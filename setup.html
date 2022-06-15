@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
+<script type="text/javascript" src="https://cdn.jsdelivr.net/jquery/latest/jquery.min.js"></script>
+<script type="text/javascript" src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+<style>
+    input[type=text],label{width: 100%;}
+</style>
+</head>
+<body class="content layout-2" role="document">
+	<div class="container-fluid">
+		<main>
+			<div class="row">
+				<div class="col-xs-12 col-sm-offset-2 col-sm-8">
+                    <h1>Create a Signup Schedule</h1>
+                    <div>
+                        <label for="title">
+                            <h2>Title</h2>
+                            <p>Title of the schedule</p>
+                            <p><input type="text" name="title" id="title" /></p>
+                        </label>
+                    </div>
+                    <div>
+                        <h2>Range of dates and times</h2>
+                        <div class="daterange__div">
+                            <h3>Date Range 1</h3>
+                            <p><input type="text" id="daterange1" name="daterange1" /></p>
+                        </div>
+                        <p><input type="button" value="Add another date &amp; time range" onclick="add_daterange()"/></p>
+                    </div>
+                </div>
+			</div>
+		</main>
+	</div>
+<script>
+    $(function() {
+        add_date_range('daterange1');
+    });
+    function add_date_range(id){
+        $('#'+id).daterangepicker({
+            timePicker: true,
+            startDate: moment().startOf('hour'),
+            endDate: moment().startOf('hour').add(32, 'hour'),
+            locale: {
+            format: 'M/DD hh:mm A'
+            },
+        },
+        function(start, end, label) {
+            console.log("A new date selection was made: " + start.format('YYYY-MM-DD') + ' to ' + end.format('YYYY-MM-DD'));
+        });
+    }
+</script>
+</body>
+</html>
