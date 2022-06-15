@@ -21,26 +21,60 @@
                         <label for="title">
                             <h2>Title</h2>
                             <p>Title of the schedule</p>
-                            <p><input type="text" name="title" id="title" /></p>
+                            <p><input type="text" name="title" id="title"  class="form-control" /></p>
                         </label>
                     </div>
                     <div>
                         <h2>Range of dates and times</h2>
                         <div class="daterange__div">
                             <h3>Date Range 1</h3>
-                            <p><input type="text" id="daterange1" name="daterange1" /></p>
+                            <p><input type="text" class="daterange__input form-control" id="daterange_1" name="daterange_1" /></p>
                         </div>
-                        <p><input type="button" value="Add another date &amp; time range" onclick="add_daterange()"/></p>
+                        <p><input type="button" class="btn" value="Add another date &amp; time range" onclick="add_daterange()"/></p>
                     </div>
+                    <div>
+                        <h3>Total time</h3>
+                        <h2 id="total_time"></h2>
+                    </div>
+                    <div>
+                        <label for="time_blocks">
+                            <h2>Time Blocks</h2>
+                            <p>The total number of time blocks to divide the ranges into. 6 hours of time divided into 12 blocks would result in 30 min blocks.</p>
+                            <p><input type="text" name="time_blocks" id="time_blocks"  class="form-control" value="1" /></p>
+                        </label>
+                    </div>
+                    <H2>OR</H2>
+                    <div>
+                        <label for="time_block_size">
+                            <h2>Time Block Size</h2>
+                            <p>The size of each time block in minutes.</p>
+                            <p><input type="text" name="time_block_size" id="time_block_size"  class="form-control" value="30" /></p>
+                        </label>
+                    </div>
+                    <p><input type="submit" class="btn btn-primary" value="Submit" /></p>
                 </div>
 			</div>
 		</main>
 	</div>
 <script>
     $(function() {
-        add_date_range('daterange1');
+        initialize_daterange('daterange_1');
     });
-    function add_date_range(id){
+
+    function add_daterange(){
+        let last_daterange = $('.daterange__div').last();
+        let new_daterange = last_daterange.clone();
+        let new_length = $('.daterange__div').length + 1
+        let new_id = 'daterange_' + new_length;
+
+        new_daterange.find('h3').text('Date Range ' + new_length);
+        new_daterange.find('input').attr('name', new_id).attr('id', new_id)
+        
+        new_daterange.insertAfter(last_daterange);
+        initialize_daterange(new_id);   // initialize the new daterange
+    }
+
+    function initialize_daterange(id){
         $('#'+id).daterangepicker({
             timePicker: true,
             startDate: moment().startOf('hour'),
@@ -51,6 +85,39 @@
         },
         function(start, end, label) {
             console.log("A new date selection was made: " + start.format('YYYY-MM-DD') + ' to ' + end.format('YYYY-MM-DD'));
+        });
+    }
+
+    function validate(){
+        let title = $('#title').val();
+        let dateranges = [];
+
+        $('.daterange__div').each(function(){
+            let daterange = {};
+            daterange['start'] = $(this).find('input').data('daterangepicker').startDate.format('YYYY-MM-DD HH:mm:ss');
+            daterange['end'] = $(this).find('input').data('daterangepicker').endDate.format('YYYY-MM-DD HH:mm:ss');
+            dateranges.push(daterange);
+        });
+
+        $('#time_blocks').val(parseInt($('#time_blocks').val()));
+
+        let time_blocks
+        
+        let valid = true;
+
+        if(title == ''){
+            $('#title').addClass('error');
+            valid = false;
+        }
+        if(time_blocks == ''){
+            $('#time_blocks').addClass('error');
+            valid = false;
+        }
+        $('.daterange__input').each(function(){
+            if($(this).val() == ''){
+                $(this).addClass('error');
+                valid = false;
+            }
         });
     }
 </script>
