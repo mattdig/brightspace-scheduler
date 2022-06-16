@@ -3,12 +3,15 @@
 <head>
 <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
 <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
-<script type="text/javascript" src="https://cdn.jsdelivr.net/jquery/latest/jquery.min.js"></script>
+<script type="text/javascript" src="https://code.jquery.com/jquery-2.2.4.min.js"></script></script>
 <script type="text/javascript" src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
 <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
 <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.0.10/css/all.css" integrity="sha384-+d0P83n9kaQMCwj8F4RJB66tzIwOKmrdb46+porD/OvrJ+37WqIM7UoBtwHO6Nlg" crossorigin="anonymous">
 <style>
     input[type=text],label{width: 100%;}
+    .nav-tabs{font-weight: bold;}
+    .tab-pane{padding: 10px 10px 0px 10px; margin-bottom: 1px solid #ccc;}
 </style>
 </head>
 <body class="content layout-2" role="document">
@@ -28,29 +31,39 @@
                         <h2>Range of dates and times</h2>
                         <div class="daterange__div">
                             <h3>Date Range 1</h3>
-                            <p><input type="text" class="daterange__input form-control" id="daterange_1" name="daterange_1" /></p>
+                            <div class="daterange_container" id="daterange_1" style="background: #fff; cursor: pointer; padding: 5px 10px; border: 1px solid #ccc; width: 100%">
+                                <i class="fa fa-calendar"></i>&nbsp;
+                                <span id="daterange_1_content">&nbsp;</span> <i class="fa fa-caret-down"></i>
+                            </div>
                         </div>
                         <p><input type="button" class="btn" value="Add another date &amp; time range" onclick="add_daterange()"/></p>
                     </div>
                     <div>
-                        <h3>Total time</h3>
-                        <h2 id="total_time"></h2>
+                        <h3 id="total_time">Total time: 4 hours</h3>
                     </div>
-                    <div>
-                        <label for="time_blocks">
-                            <h2>Time Blocks</h2>
-                            <p>The total number of time blocks to divide the ranges into. 6 hours of time divided into 12 blocks would result in 30 min blocks.</p>
-                            <p><input type="text" name="time_blocks" id="time_blocks"  class="form-control" value="1" /></p>
-                        </label>
+                 
+                    <h2>Blocks of time</h2>
+                    <div class="tabs">
+                        <ul class="nav nav-tabs">
+                            <li class="active"><a href="#tab1" data-toggle="tab" onclick="select_tab(this);">Number of blocks</a></li>
+                            <li><a href="#tab2" data-toggle="tab" onclick="select_tab(this);">Time per block</a></li>
+                        </ul>
+                        <div id="myTabContent" class="tab-content">
+                            <div class="tab-pane active" id="tab1">
+                                <label for="time_blocks">
+                                    <p>The number of time blocks to divide the total time into.</p>
+                                    <p><input type="text" name="time_blocks" id="time_blocks"  class="form-control" value="4" /></p>
+                                </label>
+                            </div>
+                            <div class="tab-pane" id="tab2">
+                                <label for="time_block_size">
+                                    <p>The length of each time block in minutes.</p>
+                                    <p><input type="text" name="time_block_size" id="time_block_size"  class="form-control" value="30" /></p>
+                                </label>
+                            </div>
+                        </div>
                     </div>
-                    <H2>OR</H2>
-                    <div>
-                        <label for="time_block_size">
-                            <h2>Time Block Size</h2>
-                            <p>The size of each time block in minutes.</p>
-                            <p><input type="text" name="time_block_size" id="time_block_size"  class="form-control" value="30" /></p>
-                        </label>
-                    </div>
+                    <h4>This will create 8 blocks of 30 minutes each.</h4>
                     <p><input type="submit" class="btn btn-primary" value="Submit" /></p>
                 </div>
 			</div>
@@ -74,18 +87,22 @@
         initialize_daterange(new_id);   // initialize the new daterange
     }
 
+    function select_tab(obj){
+        $('.tabs').find('li').removeClass('active');
+        $(obj).parent().addClass('active');
+        $('.tabs').find('div').removeClass('active');
+        $('.tabs').find($(obj).attr('href')).addClass('active');
+    }
+
     function initialize_daterange(id){
         $('#'+id).daterangepicker({
-            timePicker: true,
-            startDate: moment().startOf('hour'),
-            endDate: moment().startOf('hour').add(32, 'hour'),
-            locale: {
-            format: 'M/DD hh:mm A'
-            },
-        },
-        function(start, end, label) {
-            console.log("A new date selection was made: " + start.format('YYYY-MM-DD') + ' to ' + end.format('YYYY-MM-DD'));
-        });
+                timePicker: true,
+                startDate: moment().startOf('hour'),
+                endDate: moment().startOf('hour').add(4, 'hour')
+            }, function(start, end){
+                let new_date = start.format('MMMM D, YYYY') + ' - ' + end.format('MMMM D, YYYY') + ' ' + start.format('h:mm A') + ' - ' + end.format('h:mm A');
+                $('#'+id+'_content').html(new_date);
+            });
     }
 
     function validate(){
@@ -100,9 +117,8 @@
         });
 
         $('#time_blocks').val(parseInt($('#time_blocks').val()));
+        $('#time_block_size').val(parseInt($('#time_block_size').val()));
 
-        let time_blocks
-        
         let valid = true;
 
         if(title == ''){
