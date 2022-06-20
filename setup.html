@@ -12,6 +12,7 @@
     input[type=text],label{width: 100%;}
     .nav-tabs{font-weight: bold;}
     .tab-pane{padding: 10px 10px 0px 10px; margin-bottom: 1px solid #ccc;}
+    .error{background-color: lightcoral;}
 </style>
 </head>
 <body class="content layout-2" role="document">
@@ -24,118 +25,70 @@
                         <label for="title">
                             <h2>Title</h2>
                             <p>Title of the schedule</p>
-                            <p><input type="text" name="title" id="title"  class="form-control" /></p>
+                            <p><input type="text" name="title" id="title"  class="form-control" required /></p>
                         </label>
                     </div>
                     <div>
                         <h2>Range of dates and times</h2>
                         <div class="daterange__div">
                             <h3>Date Range 1</h3>
-                            <div class="daterange_container" id="daterange_1" style="background: #fff; cursor: pointer; padding: 5px 10px; border: 1px solid #ccc; width: 100%">
+                            <p class="daterange__p" id="daterange_1" style="background: #fff; cursor: pointer; padding: 5px 10px; border: 1px solid #ccc; width: 100%">
                                 <i class="fa fa-calendar"></i>&nbsp;
-                                <span id="daterange_1_content">&nbsp;</span> <i class="fa fa-caret-down"></i>
-                            </div>
+                                <span class="daterange__span" id="daterange_1_content">&nbsp;</span> <i class="fa fa-caret-down"></i>
+                            </p>
                         </div>
                         <p><input type="button" class="btn" value="Add another date &amp; time range" onclick="add_daterange()"/></p>
                     </div>
                     <div>
-                        <h3 id="total_time">Total time: 4 hours</h3>
+                        <h3 id="total_time">Total time: 3 hours</h3>
                     </div>
                  
                     <h2>Blocks of time</h2>
                     <div class="tabs">
                         <ul class="nav nav-tabs">
-                            <li class="active"><a href="#tab1" data-toggle="tab" onclick="select_tab(this);">Number of blocks</a></li>
-                            <li><a href="#tab2" data-toggle="tab" onclick="select_tab(this);">Time per block</a></li>
+                            <li class="active"><a href="#tab1" data-toggle="tab" onclick="select_tab(this);">Time per block</a></li>
+                            <li><a href="#tab2" data-toggle="tab" onclick="select_tab(this);">Number of blocks</a></li>
                         </ul>
                         <div id="myTabContent" class="tab-content">
                             <div class="tab-pane active" id="tab1">
-                                <label for="time_blocks">
-                                    <p>The number of time blocks to divide the total time into.</p>
-                                    <p><input type="text" name="time_blocks" id="time_blocks"  class="form-control" value="4" /></p>
-                                </label>
-                            </div>
-                            <div class="tab-pane" id="tab2">
                                 <label for="time_block_size">
                                     <p>The length of each time block in minutes.</p>
                                     <p><input type="text" name="time_block_size" id="time_block_size"  class="form-control" value="30" /></p>
                                 </label>
                             </div>
+                            <div class="tab-pane" id="tab2">
+                                <label for="time_blocks">
+                                    <p>The number of time blocks to divide the total time into.</p>
+                                    <p><input type="text" name="time_blocks" id="time_blocks"  class="form-control" value="4" /></p>
+                                </label>
+                            </div>
                         </div>
                     </div>
-                    <h4>This will create 8 blocks of 30 minutes each.</h4>
+                    <h4 id="total_time_blocks">This will create 6 blocks of 30 minutes each.</h4>
                     <p><input type="submit" class="btn btn-primary" value="Submit" /></p>
+                    <!-- Button trigger modal -->
                 </div>
 			</div>
 		</main>
 	</div>
-<script>
-    $(function() {
-        initialize_daterange('daterange_1');
-    });
-
-    function add_daterange(){
-        let last_daterange = $('.daterange__div').last();
-        let new_daterange = last_daterange.clone();
-        let new_length = $('.daterange__div').length + 1
-        let new_id = 'daterange_' + new_length;
-
-        new_daterange.find('h3').text('Date Range ' + new_length);
-        new_daterange.find('input').attr('name', new_id).attr('id', new_id)
-        
-        new_daterange.insertAfter(last_daterange);
-        initialize_daterange(new_id);   // initialize the new daterange
-    }
-
-    function select_tab(obj){
-        $('.tabs').find('li').removeClass('active');
-        $(obj).parent().addClass('active');
-        $('.tabs').find('div').removeClass('active');
-        $('.tabs').find($(obj).attr('href')).addClass('active');
-    }
-
-    function initialize_daterange(id){
-        $('#'+id).daterangepicker({
-                timePicker: true,
-                startDate: moment().startOf('hour'),
-                endDate: moment().startOf('hour').add(4, 'hour')
-            }, function(start, end){
-                let new_date = start.format('MMMM D, YYYY') + ' - ' + end.format('MMMM D, YYYY') + ' ' + start.format('h:mm A') + ' - ' + end.format('h:mm A');
-                $('#'+id+'_content').html(new_date);
-            });
-    }
-
-    function validate(){
-        let title = $('#title').val();
-        let dateranges = [];
-
-        $('.daterange__div').each(function(){
-            let daterange = {};
-            daterange['start'] = $(this).find('input').data('daterangepicker').startDate.format('YYYY-MM-DD HH:mm:ss');
-            daterange['end'] = $(this).find('input').data('daterangepicker').endDate.format('YYYY-MM-DD HH:mm:ss');
-            dateranges.push(daterange);
-        });
-
-        $('#time_blocks').val(parseInt($('#time_blocks').val()));
-        $('#time_block_size').val(parseInt($('#time_block_size').val()));
-
-        let valid = true;
-
-        if(title == ''){
-            $('#title').addClass('error');
-            valid = false;
-        }
-        if(time_blocks == ''){
-            $('#time_blocks').addClass('error');
-            valid = false;
-        }
-        $('.daterange__input').each(function(){
-            if($(this).val() == ''){
-                $(this).addClass('error');
-                valid = false;
-            }
-        });
-    }
-</script>
+    <!-- Modal -->
+    <div class="modal fade" id="messageModal" tabindex="-1" role="dialog" aria-labelledby="messageModalCenterTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="messageModalLongTitle">Modal title</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary">Save changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+<script type="text/javascript" src="setup.js"></script>
 </body>
 </html>
