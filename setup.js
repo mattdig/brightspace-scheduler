@@ -2,23 +2,28 @@ let latest_time = moment();
 let time_blocks = [];
 
 $(function() {
-    let start = moment().startOf('hour');
-    let end = moment().startOf('hour').add(3, 'hour');
-    $('#daterange_1_content').html(start.format('YYYY MM DD') + ' - ' + end.format('YYYY MM DD') + ', ' + start.format('h:mm A') + ' - ' + end.format('h:mm A'));
-    initialize_daterange('daterange_1');
+    // let start = moment().startOf('hour');
+    // let end = moment().startOf('hour').add(3, 'hour');
+    // $('#datetime_1_content').html(start.format('YYYY MM DD') + ' - ' + end.format('YYYY MM DD') + ', ' + start.format('h:mm A') + ' - ' + end.format('h:mm A'));
+    initialize_datetime($('.datetime__div').first());
 });
 
-function add_daterange(){
-    let last_daterange = $('.daterange__div').last();
-    let new_daterange = last_daterange.clone();
-    let new_length = $('.daterange__div').length + 1
+function add_datetime(){
+    let last_datetime = $('.datetime__div').last();
+    let new_datetime = last_datetime.clone();
+    let new_length = $('.datetime__div').length + 1
 
-    new_daterange.find('h3').text('Date Range ' + new_length);
-    new_daterange.find('.daterange__p').attr('id', 'daterange_' + new_length);
-    new_daterange.find('.daterange__span').attr('id', 'daterange_' + new_length + '_content');
+    new_datetime.find('h3').text('Date & Time ' + new_length);
+    new_datetime.find('label.date_label').attr('for', 'date_' + new_length);
+    new_datetime.find('label.starttime_label').attr('for', 'starttime_' + new_length);
+    new_datetime.find('label.endtime_label').attr('for', 'endtime_' + new_length);
     
-    new_daterange.insertAfter(last_daterange);
-    initialize_daterange('daterange_' + new_length);   // initialize the new daterange
+    new_datetime.find('input.date_input').attr('id', 'date_' + new_length).attr('name', 'date_' + new_length).val('');
+    new_datetime.find('input.time_input').first().attr('id', 'starttime_' + new_length).attr('name', 'starttime_' + new_length).val('');
+    new_datetime.find('input.time_input').last().attr('id', 'endtime_' + new_length).attr('name', 'endtime_' + new_length).val('');
+    
+    new_datetime.insertAfter(last_datetime);
+    initialize_datetime($('.datetime__div').last());   // initialize the new datetime
 }
 
 function select_tab(obj){
@@ -30,7 +35,7 @@ function select_tab(obj){
 
 function update_total_time(){
     let total_time = 0;
-    $('.daterange__span').each(function(){
+    $('.datetime__span').each(function(){
         let time = $(this).text();
         if(time != ''){
             total_time += parseInt(time);
@@ -43,7 +48,7 @@ function update_total_time(){
 
 function update_total_time_blocks(){
     let total_time_blocks = 0;
-    $('.daterange__span').each(function(){
+    $('.datetime__span').each(function(){
         let time = $(this).text();
         if(time != ''){
             total_time_blocks += Math.ceil(parseInt(time) / parseInt($('#time_block_size').val()));
@@ -52,52 +57,45 @@ function update_total_time_blocks(){
     $('#total_time_blocks').text('This will create ' + total_time_blocks + ' blocks of ' + $('#time_block_size').val() + ' minutes each.');
 }
 
-function initialize_daterange(id){
+function initialize_datetime(datetime_elem){
 
-    let previous_daterange = $('#' + id).pare;
+    $(datetime_elem).find('.date_input').datetimepicker({
+        format: 'YYYY-MM-DD',
+    });
 
-    let newStart = moment();
+    $(datetime_elem).find('.time_input').datetimepicker({
+        format: 'LT',
+        stepping: 15,
+    });
+        
+            // let no_overlap = true;            
+            // time_blocks.some(function(time_block){
+            //     // if the new datetime overlaps with an existing time block, remove it
+            //     if(start.isBetween(time_block.start, time_block.end) || end.isBetween(time_block.start, time_block.end)){
+            //         no_overlap = false;
+            //         error_message('The date range you selected overlaps with an existing time block.', time_block.id);
+            //         return false;
+            //     }
+            // });
 
-    $('#'+id).daterangepicker({
-            timePicker: true,
-            singleDatePicker: true,
-            startDate: newStart.startOf('hour'),
-            endDate: newStart.startOf('hour').add(3, 'hour'),
-            timePickerIncrement: 5,
-        }, function(start, end){
-            
-            let new_date = start.format('YYYY MM DD') + ' - ' + end.format('YYYY MM DD') + ', ' + start.format('h:mm A') + ' - ' + end.format('h:mm A');
-            $('#' + id + '_content').html(new_date);
-            
-            let no_overlap = true;            
-            time_blocks.some(function(time_block){
-                // if the new daterange overlaps with an existing time block, remove it
-                if(start.isBetween(time_block.start, time_block.end) || end.isBetween(time_block.start, time_block.end)){
-                    no_overlap = false;
-                    error_message('The date range you selected overlaps with an existing time block.', time_block.id);
-                    return false;
-                }
-            });
+            // if(no_overlap){
+            //     clear_error_message(id);
 
-            if(no_overlap){
-                clear_error_message(id);
+            //     time_blocks.push({
+            //         id: id,
+            //         start: start,
+            //         end: end
+            //     });
 
-                time_blocks.push({
-                    id: id,
-                    start: start,
-                    end: end
-                });
-
-                if(end > latest_time){
-                    latest_time = end;
-                }
+            //     if(end > latest_time){
+            //         latest_time = end;
+            //     }
     
-                update_total_time();
-            } else {
-                $('#' + id + '_content').html("");
-            }
+            //     update_total_time();
+            // } else {
+            //     $('#' + id + '_content').html("");
+            // }
 
-        });
 }
 
 function error_message(message, id){
@@ -114,13 +112,13 @@ function clear_error_message(id){
 
 function validate(){
     let title = $('#title').val();
-    let dateranges = [];
+    let datetimes = [];
 
-    $('.daterange__div').each(function(){
-        let daterange = {};
-        daterange['start'] = $(this).find('input').data('daterangepicker').startDate.format('YYYY-MM-DD HH:mm:ss');
-        daterange['end'] = $(this).find('input').data('daterangepicker').endDate.format('YYYY-MM-DD HH:mm:ss');
-        dateranges.push(daterange);
+    $('.datetime__div').each(function(){
+        let datetime = {};
+        datetime['start'] = $(this).find('input').data('datetimepicker').startDate.format('YYYY-MM-DD HH:mm:ss');
+        datetime['end'] = $(this).find('input').data('datetimepicker').endDate.format('YYYY-MM-DD HH:mm:ss');
+        datetimes.push(datetime);
     });
 
     $('#time_blocks').val(parseInt($('#time_blocks').val()));
@@ -136,7 +134,7 @@ function validate(){
         $('#time_blocks').addClass('error');
         valid = false;
     }
-    $('.daterange__input').each(function(){
+    $('.datetime__input').each(function(){
         if($(this).val() == ''){
             $(this).addClass('error');
             valid = false;

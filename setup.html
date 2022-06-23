@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
 <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
-<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
+<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.47/css/bootstrap-datetimepicker.css" />
 <script type="text/javascript" src="https://code.jquery.com/jquery-2.2.4.min.js"></script></script>
 <script type="text/javascript" src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
 <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
-<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.47/js/bootstrap-datetimepicker.min.js"></script>
 <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.0.10/css/all.css" integrity="sha384-+d0P83n9kaQMCwj8F4RJB66tzIwOKmrdb46+porD/OvrJ+37WqIM7UoBtwHO6Nlg" crossorigin="anonymous">
 <style>
     input[type=text],label{width: 100%;}
@@ -30,14 +30,28 @@
                     </div>
                     <div>
                         <h2>Range of dates and times</h2>
-                        <div class="daterange__div">
-                            <h3>Date Range 1</h3>
-                            <p class="daterange__p" id="daterange_1" style="background: #fff; cursor: pointer; padding: 5px 10px; border: 1px solid #ccc; width: 100%">
-                                <i class="fa fa-calendar"></i>&nbsp;
-                                <span class="daterange__span" id="daterange_1_content">&nbsp;</span> <i class="fa fa-caret-down"></i>
-                            </p>
+                        <div class="datetime__div">
+                            <h3>Date & Time 1</h3>
+                            <div class="col-sm-6">
+                                <label for="date_1" class="date_label">
+                                    <p>Date</p>
+                                    <p><input type="text" name="date_1" id="date_1" class="form-control date_input" required /></p>
+                                </label>
+                            </div>
+                            <div class="col-sm-3 col-xs-6">
+                                <label for="starttime_1" class="starttime_label">
+                                    <p>Start&nbsp;Time</p>
+                                    <p><input type="text" name="starttime_1" id="starttime_1" class="form-control time_input" required /></p>
+                                </label>
+                            </div>
+                            <div class="col-sm-3 col-xs-6">
+                                <label for="endtime_1" class="endtime_label">
+                                    <p>End&nbsp;Time</p>
+                                    <p><input type="text" name="endtime_1" id="endtime_1" class="form-control time_input" required /></p>
+                                </label>
+                            </div>
                         </div>
-                        <p><input type="button" class="btn" value="Add another date &amp; time range" onclick="add_daterange()"/></p>
+                        <p><input type="button" class="btn" value="Add another date &amp; time range" onclick="add_datetime()"/></p>
                     </div>
                     <div>
                         <h3 id="total_time">Total time: 3 hours</h3>
