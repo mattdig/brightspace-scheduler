@@ -13,14 +13,15 @@ function add_datetime(){
     let new_datetime = last_datetime.clone();
     let new_length = $('.datetime__div').length + 1
 
+    new_datetime.attr('id', 'datetime_' + new_length);
     new_datetime.find('h3').text('Date & Time ' + new_length);
     new_datetime.find('label.date_label').attr('for', 'date_' + new_length);
     new_datetime.find('label.starttime_label').attr('for', 'starttime_' + new_length);
     new_datetime.find('label.endtime_label').attr('for', 'endtime_' + new_length);
     
     new_datetime.find('input.date_input').attr('id', 'date_' + new_length).attr('name', 'date_' + new_length).val('');
-    new_datetime.find('input.time_input').first().attr('id', 'starttime_' + new_length).attr('name', 'starttime_' + new_length).val('');
-    new_datetime.find('input.time_input').last().attr('id', 'endtime_' + new_length).attr('name', 'endtime_' + new_length).val('');
+    new_datetime.find('input.starttime_input').attr('id', 'starttime_' + new_length).attr('name', 'starttime_' + new_length).val('');
+    new_datetime.find('input.endtime_input').attr('id', 'endtime_' + new_length).attr('name', 'endtime_' + new_length).val('');
     
     new_datetime.insertAfter(last_datetime);
     initialize_datetime($('.datetime__div').last());   // initialize the new datetime
@@ -59,50 +60,48 @@ function update_total_time_blocks(){
 
 function initialize_datetime(datetime_elem){
 
+    const now = moment();
+
     $(datetime_elem).find('.date_input').datetimepicker({
         format: 'YYYY-MM-DD',
+        defaultDate: now,
+        minDate: now,
+        maxDate: moment().add(1, 'years')
     });
 
-    $(datetime_elem).find('.time_input').datetimepicker({
+    $(datetime_elem).find('.starttime_input').datetimepicker({
         format: 'LT',
         stepping: 15,
+        defaultDate: now,
+        minDate: moment().startOf('day'),
+        maxDate: moment().add(1, 'hours')
+    }).on('dp.hide', function(e){
+        $(datetime_elem).find('.endtime_input').data('DateTimePicker').minDate(e.date.add(15, 'minute'));
     });
-        
-            // let no_overlap = true;            
-            // time_blocks.some(function(time_block){
-            //     // if the new datetime overlaps with an existing time block, remove it
-            //     if(start.isBetween(time_block.start, time_block.end) || end.isBetween(time_block.start, time_block.end)){
-            //         no_overlap = false;
-            //         error_message('The date range you selected overlaps with an existing time block.', time_block.id);
-            //         return false;
-            //     }
-            // });
 
-            // if(no_overlap){
-            //     clear_error_message(id);
-
-            //     time_blocks.push({
-            //         id: id,
-            //         start: start,
-            //         end: end
-            //     });
-
-            //     if(end > latest_time){
-            //         latest_time = end;
-            //     }
-    
-            //     update_total_time();
-            // } else {
-            //     $('#' + id + '_content').html("");
-            // }
+    $(datetime_elem).find('.endtime_input').datetimepicker({
+        format: 'LT',
+        stepping: 15,
+        defaultDate: now + moment.duration({hours:1}),
+        minDate: moment().subtract(1, 'hours'),
+        maxDate: moment().endOf('day'),
+    }).on('dp.hide', function(e){
+        $(datetime_elem).find('.starttime_input').data('DateTimePicker').maxDate(e.date.subtract(15, 'minute')); 
+    });
 
 }
 
 function error_message(message, id){
-    $('#' + id).addClass('error');
+    
+    if(typeof(id) == 'string')
+        $('#' + id).addClass('error');
+    else
+        id.addClass('error');
+    
     $('#messageModel').find('.modal-title').html('Error');
     $('#messageModal').find('.modal-body').html(message);
     $('#messageModal').modal('show');
+
 }
 
 function clear_error_message(id){
@@ -111,33 +110,73 @@ function clear_error_message(id){
 
 
 function validate(){
+
+    $('input').removeClass('error');
+
     let title = $('#title').val();
     let datetimes = [];
+    let total_time = 0;
+    let total_blocks = 0;
+    let time_block_size = 0;
+
+    let selected_tab = $('.tab-pane.active').find('label').attr('for');
+    let block_value = parseInt($('#' + selected_tab).val());
+
+    console.log(block_value);
 
     $('.datetime__div').each(function(){
         let datetime = {};
-        datetime['start'] = $(this).find('input').data('datetimepicker').startDate.format('YYYY-MM-DD HH:mm:ss');
-        datetime['end'] = $(this).find('input').data('datetimepicker').endDate.format('YYYY-MM-DD HH:mm:ss');
+        let format = "YYYY-MM-DD hh:mm A";
+        let date = $(this).find('.date_input').val() + " ";
+        datetime['id'] = $(this).attr('id');
+        datetime['start'] = moment(date + $(this).find('.starttime_input').val(), format);
+        datetime['end'] = moment(date + $(this).find('.endtime_input').val(), format);
         datetimes.push(datetime);
     });
-
-    $('#time_blocks').val(parseInt($('#time_blocks').val()));
-    $('#time_block_size').val(parseInt($('#time_block_size').val()));
 
     let valid = true;
 
     if(title == ''){
         $('#title').addClass('error');
         valid = false;
+        return false;
     }
-    if(time_blocks == ''){
-        $('#time_blocks').addClass('error');
-        valid = false;
-    }
-    $('.datetime__input').each(function(){
-        if($(this).val() == ''){
-            $(this).addClass('error');
+    
+    datetimes.every(function(datetime1){
+        if(datetime1['start'].isAfter(datetime1['end']) || datetime1['start'].isSame(datetime1['end'])){
+
+            error_message('Start time must be before end time.', $('#' + datetime1['id']).find('input'));
             valid = false;
+            return false;
+        
+        } else {
+            let no_overlap = datetimes.every(function(datetime2){
+                if(datetime1['id'] != datetime2['id'] && (
+                    datetime1['start'].isAfter(datetime2['start']) && datetime1['start'].isBefore(datetime2['end']) || 
+                    datetime1['end'].isAfter(datetime2['start']) && datetime1['end'].isBefore(datetime2['end']) ||
+                    datetime1['start'].isSame(datetime2['start']) || datetime1['end'].isSame(datetime2['end']))){
+                    
+                    error_message('Datetimes must not overlap.', $('#' + datetime2['id']).find('input'));
+                    
+                    valid = false;
+                    return false;
+                } else {
+                    return true;
+                }
+            });
+
+            if(no_overlap == false){
+                return false;
+            } else {
+                return true;
+            }
         }
     });
+
+    if(block_value == ''){
+        $('#' + selected_tab).addClass('error');
+        valid = false;
+        return false;
+    }
+
 }
