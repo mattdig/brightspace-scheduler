@@ -1,14 +1,25 @@
-let latest_time = moment();
+let global_latest_time = moment();
 let time_blocks = [];
 
 $(function() {
-    // let start = moment().startOf('hour');
-    // let end = moment().startOf('hour').add(3, 'hour');
-    // $('#datetime_1_content').html(start.format('YYYY MM DD') + ' - ' + end.format('YYYY MM DD') + ', ' + start.format('h:mm A') + ' - ' + end.format('h:mm A'));
     initialize_datetime($('.datetime__div').first());
 });
 
+function get_existing_time_blocks(){
+    $.ajax({
+        url: '/api/get_existing_time_blocks',
+        type: 'GET',
+        dataType: 'json',
+        success: function(data){
+            data.array.forEach(element => {
+                time_blocks.push(element);
+            });
+        }
+    })
+}
+
 function add_datetime(){
+
     let last_datetime = $('.datetime__div').last();
     let new_datetime = last_datetime.clone();
     let new_length = $('.datetime__div').length + 1
@@ -25,6 +36,7 @@ function add_datetime(){
     
     new_datetime.insertAfter(last_datetime);
     initialize_datetime($('.datetime__div').last());   // initialize the new datetime
+
 }
 
 function select_tab(obj){
@@ -62,33 +74,59 @@ function initialize_datetime(datetime_elem){
 
     const now = moment();
 
+    if(global_latest_time <= 22){
+        global_latest_time = global_latest_time + moment.duration({hours:1});
+    } else {
+        global_latest_time = global_latest_time + moment.hours({hours:9});
+    }
+
     $(datetime_elem).find('.date_input').datetimepicker({
         format: 'YYYY-MM-DD',
-        defaultDate: now,
-        minDate: now,
+        defaultDate: global_latest_time,
+        minDate: global_latest_time,
         maxDate: moment().add(1, 'years')
     });
 
     $(datetime_elem).find('.starttime_input').datetimepicker({
         format: 'LT',
         stepping: 15,
-        defaultDate: now,
+        defaultDate: global_latest_time,
         minDate: moment().startOf('day'),
         maxDate: moment().add(1, 'hours')
     }).on('dp.hide', function(e){
         $(datetime_elem).find('.endtime_input').data('DateTimePicker').minDate(e.date.add(15, 'minute'));
+        validate_time_fields(false);
     });
 
     $(datetime_elem).find('.endtime_input').datetimepicker({
         format: 'LT',
         stepping: 15,
-        defaultDate: now + moment.duration({hours:1}),
+        defaultDate: global_latest_time + moment.duration({hours:1}),
         minDate: moment().subtract(1, 'hours'),
         maxDate: moment().endOf('day'),
     }).on('dp.hide', function(e){
-        $(datetime_elem).find('.starttime_input').data('DateTimePicker').maxDate(e.date.subtract(15, 'minute')); 
+        $(datetime_elem).find('.starttime_input').data('DateTimePicker').maxDate(e.date.subtract(15, 'minute'));
+        validate_time_fields(false);
     });
 
+    update_global_latest_time(global_latest_time);    
+
+}
+
+function update_global_latest_time(new_time){
+    
+    if(new_time == global_latest_time){
+        if(global_latest_time.hours() <= 22){
+            global_latest_time = global_latest_time + moment.duration({hours:1});
+        } else {
+            global_latest_time = global_latest_time + moment.hours({hours:9});
+        }
+    } else {
+        if(new_time > global_latest_time){
+            global_latest_time = new_time;
+        }
+    }
+    
 }
 
 function error_message(message, id){
@@ -109,20 +147,18 @@ function clear_error_message(id){
 }
 
 
-function validate(){
+function validate_time_fields(with_errors){
+    valid = true;
 
-    $('input').removeClass('error');
-
-    let title = $('#title').val();
     let datetimes = [];
     let total_time = 0;
     let total_blocks = 0;
     let time_block_size = 0;
 
+    let latest_time = 0;
+
     let selected_tab = $('.tab-pane.active').find('label').attr('for');
     let block_value = parseInt($('#' + selected_tab).val());
-
-    console.log(block_value);
 
     $('.datetime__div').each(function(){
         let datetime = {};
@@ -134,18 +170,12 @@ function validate(){
         datetimes.push(datetime);
     });
 
-    let valid = true;
-
-    if(title == ''){
-        $('#title').addClass('error');
-        valid = false;
-        return false;
-    }
-    
     datetimes.every(function(datetime1){
         if(datetime1['start'].isAfter(datetime1['end']) || datetime1['start'].isSame(datetime1['end'])){
 
-            error_message('Start time must be before end time.', $('#' + datetime1['id']).find('input'));
+            if(with_errors){
+                error_message('Start time must be before end time.', $('#' + datetime1['id']).find('input'));
+            }
             valid = false;
             return false;
         
@@ -156,8 +186,9 @@ function validate(){
                     datetime1['end'].isAfter(datetime2['start']) && datetime1['end'].isBefore(datetime2['end']) ||
                     datetime1['start'].isSame(datetime2['start']) || datetime1['end'].isSame(datetime2['end']))){
                     
-                    error_message('Datetimes must not overlap.', $('#' + datetime2['id']).find('input'));
-                    
+                    if(with_errors){
+                        error_message('Datetimes must not overlap.', $('#' + datetime2['id']).find('input'));
+                    }
                     valid = false;
                     return false;
                 } else {
@@ -168,6 +199,10 @@ function validate(){
             if(no_overlap == false){
                 return false;
             } else {
+
+                if(datetime1['end'].isAfter(latest_time)){
+                    latest_time = datetime1['end'];
+                }
                 return true;
             }
         }
@@ -178,5 +213,24 @@ function validate(){
         valid = false;
         return false;
     }
+}
+
+
+function validate_all_fields(){
+
+    $('input').removeClass('error');
+
+    let valid = true;
+
+    let title = $('#title').val();
+    
+
+    if(title == ''){
+        $('#title').addClass('error');
+        valid = false;
+        return false;
+    }
+    
+    validate_time_fields(true);
 
 }
