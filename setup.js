@@ -2,17 +2,79 @@ let global_latest_time = moment();
 let time_blocks = [];
 
 $(function() {
+    setup();
     initialize_datetime($('.datetime__div').first());
 });
 
+function setup(){
+    get_existing_time_blocks();
+
+}
+
 function get_existing_time_blocks(){
-    $.ajax({
+    await $.ajax({
         url: '/api/get_existing_time_blocks',
         type: 'GET',
         dataType: 'json',
         success: function(data){
             data.array.forEach(element => {
                 time_blocks.push(element);
+            });
+        }
+    })
+
+    return true;
+}
+
+function display_existing_time_blocks(){
+
+    let html = '';
+    time_blocks.forEach(element => {
+        html += '<div class="time_block" id="time_block_' + element.id + '">';
+        html += '<div class="time_block__student">' + element.student + '</div>';
+        html += '<div class="time_block__starttime">' + element.starttime + '</div>';
+        html += '<div class="time_block__endtime">' + element.endtime + '</div>';
+        html += '<div class="time_block__actions">';
+        if(element.student !== false){
+            html += '<button class="btn btn-danger btn-sm cancel_time_block" data-id="' + element.id + '">Cancel</button>';
+        }
+        html += '<button class="btn btn-danger btn-sm delete_time_block" data-id="' + element.id + '">Delete</button></div>';
+        html += '</div>';
+        html += '</div>';
+    });
+
+    $('#existing_time_blocks').html(html);
+}
+
+function cancel_time_block(id){
+    $.ajax({
+        url: '/api/cancel_time_block',
+        type: 'POST',
+        dataType: 'json',
+        data: {
+            id: id
+        },
+        success: function(data){
+            $('#time_block_' + id).find('div.time_block__student').text('Not selected');
+            $('#time_block_' + id).find('button.cancel_time_block').remove();
+        }
+    })
+}
+
+function delete_time_block(id){
+    $.ajax({
+        url: '/api/delete_time_block',
+        type: 'POST',
+        dataType: 'json',
+        data: {
+            id: id
+        },
+        success: function(data){
+            $('#time_block_' + id).remove();
+            time_blocks.forEach(element => {
+                if(element.id == id){
+                    time_blocks.splice(time_blocks.indexOf(element), 1);
+                }
             });
         }
     })
@@ -213,6 +275,7 @@ function validate_time_fields(with_errors){
         valid = false;
         return false;
     }
+
 }
 
 

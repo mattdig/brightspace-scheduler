@@ -62,14 +62,21 @@
                     </label>
                 </div>
             </div>
-            
             <div class="row">
                 <div class="col-xs-12 col-sm-offset-2 col-sm-8">
                     <p><input type="button" class="btn" value="Add another date &amp; time range" onclick="add_datetime()"/></p>
-                   <div>
+                    <div>
                         <h3 id="total_time">Total time: 3 hours</h3>
                     </div>
-                 
+
+                    <div>
+                        <h3>Signup Deadline</h3>
+                        <p>
+                            <input type="text" name="deadline_date" id="deadline_date" class="form-control date_input" />
+                            <input type="text" name="deadline_time" id="deadline_time" class="form-control starttime_input" />
+                        </p>
+                    </div>
+
                     <div id="time_blocks">
                         <h2>Blocks of time</h2>
                         <div class="tabs">
