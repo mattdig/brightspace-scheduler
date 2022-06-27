@@ -3,11 +3,12 @@
 <head>
 <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
 <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.47/css/bootstrap-datetimepicker.css" />
+<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.0.10/css/all.css" integrity="sha384-+d0P83n9kaQMCwj8F4RJB66tzIwOKmrdb46+porD/OvrJ+37WqIM7UoBtwHO6Nlg" crossorigin="anonymous">
 <script type="text/javascript" src="https://code.jquery.com/jquery-2.2.4.min.js"></script></script>
 <script type="text/javascript" src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
 <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.47/js/bootstrap-datetimepicker.min.js"></script>
-<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.0.10/css/all.css" integrity="sha384-+d0P83n9kaQMCwj8F4RJB66tzIwOKmrdb46+porD/OvrJ+37WqIM7UoBtwHO6Nlg" crossorigin="anonymous">
+<script type="text/javascript">let mode = 'create';</script>
 <style>
     input[type=text],label{width: 100%;}
     .nav-tabs{font-weight: bold;}
@@ -18,7 +19,7 @@
 <body class="content layout-2" role="document">
 	<div class="container-fluid">
 		<main>
-			<div class="row">
+			<div class="row create_title__div">
 				<div class="col-xs-12 col-sm-offset-2 col-sm-8">
                     <h1>Create a Signup Schedule</h1>
                     <div>
@@ -39,70 +40,90 @@
                      <h2>Range of dates and times</h2>
                 </div>
             </div>
-            <div class="row datetime__div" id="datetime_1">
+            <div class="row title__div">
                 <div class="col-xs-12 col-sm-offset-2 col-sm-8">
-                    <h3>Date & Time 1</h3>
-                </div>
-                <div class="col col-sm-offset-2 col-sm-4">
-                    <label for="date_1" class="date_label">
-                        <p>Date</p>
-                        <p><input type="text" name="date_1" id="date_1" class="form-control date_input" required /></p>
-                    </label>
-                </div>
-                <div class="col col-sm-2 col-xs-6">
-                    <label for="starttime_1" class="starttime_label">
-                        <p>Start&nbsp;Time</p>
-                        <p><input type="text" name="starttime_1" id="starttime_1" class="form-control starttime_input" required /></p>
-                    </label>
-                </div>
-                <div class="col col-sm-2 col-xs-6">
-                    <label for="endtime_1" class="endtime_label">
-                        <p>End&nbsp;Time</p>
-                        <p><input type="text" name="endtime_1" id="endtime_1" class="form-control endtime_input" required /></p>
-                    </label>
+                    <h1 id="title"></h1>
                 </div>
             </div>
-            <div class="row">
+            <div class="row" id="existing_time_blocks">
                 <div class="col-xs-12 col-sm-offset-2 col-sm-8">
-                    <p><input type="button" class="btn" value="Add another date &amp; time range" onclick="add_datetime()"/></p>
-                    <div>
-                        <h3 id="total_time">Total time: 3 hours</h3>
+                    <h2>Current Available Time Slots</h2>
+                    <table id="existing_time_blocks__table">
+                        <tr><th>Registration</th><th>Start</th><th>End</th><th>Actions</th></tr>
+                    </table>
+                </div>
+            </div>
+            <div id="edit_time_blocks">
+                <div class="row">
+                    <div class="col-xs-12 col-sm-offset-2 col-sm-8">
+                        <h2>Range of dates and times</h2>
                     </div>
-
-                    <div>
-                        <h3>Signup Deadline</h3>
-                        <p>
-                            <input type="text" name="deadline_date" id="deadline_date" class="form-control date_input" />
-                            <input type="text" name="deadline_time" id="deadline_time" class="form-control starttime_input" />
-                        </p>
+                </div>
+                <div class="row datetime__div" id="datetime_1">
+                    <div class="col-xs-12 col-sm-offset-2 col-sm-8">
+                        <h3>Date & Time 1</h3>
                     </div>
+                    <div class="col col-sm-offset-2 col-sm-4">
+                        <label for="date_1" class="date_label">
+                            <p>Date</p>
+                            <p><input type="text" name="date_1" id="date_1" class="form-control date_input" required /></p>
+                        </label>
+                    </div>
+                    <div class="col col-sm-2 col-xs-6">
+                        <label for="starttime_1" class="starttime_label">
+                            <p>Start&nbsp;Time</p>
+                            <p><input type="text" name="starttime_1" id="starttime_1" class="form-control starttime_input" required /></p>
+                        </label>
+                    </div>
+                    <div class="col col-sm-2 col-xs-6">
+                        <label for="endtime_1" class="endtime_label">
+                            <p>End&nbsp;Time</p>
+                            <p><input type="text" name="endtime_1" id="endtime_1" class="form-control endtime_input" required /></p>
+                        </label>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-xs-12 col-sm-offset-2 col-sm-8">
+                        <p><input type="button" class="btn" value="Add another date &amp; time range" onclick="add_datetime()"/></p>
+                        <div>
+                            <h3 id="total_time">Total time: 3 hours</h3>
+                        </div>
 
-                    <div id="time_blocks">
-                        <h2>Blocks of time</h2>
-                        <div class="tabs">
-                            <ul class="nav nav-tabs">
-                                <li class="active"><a href="#tab1" data-toggle="tab" onclick="select_tab(this);">Time per block</a></li>
-                                <li><a href="#tab2" data-toggle="tab" onclick="select_tab(this);">Number of blocks</a></li>
-                            </ul>
-                            <div id="myTabContent" class="tab-content">
-                                <div class="tab-pane active" id="tab1">
-                                    <label for="time_block_size">
-                                        <p>The length of each time block in minutes.</p>
-                                        <p><input type="text" name="time_block_size" id="time_block_size" class="selected_block form-control" value="30" /></p>
-                                    </label>
-                                </div>
-                                <div class="tab-pane" id="tab2">
-                                    <label for="time_blocks">
-                                        <p>The number of time blocks to divide the total time into.</p>
-                                        <p><input type="text" name="time_blocks" id="time_blocks" class="selected_block form-control" value="4" /></p>
-                                    </label>
+                        <div>
+                            <h3>Signup Deadline</h3>
+                            <p>
+                                <input type="text" name="deadline_date" id="deadline_date" class="form-control date_input" />
+                                <input type="text" name="deadline_time" id="deadline_time" class="form-control starttime_input" />
+                            </p>
+                        </div>
+
+                        <div id="time_blocks">
+                            <h2>Blocks of time</h2>
+                            <div class="tabs">
+                                <ul class="nav nav-tabs">
+                                    <li class="active"><a href="#tab1" data-toggle="tab" onclick="select_tab(this);">Time per block</a></li>
+                                    <li><a href="#tab2" data-toggle="tab" onclick="select_tab(this);">Number of blocks</a></li>
+                                </ul>
+                                <div id="myTabContent" class="tab-content">
+                                    <div class="tab-pane active" id="tab1">
+                                        <label for="time_block_size">
+                                            <p>The length of each time block in minutes.</p>
+                                            <p><input type="text" name="time_block_size" id="time_block_size" class="selected_block form-control" value="30" /></p>
+                                        </label>
+                                    </div>
+                                    <div class="tab-pane" id="tab2">
+                                        <label for="time_blocks">
+                                            <p>The number of time blocks to divide the total time into.</p>
+                                            <p><input type="text" name="time_blocks" id="time_blocks" class="selected_block form-control" value="4" /></p>
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
                         </div>
+                        <h4 id="total_time_blocks">This will create 6 blocks of 30 minutes each.</h4>
+                        <p><input type="submit" class="btn btn-primary" value="Submit" /></p>
+                        <!-- Button trigger modal -->
                     </div>
-                    <h4 id="total_time_blocks">This will create 6 blocks of 30 minutes each.</h4>
-                    <p><input type="submit" class="btn btn-primary" value="Submit" /></p>
-                    <!-- Button trigger modal -->
                 </div>
 			</div>
 		</main>

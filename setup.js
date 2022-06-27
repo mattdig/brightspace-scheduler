@@ -1,28 +1,38 @@
 let global_latest_time = moment();
+let original_time_blocks = [];
 let time_blocks = [];
 
 $(function() {
     setup();
-    initialize_datetime($('.datetime__div').first());
 });
 
 function setup(){
-    get_existing_time_blocks();
-
+    if(mode == 'edit'){ 
+        get_existing_time_blocks().then(function(){
+            time_blocks = original_time_blocks.slice();
+            display_existing_time_blocks();
+            update_total_time();
+            initialize_datetime( $('.datetime__div').first() );
+        });
+    } else {
+        initialize_datetime( $('.datetime__div').first() );
+        show_timeblock_editor();
+    }
 }
 
 function get_existing_time_blocks(){
-    await $.ajax({
-        url: '/api/get_existing_time_blocks',
-        type: 'GET',
-        dataType: 'json',
-        success: function(data){
-            data.array.forEach(element => {
-                time_blocks.push(element);
-            });
-        }
-    })
-
+    if(mode == 'edit'){
+        await $.ajax({
+            url: '/api/get_existing_time_blocks',
+            type: 'GET',
+            dataType: 'json',
+            success: function(data){
+                data.array.forEach(element => {
+                    original_time_blocks.push(element);
+                });
+            }
+        })
+    }
     return true;
 }
 
@@ -30,40 +40,66 @@ function display_existing_time_blocks(){
 
     let html = '';
     time_blocks.forEach(element => {
-        html += '<div class="time_block" id="time_block_' + element.id + '">';
-        html += '<div class="time_block__student">' + element.student + '</div>';
-        html += '<div class="time_block__starttime">' + element.starttime + '</div>';
-        html += '<div class="time_block__endtime">' + element.endtime + '</div>';
-        html += '<div class="time_block__actions">';
+        html += '<tr class="time_block" id="time_block_' + element.id + '">';
+        html += '<td class="time_block__student">' + element.student + '</td>';
+        html += '<td class="time_block__starttime">' + element.starttime + '</td>';
+        html += '<td class="time_block__endtime">' + element.endtime + '</td>';
+        html += '<td class="time_block__actions">';
         if(element.student !== false){
-            html += '<button class="btn btn-danger btn-sm cancel_time_block" data-id="' + element.id + '">Cancel</button>';
+            html += '<button class="btn btn-danger btn-sm cancel_time_block" onclick="canel_time_block(' + element.id + ')" data-id="' + element.id + '">Cancel</button>';
         }
-        html += '<button class="btn btn-danger btn-sm delete_time_block" data-id="' + element.id + '">Delete</button></div>';
-        html += '</div>';
-        html += '</div>';
+        html += '<button class="btn btn-danger btn-sm delete_time_block" onclick="delete_time_block(' + element.id + ')" data-id="' + element.id + '">Delete</button></td>';
+        html += '</td>';
+        html += '</tr>';
     });
 
     $('#existing_time_blocks').html(html);
 }
 
 function cancel_time_block(id){
-    $.ajax({
-        url: '/api/cancel_time_block',
+    unenrol_from_group(id);
+}
+
+function delete_time_block(id){
+    unenrol_from_group(id).then(function(){
+        delete_calendar_event(id).then(function(){
+            delete_group(id);
+        })
+    });
+}
+
+function unenrol_from_group(id){
+    await $.ajax({
+        url: '/api/unenrol_from_group',
         type: 'POST',
         dataType: 'json',
         data: {
             id: id
         },
         success: function(data){
-            $('#time_block_' + id).find('div.time_block__student').text('Not selected');
-            $('#time_block_' + id).find('button.cancel_time_block').remove();
+            $('#registration_' + id).html('Empty');
         }
-    })
+    });
+
+    return true;
 }
 
-function delete_time_block(id){
-    $.ajax({
-        url: '/api/delete_time_block',
+function delete_calendar_event(id){
+    await $.ajax({
+        url: '/api/delete_calendar_event',
+        type: 'POST',
+        dataType: 'json',
+        data: {
+            id: id
+        }
+    });
+
+    return true;
+}
+
+function delete_group(id){
+    await $.ajax({
+        url: '/api/delete_group',
         type: 'POST',
         dataType: 'json',
         data: {
@@ -71,13 +107,10 @@ function delete_time_block(id){
         },
         success: function(data){
             $('#time_block_' + id).remove();
-            time_blocks.forEach(element => {
-                if(element.id == id){
-                    time_blocks.splice(time_blocks.indexOf(element), 1);
-                }
-            });
         }
-    })
+    });
+
+    return;
 }
 
 function add_datetime(){
@@ -179,7 +212,7 @@ function update_global_latest_time(new_time){
     
     if(new_time == global_latest_time){
         if(global_latest_time.hours() <= 22){
-            global_latest_time = global_latest_time + moment.duration({hours:1});
+            global_latest_time = global_latest_time + moment.duration({days:1});
         } else {
             global_latest_time = global_latest_time + moment.hours({hours:9});
         }
@@ -262,6 +295,8 @@ function validate_time_fields(with_errors){
                 return false;
             } else {
 
+                time_blocks.push(datetime1);
+
                 if(datetime1['end'].isAfter(latest_time)){
                     latest_time = datetime1['end'];
                 }
@@ -269,6 +304,8 @@ function validate_time_fields(with_errors){
             }
         }
     });
+
+    update_global_latest_time(latest_time);
 
     if(block_value == ''){
         $('#' + selected_tab).addClass('error');
