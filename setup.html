@@ -19,8 +19,13 @@
 <body class="content layout-2" role="document">
 	<div class="container-fluid">
 		<main>
-			<div class="row create_title__div">
-				<div class="col-xs-12 col-sm-offset-2 col-sm-8">
+			<div class="row">
+                <div class="row title__div">
+                    <div class="col-xs-12 col-sm-offset-2 col-sm-8">
+                        <h1 id="title"></h1>
+                    </div>
+                </div>
+				<div class="col-xs-12 col-sm-offset-2 col-sm-8 create_title__div">
                     <h1>Create a Signup Schedule</h1>
                     <div>
                         <label for="title">
@@ -36,19 +41,12 @@
                             <p><textarea name="description" id="description" class="form-control"></textarea></p>
                         </label>
                     </div>
-                
-                     <h2>Range of dates and times</h2>
                 </div>
             </div>
-            <div class="row title__div">
-                <div class="col-xs-12 col-sm-offset-2 col-sm-8">
-                    <h1 id="title"></h1>
-                </div>
-            </div>
-            <div class="row" id="existing_time_blocks">
+            <div class="row" id="existing_time_slots">
                 <div class="col-xs-12 col-sm-offset-2 col-sm-8">
                     <h2>Current Available Time Slots</h2>
-                    <table id="existing_time_blocks__table">
+                    <table id="existing_time_slots__table">
                         <tr><th>Registration</th><th>Start</th><th>End</th><th>Actions</th></tr>
                     </table>
                 </div>
@@ -97,30 +95,30 @@
                             </p>
                         </div>
 
-                        <div id="time_blocks">
-                            <h2>Blocks of time</h2>
+                        <div id="time_slots">
+                            <h2>Set the number meetings</h2>
                             <div class="tabs">
                                 <ul class="nav nav-tabs">
-                                    <li class="active"><a href="#tab1" data-toggle="tab" onclick="select_tab(this);">Time per block</a></li>
-                                    <li><a href="#tab2" data-toggle="tab" onclick="select_tab(this);">Number of blocks</a></li>
+                                    <li class="active"><a href="#tab1" data-toggle="tab" onclick="select_tab(this);">Time meeting</a></li>
+                                    <li><a href="#tab2" data-toggle="tab" onclick="select_tab(this);">Number of meetings</a></li>
                                 </ul>
                                 <div id="myTabContent" class="tab-content">
                                     <div class="tab-pane active" id="tab1">
-                                        <label for="time_block_size">
-                                            <p>The length of each time block in minutes.</p>
-                                            <p><input type="text" name="time_block_size" id="time_block_size" class="selected_block form-control" value="30" /></p>
+                                        <label for="time_slot_duration">
+                                            <p>The length of each meeting in minutes.</p>
+                                            <p><input type="text" name="time_slot_duration" id="time_slot_duration" class="selected_slot form-control" value="30" /></p>
                                         </label>
                                     </div>
                                     <div class="tab-pane" id="tab2">
-                                        <label for="time_blocks">
-                                            <p>The number of time blocks to divide the total time into.</p>
-                                            <p><input type="text" name="time_blocks" id="time_blocks" class="selected_block form-control" value="4" /></p>
+                                        <label for="time_slot_number">
+                                            <p>The number of meetings to divide the total time into.</p>
+                                            <p><input type="text" name="time_slot_number" id="time_slot_number" class="selected_slot form-control" value="4" /></p>
                                         </label>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        <h4 id="total_time_blocks">This will create 6 blocks of 30 minutes each.</h4>
+                        <h4 id="total_time_slots">This will create 6 meeting times of 30 minutes each.</h4>
                         <p><input type="submit" class="btn btn-primary" value="Submit" /></p>
                         <!-- Button trigger modal -->
                     </div>

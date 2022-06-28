@@ -1,6 +1,9 @@
+let auth_key = false;
 let global_latest_time = moment();
-let original_time_blocks = [];
+let existing_time_slots = [];
 let time_blocks = [];
+let time_slots = [];
+let total_time_slots = 0;
 
 $(function() {
     setup();
@@ -8,8 +11,8 @@ $(function() {
 
 function setup(){
     if(mode == 'edit'){ 
-        get_existing_time_blocks().then(function(){
-            time_blocks = original_time_blocks.slice();
+        get_existing_time_slots().then(function(){
+            time_slots = existing_time_slots.slice();
             display_existing_time_blocks();
             update_total_time();
             initialize_datetime( $('.datetime__div').first() );
@@ -20,26 +23,28 @@ function setup(){
     }
 }
 
-function get_existing_time_blocks(){
-    if(mode == 'edit'){
-        await $.ajax({
-            url: '/api/get_existing_time_blocks',
-            type: 'GET',
-            dataType: 'json',
-            success: function(data){
-                data.array.forEach(element => {
-                    original_time_blocks.push(element);
-                });
-            }
-        })
-    }
+async function get_existing_time_slots(){
+    await $.ajax({
+        url: '/api/get_existing_time_blocks',
+        type: 'GET',
+        dataType: 'json',
+        beforeSend: function(headers){
+            headers.set('Authorization', await get_auth_key());
+        },
+        success: function(data){
+            data.array.forEach(element => {
+                existing_time_slots.push(element);
+            });
+        }
+    })
+    
     return true;
 }
 
-function display_existing_time_blocks(){
+function display_existing_time_slots(){
 
     let html = '';
-    time_blocks.forEach(element => {
+    existing_time_slots.forEach(element => {
         html += '<tr class="time_block" id="time_block_' + element.id + '">';
         html += '<td class="time_block__student">' + element.student + '</td>';
         html += '<td class="time_block__starttime">' + element.starttime + '</td>';
@@ -68,7 +73,7 @@ function delete_time_block(id){
     });
 }
 
-function unenrol_from_group(id){
+async function unenrol_from_group(id){
     await $.ajax({
         url: '/api/unenrol_from_group',
         type: 'POST',
@@ -84,7 +89,7 @@ function unenrol_from_group(id){
     return true;
 }
 
-function delete_calendar_event(id){
+async function delete_calendar_event(id){
     await $.ajax({
         url: '/api/delete_calendar_event',
         type: 'POST',
@@ -97,7 +102,7 @@ function delete_calendar_event(id){
     return true;
 }
 
-function delete_group(id){
+async function delete_group(id){
     await $.ajax({
         url: '/api/delete_group',
         type: 'POST',
@@ -151,18 +156,18 @@ function update_total_time(){
     });
     $('#total_time').text('Total time: ' + total_time + ' minutes');
     
-    update_total_time_blocks();
+    update_total_time_slots();
 }
 
-function update_total_time_blocks(){
-    let total_time_blocks = 0;
-    $('.datetime__span').each(function(){
-        let time = $(this).text();
-        if(time != ''){
-            total_time_blocks += Math.ceil(parseInt(time) / parseInt($('#time_block_size').val()));
-        }
+function update_total_time_slots(){
+    let total_time_slots = 0;
+    let time_slot_duration = parseInt($('#time_slot_duration').val()); 
+    
+    time_blocks.forEach(block => {
+        total_time_slots += parseInt(Math.floor(block.time / time_slot_duration));
     });
-    $('#total_time_blocks').text('This will create ' + total_time_blocks + ' blocks of ' + $('#time_block_size').val() + ' minutes each.');
+
+    $('#total_time_slots').text('This will create ' + total_time_slots + ' meetings of ' + time_slot_duration + ' minutes each.');
 }
 
 function initialize_datetime(datetime_elem){
@@ -265,7 +270,7 @@ function validate_time_fields(with_errors){
         datetimes.push(datetime);
     });
 
-    datetimes.every(function(datetime1){
+    datetimes.every(function(datetime1, i){
         if(datetime1['start'].isAfter(datetime1['end']) || datetime1['start'].isSame(datetime1['end'])){
 
             if(with_errors){
@@ -275,7 +280,7 @@ function validate_time_fields(with_errors){
             return false;
         
         } else {
-            let no_overlap = datetimes.every(function(datetime2){
+            let no_overlap = datetimes.slice(i + 1).every(function(datetime2){
                 if(datetime1['id'] != datetime2['id'] && (
                     datetime1['start'].isAfter(datetime2['start']) && datetime1['start'].isBefore(datetime2['end']) || 
                     datetime1['end'].isAfter(datetime2['start']) && datetime1['end'].isBefore(datetime2['end']) ||
@@ -333,4 +338,36 @@ function validate_all_fields(){
     
     validate_time_fields(true);
 
+}
+
+async function get_auth_key(){
+    await $.ajax({
+        url: '/api/auth/key',
+        type: 'GET',
+        success: function(data){
+            auth_key = data.key;
+        }
+    });
+    
+    return true;
+}
+
+function create_group_category(){
+    let category = {};
+     
+}
+
+function create_groups(){
+    let groups = [];
+
+    return groups;
+}
+
+function create_calendar_events(groups){
+
+}
+
+function loading(){
+    $('.main').children().toggle();
+    $('#loading').toggle();
 }
