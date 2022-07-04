@@ -209,7 +209,7 @@ function initialize_datetime(datetime_elem){
         validate_time_fields(false);
     });
 
-    update_global_latest_time(global_latest_time);    
+    validate_time_fields(false);
 
 }
 
@@ -249,6 +249,8 @@ function clear_error_message(id){
 
 function validate_time_fields(with_errors){
     valid = true;
+    time_slots = [];
+    total_time_slots = 0;
 
     let datetimes = [];
     let total_time = 0;
@@ -300,8 +302,16 @@ function validate_time_fields(with_errors){
                 return false;
             } else {
 
-                time_blocks.push(datetime1);
+                if(datetime1['end'] == datetime2['start']){
+                    datetime1['end'] = datetime2['end'];
+                } else if(datetime1['start'] == datetime2['end']){
+                    datetime1['start'] = datetime2['start'];
+                }
 
+                update_total_time_slots(datetime1);
+
+                time_blocks.push(datetime1);
+                
                 if(datetime1['end'].isAfter(latest_time)){
                     latest_time = datetime1['end'];
                 }
@@ -338,6 +348,21 @@ function validate_all_fields(){
     
     validate_time_fields(true);
 
+}
+
+function update_time_slots(time_block){
+    let duration = time_block['end'] - time_block['start'];
+    let slots_per_block = Math.floor(duration.asMinutes() / time_block_size);
+    total_time_slots += slots_per_block;
+    for(i = 0; i < slots_per_block; i++){
+        let time ={
+            'start' : time_block['start'].add(i * time_block_size, 'minutes'),
+            'end' : time_block['start'].add((i + 1) * time_block_size, 'minutes')
+        }
+        time_slots.push(time);
+    }
+    $('#' + time_block['id']).find('.total_time').html(total_time.format('HH:mm'));
+    $('#' + time_block['id']).find('.total_blocks').html();
 }
 
 async function get_auth_key(){
