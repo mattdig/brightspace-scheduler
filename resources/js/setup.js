@@ -19,7 +19,7 @@ function setup(){
         });
     } else {
         initialize_datetime( $('.datetime__div').first() );
-        show_timeblock_editor();
+        //show_timeblock_editor();
     }
 }
 
@@ -29,7 +29,7 @@ async function get_existing_time_slots(){
         type: 'GET',
         dataType: 'json',
         beforeSend: function(headers){
-            headers.set('Authorization', await get_auth_key());
+            //headers.set('Authorization', await get_auth_key());
         },
         success: function(data){
             data.array.forEach(element => {
@@ -160,11 +160,13 @@ function update_total_time(){
 }
 
 function update_total_time_slots(){
-    let total_time_slots = 0;
+    total_time_slots = 0;
     let time_slot_duration = parseInt($('#time_slot_duration').val()); 
     
+    console.log(time_slot_duration);
+
     time_blocks.forEach(block => {
-        total_time_slots += parseInt(Math.floor(block.time / time_slot_duration));
+        total_time_slots += parseInt(Math.floor(block.end.diff(block.start, 'minutes') / time_slot_duration));
     });
 
     $('#total_time_slots').text('This will create ' + total_time_slots + ' meetings of ' + time_slot_duration + ' minutes each.');
@@ -174,11 +176,11 @@ function initialize_datetime(datetime_elem){
 
     const now = moment();
 
-    if(global_latest_time <= 22){
-        global_latest_time = global_latest_time + moment.duration({hours:1});
-    } else {
-        global_latest_time = global_latest_time + moment.hours({hours:9});
-    }
+    // if(global_latest_time.hours() <= 22){
+    //     global_latest_time = global_latest_time + moment.duration({hours:1});
+    // } else {
+    //     global_latest_time = global_latest_time + moment.duration({hours:9});
+    // }
 
     $(datetime_elem).find('.date_input').datetimepicker({
         format: 'YYYY-MM-DD',
@@ -250,6 +252,7 @@ function clear_error_message(id){
 function validate_time_fields(with_errors){
     valid = true;
     time_slots = [];
+    time_blocks = [];
     total_time_slots = 0;
 
     let datetimes = [];
@@ -294,6 +297,13 @@ function validate_time_fields(with_errors){
                     valid = false;
                     return false;
                 } else {
+
+                    if(datetime1['end'] == datetime2['start']){
+                        datetime1['end'] = datetime2['end'];
+                    } else if(datetime1['start'] == datetime2['end']){
+                        datetime1['start'] = datetime2['start'];
+                    }
+
                     return true;
                 }
             });
@@ -302,15 +312,9 @@ function validate_time_fields(with_errors){
                 return false;
             } else {
 
-                if(datetime1['end'] == datetime2['start']){
-                    datetime1['end'] = datetime2['end'];
-                } else if(datetime1['start'] == datetime2['end']){
-                    datetime1['start'] = datetime2['start'];
-                }
+                time_blocks.push(datetime1);
 
                 update_total_time_slots(datetime1);
-
-                time_blocks.push(datetime1);
                 
                 if(datetime1['end'].isAfter(latest_time)){
                     latest_time = datetime1['end'];
@@ -361,8 +365,11 @@ function update_time_slots(time_block){
         }
         time_slots.push(time);
     }
-    $('#' + time_block['id']).find('.total_time').html(total_time.format('HH:mm'));
-    $('#' + time_block['id']).find('.total_blocks').html();
+
+    console.log(time_slots);
+    
+//     $('#' + time_block['id']).find('.total_time').html(total_time.format('HH:mm'));
+//     $('#' + time_block['id']).find('.total_blocks').html();
 }
 
 async function get_auth_key(){
