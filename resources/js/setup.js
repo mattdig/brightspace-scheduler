@@ -256,10 +256,7 @@ function validate_time_fields(with_errors){
     total_time_slots = 0;
 
     let datetimes = [];
-    let total_time = 0;
-    let total_blocks = 0;
-    let time_block_size = 0;
-
+    
     let latest_time = 0;
 
     let selected_tab = $('.tab-pane.active').find('label').attr('for');
@@ -275,6 +272,8 @@ function validate_time_fields(with_errors){
         datetimes.push(datetime);
     });
 
+    datetimes.sort(compare_starttime);
+
     datetimes.every(function(datetime1, i){
         if(datetime1['start'].isAfter(datetime1['end']) || datetime1['start'].isSame(datetime1['end'])){
 
@@ -285,7 +284,10 @@ function validate_time_fields(with_errors){
             return false;
         
         } else {
-            let no_overlap = datetimes.slice(i + 1).every(function(datetime2){
+
+            let splice_indexes = [];
+
+            let no_overlap = datetimes.slice(i + 1).every(function(datetime2, j){
                 if(datetime1['id'] != datetime2['id'] && (
                     datetime1['start'].isAfter(datetime2['start']) && datetime1['start'].isBefore(datetime2['end']) || 
                     datetime1['end'].isAfter(datetime2['start']) && datetime1['end'].isBefore(datetime2['end']) ||
@@ -298,10 +300,9 @@ function validate_time_fields(with_errors){
                     return false;
                 } else {
 
-                    if(datetime1['end'] == datetime2['start']){
+                    if(datetime1['end'].isSame(datetime2['start'])){
                         datetime1['end'] = datetime2['end'];
-                    } else if(datetime1['start'] == datetime2['end']){
-                        datetime1['start'] = datetime2['start'];
+                        splice_indexes.push(i + j + 1);
                     }
 
                     return true;
@@ -314,7 +315,9 @@ function validate_time_fields(with_errors){
 
                 time_blocks.push(datetime1);
 
-                update_total_time_slots(datetime1);
+                splice_indexes.forEach(function(index){
+                    datetimes.splice(index, 1);
+                });
                 
                 if(datetime1['end'].isAfter(latest_time)){
                     latest_time = datetime1['end'];
@@ -324,14 +327,28 @@ function validate_time_fields(with_errors){
         }
     });
 
-    update_global_latest_time(latest_time);
-
     if(block_value == ''){
         $('#' + selected_tab).addClass('error');
         valid = false;
         return false;
     }
 
+    if(valid){
+        update_total_time_slots();
+    }
+
+    update_global_latest_time(latest_time);
+
+}
+
+function compare_starttime(a, b){
+    if(a['start'].isBefore(b['start'])){
+        return -1;
+    } else if(a['start'].isAfter(b['start'])){
+        return 1;
+    } else {
+        return 0;
+    }
 }
 
 
