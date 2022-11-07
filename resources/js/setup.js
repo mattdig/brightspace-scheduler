@@ -390,7 +390,7 @@ function update_time_slots(time_block){
 }
 
 async function get_auth_key(){
-    await $.ajax({
+    let result = await $.ajax({
         url: '/api/auth/key',
         type: 'GET',
         success: function(data){
@@ -398,25 +398,155 @@ async function get_auth_key(){
         }
     });
     
+    return result.key;
+}
+
+async function create_group_category(){
+    
+    let title = $('#title').val();
+    let description = $('#description').val();
+    let num_groups = total_time_slots;
+    let deadline_UTCDateTime = $('#deadline_UTCDateTime').val();
+
+    let category = {
+        "Name": title,
+        "Description": {"Content": description, "Type":"Html"}, //{"Content": <string>,"Type": "Text|Html"}
+        "EnrollmentStyle": 4, //SelfEnrollmentNumberOfGroups
+        //"EnrollmentQuantity": <number>|null,
+        "AutoEnroll": false,
+        "RandomizeEnrollments": false,
+        "NumberOfGroups": num_groups,
+        "MaxUsersPerGroup": 1,
+        "AllocateAfterExpiry": false,
+        "SelfEnrollmentExpiryDate": deadline_UTCDateTime, //<string:UTCDateTime>( yyyy-MM-ddTHH:mm:ss.fffZ )|null,
+        //"GroupPrefix": <string>|null,
+        //"RestrictedByOrgUnitId": <number:D2LID>|null,
+        "DescriptionsVisibleToEnrolees": true  // Added with LP API version 1.42
+    };
+    
+
+    let result = await $.ajax({
+        url: '/d2l/api/lp/1.42/{orgUnitId}/groupcategories/',
+        type: 'POST',
+        dataType: 'json',
+        data: category,
+        beforeSend: function(headers){
+            let key = get_auth_key();
+            headers.set('Authorization', key);
+        }
+    });
+
+    return result.CategoryId;
+}
+
+async function set_group_name(time_slot){
+    let group = {
+        "Name": time_slot['start'].format('MMMM D, YYYY | h:mma') + ' - ' + time_slot['end'].format('HH:MM'),
+        "Code": "",
+        "Description": { "Content": "", "Type": "Html" },
+    }
+
+    await $.ajax({
+        url: '/d2l/api/lp/1.42/{orgUnitId}/groupcategories/' + group_category_id + '/groups/' + time_slot['group_id'],
+        type: 'PUT',
+        dataType: 'json',
+        data: category,
+        beforeSend: function(headers){
+            let key = get_auth_key();
+            headers.set('Authorization', key);
+        }
+    });
+
     return true;
 }
 
-function create_group_category(){
-    let category = {};
-     
+async function create_group(time_slot){
+    let group = {
+        "Name": time_slot['start'].format('MMMM D, YYYY | h:mma') + ' - ' + time_slot['end'].format('HH:MM'),
+        "Code": "",
+        "Description": { "Content": "", "Type": "Html" },
+    }
+
+    let result = await $.ajax({
+        url: '/d2l/api/lp/1.42/{orgUnitId}/groupcategories/' + group_category_id + '/groups/',
+        type: 'POST',
+        dataType: 'json',
+        data: category,
+        beforeSend: function(headers){
+            let key = get_auth_key();
+            headers.set('Authorization', key);
+        }
+    });
+
+    return result.GroupId;
 }
 
-function create_groups(){
-    let groups = [];
+async function create_calendar_event(time_slot){
 
-    return groups;
-}
+    let event = {
+        "Title": title,
+        "Description": "",
+        "StartDateTime": convertToUTC(time_slot['start']),
+        "EndDateTime": convertToUTC(time_slot['end']),
+        //"StartDay": <string:LocalDateTime>|null,
+        //"EndDay": <string:LocalDateTime>|null,
+        "GroupId": time_slot['group_id'],
+        "RecurrenceInfo": {
+            "RepeatType": 2,
+            "RepeatEvery": 1,
+            "RepeatOnInfo": {
+                "Monday": false,
+                "Tuesday": false,
+                "Wednesday": false,
+                "Thursday": false,
+                "Friday": false,
+                "Saturday": false,
+                "Sunday": false
+            },
+            "RepeatUntilDate": convertToUTCDateTime(time_slot['end'])
+        },
+        //"LocationId": <number:D2LID>|null,
+        "LocationName": "",
+        //"AssociatedEntity": { <composite:Calendar.AssociatedEntity> },
+        "VisibilityRestrictions": {
+            "Type": 1,
+            // "Range": <number>|null,
+            // "HiddenRangeUnitType": <number:HIDDENUNIT_T>|null,
+            // "StartDate": <string:UTCDateTime>|null,
+            // "EndDate": <string:UTCDateTime>|null,
+        }
+    };
 
-function create_calendar_events(groups){
+    let result = await $.ajax({
+        url: '/d2l/api/lp/1.42/{orgUnitId}/calendar/event/',
+        type: 'POST',
+        dataType: 'json',
+        data: event,
+        beforeSend: function(headers){
+            let key = get_auth_key();
+            headers.set('Authorization', key);
+        }
+    });
 
+    console.log(result);
+
+    return result.EventId;
 }
 
 function loading(){
     $('.main').children().toggle();
     $('#loading').toggle();
+}
+
+function convertToUTCDateTime(date){
+
+    var now_utc = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(),
+                date.getUTCDate(), date.getUTCHours(),
+                date.getUTCMinutes(), date.getUTCSeconds());
+
+    console.log(now_utc.toISOString());
+    console.log(now_utc.format('YYYY-MM-DDTHH:mm:ss.fff') + 'Z');
+
+    return now_utc.format('YYYY-MM-DDTHH:mm:ss.fff') + 'Z';
+
 }
