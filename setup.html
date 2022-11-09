@@ -1,14 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
-<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.47/css/bootstrap-datetimepicker.css" />
+<link rel="stylesheet" href="resources/css/bootstrap.3.3.6.min.css">
+<link rel="stylesheet" type="text/css" href="resources/css/bootstrap-datetimepicker.css" />
+<!-- link rel="stylesheet" href="resources/css/fontawesome.all.css" -->
 <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.0.10/css/all.css" integrity="sha384-+d0P83n9kaQMCwj8F4RJB66tzIwOKmrdb46+porD/OvrJ+37WqIM7UoBtwHO6Nlg" crossorigin="anonymous">
-<script type="text/javascript" src="https://code.jquery.com/jquery-2.2.4.min.js"></script></script>
-<script type="text/javascript" src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
-<script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
-<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.17.47/js/bootstrap-datetimepicker.min.js"></script>
-<script type="text/javascript">let mode = 'create';</script>
+<script type="text/javascript" src="resources/js/jquery-2.2.4.min.js"></script></script>
+<script type="text/javascript" src="resources/js/bootstrap.3.3.6.min.js"></script>
+<script type="text/javascript" src="resources/js/moment.min.js"></script>
+<script type="text/javascript" src="resources/js/bootstrap-datetimepicker.min.js"></script>
+<script type="text/javascript" src="resources/js/brightspace.js"></script>    
+<script type="text/javascript">
+const params = new Proxy(new URLSearchParams(window.location.search), {get: (searchParams, prop) => searchParams.get(prop)});
+const ORG_UNIT_ID = params.ou;
+const MODE = (window.location.search.indexOf('gc=') != -1 ? 'edit' : 'create');
+let groupCategoryId = (mode == 'edit' ? params.gc : null);
+</script>
 <style>
     input[type=text],label{width: 100%;}
     .nav-tabs{font-weight: bold;}
@@ -156,6 +163,6 @@
         </div>
     </div>
     <!-- End Modal -->
-<script type="text/javascript" src="setup.js"></script>
+<script type="text/javascript" src="resources/js/setup.js"></script>
 </body>
 </html>
