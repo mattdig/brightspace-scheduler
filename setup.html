@@ -12,16 +12,16 @@
 <script type="text/javascript" src="resources/js/brightspace.js"></script>    
 <script type="text/javascript">
 const params = new Proxy(new URLSearchParams(window.location.search), {get: (searchParams, prop) => searchParams.get(prop)});
-const ORG_UNIT_ID = params.ou;
-const MODE = (window.location.search.indexOf('gc=') != -1 ? 'edit' : 'create');
-let groupCategoryId = (mode == 'edit' ? params.gc : null);
+let ORG_UNIT_ID = params.ou;
+let MODE = (window.location.search.indexOf('gc=') != -1 ? 'edit' : 'create');
+let GROUP_CATEGORY_ID = (mode == 'edit' ? params.gc : null);
 </script>
 <style>
     input[type=text],label{width: 100%;}
     .nav-tabs{font-weight: bold;}
     .tab-pane{padding: 10px 10px 0px 10px; margin-bottom: 1px solid #ccc;}
     .error{background-color: lightcoral;}
-    #existing_time_slots{display: none;}
+    #existing_timeslots{display: none;}
 </style>
 </head>
 <body class="content layout-2" role="document">
@@ -51,15 +51,15 @@ let groupCategoryId = (mode == 'edit' ? params.gc : null);
                     </div>
                 </div>
             </div>
-            <div class="row" id="existing_time_slots">
+            <div class="row" id="existing_timeslots">
                 <div class="col-xs-12 col-sm-offset-2 col-sm-8">
                     <h2>Current Available Time Slots</h2>
-                    <table id="existing_time_slots__table">
+                    <table id="existing_timeslots__table">
                         <tr><th>Registration</th><th>Start</th><th>End</th><th>Actions</th></tr>
                     </table>
                 </div>
             </div>
-            <div id="edit_time_blocks">
+            <div id="edit_timeblocks">
                 <div class="row">
                     <div class="col-xs-12 col-sm-offset-2 col-sm-8">
                         <h2>Range of dates and times</h2>
@@ -113,7 +113,7 @@ let groupCategoryId = (mode == 'edit' ? params.gc : null);
                     </div>
                     
                     <div class="col-xs-12 col-sm-offset-2 col-sm-8">
-                        <div id="time_slots">
+                        <div id="timeslots">
                             <h2>Set the number meetings</h2>
                             <div class="tabs">
                                 <ul class="nav nav-tabs">
@@ -122,21 +122,21 @@ let groupCategoryId = (mode == 'edit' ? params.gc : null);
                                 </ul>
                                 <div class="tab-content">
                                     <div class="tab-pane active" id="tab1">
-                                        <label for="time_slot_duration">
+                                        <label for="timeslot_duration">
                                             <p>The length of each meeting in minutes.</p>
-                                            <p><input type="text" name="time_slot_duration" id="time_slot_duration" class="selected_slot form-control" value="30" /></p>
+                                            <p><input type="text" name="timeslot_duration" id="timeslot_duration" class="selected_slot form-control" value="30" /></p>
                                         </label>
                                     </div>
                                     <div class="tab-pane" id="tab2">
-                                        <label for="time_slot_number">
+                                        <label for="timeslot_number">
                                             <p>The number of meetings to divide the total time into.</p>
-                                            <p><input type="text" name="time_slot_number" id="time_slot_number" class="selected_slot form-control" value="4" /></p>
+                                            <p><input type="text" name="timeslot_number" id="timeslot_number" class="selected_slot form-control" value="4" /></p>
                                         </label>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        <h4 id="total_time_slots">This will create 6 meeting times of 30 minutes each.</h4>
+                        <h4 id="total_timeslots">This will create 6 meeting times of 30 minutes each.</h4>
                         <p><input type="submit" class="btn btn-primary" value="Submit" /></p>
                         <!-- Button trigger modal -->
                     </div>

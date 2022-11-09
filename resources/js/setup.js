@@ -16,30 +16,20 @@ function setup(){
             timeSlots = existingTimeSlots.slice();
             displayExistingTimeBlocks();
             updateTotalTime();
-            initializeDatetime( $('.datetime__div').first() );
+            initializeDatetime( $('.datetime__div') );
         });
     } else {
-        initializeDatetime( $('.datetime__div').first() );
+        initializeDatetime( $('.datetime__div') );
         //showTimeblockEditor();
     }
 }
 
 async function getExistingTimeSlots(){
-    await $.ajax({
-        url: '/api/getExistingTimeBlocks',
-        type: 'GET',
-        dataType: 'json',
-        beforeSend: function(headers){
-            //headers.set('Authorization', await getAuthKey());
-        },
-        success: function(data){
-            data.array.forEach(element => {
-                existingTimeSlots.push(element);
-            });
-        }
-    })
+    let result = await bs.get('/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + GROUP_CATEGORY_ID + '/groups/');
     
-    return true;
+    result.forEach(element => {
+        existingTimeSlots.push(element);
+    });
 }
 
 function displayExistingTimeSlots(){
@@ -66,27 +56,30 @@ function cancelTimeBlock(id){
     unenrolFromGroup(id);
 }
 
-function deleteTimeBlock(id){
-    unenrolFromGroup(id);
-    deleteCalendarEvent(id);
-    deleteGroup(id);
+async function deleteTimeBlock(timeBlock){
+    
+    await unenrolFromGroup(timeBlock.groupId);
+    await deleteCalendarEvent(timeBlock.eventId);
+    await deleteGroup(timeBlock.groupId);
+
+    $('#timeblock_' + id).remove();
 }
 
-async function unenrolFromGroup(groupId,userId){
+function unenrolFromGroup(groupId,userId){
     
-    bs.delete('/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + groupCategoryId + '/groups/' + groupId + '/enrollments/' + userId);
-
+    return bs.delete('/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + GROUP_CATEGORY_ID + '/groups/' + groupId + '/enrollments/' + userId);
+    
 }
 
 function deleteCalendarEvent(eventId){
     
-    bs.delete('/d2l/api/le/(version)/(orgUnitId)/calendar/event/' + eventId);
+    return bs.delete('/d2l/api/le/(version)/(orgUnitId)/calendar/event/' + eventId);
 
 }
 
 function deleteGroup(groupId){
     
-    bs.delete('/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + groupCategoryId + '/groups/' + groupId);
+    return bs.delete('/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + GROUP_CATEGORY_ID + '/groups/' + groupId);
     
 }
 
@@ -102,9 +95,9 @@ function addDatetime(){
     newDatetime.find('label.starttimeLabel').attr('for', 'starttime_' + newLength);
     newDatetime.find('label.endtimeLabel').attr('for', 'endtime_' + newLength);
     
-    newDatetime.find('input.dateInput').attr('id', 'date_' + newLength).attr('name', 'date_' + newLength).val('');
-    newDatetime.find('input.starttimeInput').attr('id', 'starttime_' + newLength).attr('name', 'starttime_' + newLength).val('');
-    newDatetime.find('input.endtimeInput').attr('id', 'endtime_' + newLength).attr('name', 'endtime_' + newLength).val('');
+    newDatetime.find('input.date_input').attr('id', 'date_' + newLength).attr('name', 'date_' + newLength).val('');
+    newDatetime.find('input.starttime_input').attr('id', 'starttime_' + newLength).attr('name', 'starttime_' + newLength).val('');
+    newDatetime.find('input.endtime_input').attr('id', 'endtime_' + newLength).attr('name', 'endtime_' + newLength).val('');
     
     newDatetime.insertAfter(lastDatetime);
     initializeDatetime($('.datetime_div').last());   // initialize the new datetime
@@ -120,7 +113,7 @@ function selectTab(obj){
 
 function updateTotalTime(){
     let totalTime = 0;
-    $('.datetime_Span').each(function(){
+    $('.datetime_span').each(function(){
         let time = $(this).text();
         if(time != ''){
             totalTime += parseInt(time);
@@ -133,7 +126,7 @@ function updateTotalTime(){
 
 function updateTotalTimeSlots(){
     totalTimeSlots = 0;
-    let timeSlotDuration = parseInt($('#timeSlotDuration').val()); 
+    let timeSlotDuration = parseInt($('#timeslot_duration').val()); 
     
     console.log(timeSlotDuration);
 
@@ -141,7 +134,7 @@ function updateTotalTimeSlots(){
         totalTimeSlots += parseInt(Math.floor(block.end.diff(block.start, 'minutes') / timeSlotDuration));
     });
 
-    $('#totalTimeSlots').text('This will create ' + totalTimeSlots + ' meetings of ' + timeSlotDuration + ' minutes each.');
+    $('#total_timeslots').text('This will create ' + totalTimeSlots + ' meetings of ' + timeSlotDuration + ' minutes each.');
 }
 
 function initializeDatetime(datetimeElem){
@@ -154,32 +147,32 @@ function initializeDatetime(datetimeElem){
     //     globalLatestTime = globalLatestTime + moment.duration({hours:9});
     // }
 
-    $(datetimeElem).find('.dateInput').datetimepicker({
+    $(datetimeElem).find('.date_input').datetimepicker({
         format: 'YYYY-MM-DD',
         defaultDate: globalLatestTime,
         minDate: globalLatestTime,
         maxDate: moment().add(1, 'years')
     });
 
-    $(datetimeElem).find('.starttimeInput').datetimepicker({
+    $(datetimeElem).find('.starttime_input').datetimepicker({
         format: 'LT',
         stepping: 15,
         defaultDate: globalLatestTime,
         minDate: moment().startOf('day'),
         maxDate: moment().add(1, 'hours')
     }).on('dp.hide', function(e){
-        $(datetimeElem).find('.endtimeInput').data('DateTimePicker').minDate(e.date.add(15, 'minute'));
+        $(datetimeElem).find('.endtime_input').data('DateTimePicker').minDate(e.date.add(15, 'minute'));
         validateTimeFields(false);
     });
 
-    $(datetimeElem).find('.endtimeInput').datetimepicker({
+    $(datetimeElem).find('.endtime_input').datetimepicker({
         format: 'LT',
         stepping: 15,
         defaultDate: globalLatestTime + moment.duration({hours:1}),
         minDate: moment().subtract(1, 'hours'),
         maxDate: moment().endOf('day'),
     }).on('dp.hide', function(e){
-        $(datetimeElem).find('.starttimeInput').data('DateTimePicker').maxDate(e.date.subtract(15, 'minute'));
+        $(datetimeElem).find('.starttime_input').data('DateTimePicker').maxDate(e.date.subtract(15, 'minute'));
         validateTimeFields(false);
     });
 
@@ -237,43 +230,43 @@ function validateTimeFields(withErrors){
     $('.datetime_Div').each(function(){
         let datetime = {};
         let format = "YYYY-MM-DD hh:mm A";
-        let date = $(this).find('.dateInput').val() + " ";
-        datetime['id'] = $(this).attr('id');
-        datetime['start'] = moment(date + $(this).find('.starttimeInput').val(), format);
-        datetime['end'] = moment(date + $(this).find('.endtimeInput').val(), format);
+        let date = $(this).find('.date_input').val() + " ";
+        datetime.id = $(this).attr('id');
+        datetime.start = moment(date + $(this).find('.starttime_input').val(), format);
+        datetime.end = moment(date + $(this).find('.endtime_input').val(), format);
         datetimes.push(datetime);
     });
 
     datetimes.sort(compareStarttime);
 
     datetimes.every(function(datetime1, i){
-        if(datetime1['start'].isAfter(datetime1['end']) || datetime1['start'].isSame(datetime1['end'])){
+        if(datetime1.start.isAfter(datetime1.end) || datetime1.start.isSame(datetime1.end)){
 
             if(withErrors){
-                errorMessage('Start time must be before end time.', $('#' + datetime1['id']).find('input'));
+                errorMessage('Start time must be before end time.', $('#' + datetime1.id).find('input'));
             }
             valid = false;
             return false;
         
         } else {
 
-            let spliceIndexes = [];
+            let splice_indexes = [];
 
             let noOverlap = datetimes.slice(i + 1).every(function(datetime2, j){
-                if(datetime1['id'] != datetime2['id'] && (
-                    datetime1['start'].isAfter(datetime2['start']) && datetime1['start'].isBefore(datetime2['end']) || 
-                    datetime1['end'].isAfter(datetime2['start']) && datetime1['end'].isBefore(datetime2['end']) ||
-                    datetime1['start'].isSame(datetime2['start']) || datetime1['end'].isSame(datetime2['end']))){
+                if(datetime1.id != datetime2.id && (
+                    datetime1.start.isAfter(datetime2.start) && datetime1.start.isBefore(datetime2.end) || 
+                    datetime1.end.isAfter(datetime2.start) && datetime1.end.isBefore(datetime2.end) ||
+                    datetime1.start.isSame(datetime2.start) || datetime1.end.isSame(datetime2.end))){
                     
                     if(withErrors){
-                        errorMessage('Datetimes must not overlap.', $('#' + datetime2['id']).find('input'));
+                        errorMessage('Datetimes must not overlap.', $('#' + datetime2.id).find('input'));
                     }
                     valid = false;
                     return false;
                 } else {
 
-                    if(datetime1['end'].isSame(datetime2['start'])){
-                        datetime1['end'] = datetime2['end'];
+                    if(datetime1.end.isSame(datetime2.start)){
+                        datetime1.end = datetime2.end;
                         spliceIndexes.push(i + j + 1);
                     }
 
@@ -291,8 +284,8 @@ function validateTimeFields(withErrors){
                     datetimes.splice(index, 1);
                 });
                 
-                if(datetime1['end'].isAfter(latestTime)){
-                    latestTime = datetime1['end'];
+                if(datetime1.end.isAfter(latestTime)){
+                    latestTime = datetime1.end;
                 }
                 return true;
             }
@@ -314,9 +307,9 @@ function validateTimeFields(withErrors){
 }
 
 function compareStarttime(a, b){
-    if(a['start'].isBefore(b['start'])){
+    if(a.start.isBefore(b.start)){
         return -1;
-    } else if(a['start'].isAfter(b['start'])){
+    } else if(a.start.isAfter(b.start)){
         return 1;
     } else {
         return 0;
@@ -344,46 +337,50 @@ function validateAllFields(){
 }
 
 function updateTimeSlots(timeBlock){
-    let duration = timeBlock['end'] - timeBlock['start'];
+    let duration = timeBlock.end - timeBlock.start;
     let slotsPerBlock = Math.floor(duration.asMinutes() / timeBlockSize);
     totalTimeSlots += slotsPerBlock;
     for(i = 0; i < slotsPerBlock; i++){
         let time ={
-            'start' : timeBlock['start'].add(i * timeBlockSize, 'minutes'),
-            'end' : timeBlock['start'].add((i + 1) * timeBlockSize, 'minutes')
+            'start' : timeBlock.start.add(i * timeBlockSize, 'minutes'),
+            'end' : timeBlock.start.add((i + 1) * timeBlockSize, 'minutes')
         }
         timeSlots.push(time);
     }
 
     console.log(timeSlots);
     
-//     $('#' + timeBlock['id']).find('.totalTime').html(totalTime.format('HH:mm'));
-//     $('#' + timeBlock['id']).find('.totalBlocks').html();
+//     $('#' + timeBlock.id).find('.totalTime').html(totalTime.format('HH:mm'));
+//     $('#' + timeBlock.id).find('.totalBlocks').html();
 }
 
 async function submit(){
 
     if(mode == 'create'){
         let groupCategory = await createGroupCategory();
-        groupCategoryId = groupCategory.groupCategoryId;
+        GROUP_CATEGORY_ID = groupCategory.groupCategoryId;
     }
 
     if(groupCategoryId != null){
-        newTimeSlots.forEach(function(timeSlot){
-            let groupId = createGroup(timeSlot);
-            if(groupId != null){
-                timeSlot['groupId'] = groupId;
-                createCalendarEvent(timeSlot);
+        newTimeSlots.forEach(async function(timeSlot){
+            
+            let group = await createGroup(timeSlot);
+            if(group != null){
+                timeSlot.groupId = group.GroupId;
+                let event = await createCalendarEvent(timeSlot);
+                timeSlot.eventId = event.EventId;
+                await updateGroup(timeSlot);
             }
         });
     }
+
+    window.location.reload();
 }
 
 function createGroupCategory(){
     
     let title = $('#title').val();
     let description = $('#description').val();
-    let numGroups = totalTimeSlots;
     let deadlineUTCDateTime = $('#deadlineUTCDateTime').val();
 
     let category = {
@@ -393,42 +390,41 @@ function createGroupCategory(){
         //"EnrollmentQuantity": <number>|null,
         "AutoEnroll": false,
         "RandomizeEnrollments": false,
-        "NumberOfGroups": numGroups,
+        "NumberOfGroups": 0,
         "MaxUsersPerGroup": 1,
         "AllocateAfterExpiry": false,
         "SelfEnrollmentExpiryDate": deadlineUTCDateTime, //<string:UTCDateTime>( yyyy-MM-ddTHH:mm:ss.fffZ )|null,
         //"GroupPrefix": <string>|null,
         //"RestrictedByOrgUnitId": <number:D2LID>|null,
-        "DescriptionsVisibleToEnrolees": true  // Added with LP API version 1.42
+        "DescriptionsVisibleToEnrolees": false  // Added with LP API version 1.42
     };
     
-    let result = bs.post('/d2l/api/lp/(version)/(orgUnitId)/groupcategories/', category);
-
-    return result;
-}
-
-function setGroupName(timeSlot){
-    
-    let group = {
-        "Name": timeSlot['start'].format('MMMM D, YYYY | h:mma') + ' - ' + timeSlot['end'].format('HH:MM'),
-        "Code": "",
-        "Description": { "Content": "", "Type": "Html" },
-    }
-
-    bs.put('/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + groupCategoryId + '/groups/' + timeSlot['groupId'], group);
+    return bs.post('/d2l/api/lp/(version)/(orgUnitId)/groupcategories/', category);
     
 }
 
 function createGroup(timeSlot){
+    
     let group = {
-        "Name": timeSlot['start'].format('MMMM D, YYYY | h:mma') + ' - ' + timeSlot['end'].format('HH:MM'),
+        "Name": timeSlot.start.format('MMMM D, YYYY | h:mma') + ' - ' + timeSlot.end.format('h:mma'),
         "Code": "",
-        "Description": { "Content": "", "Type": "Html" },
+        "Description": { "Content": timeSlot.start.format('YYYY-MM-DD HH:MM') + '-' + timeSlot.end.format('YYYY-MM-DD HH:MM'), "Type": "Text" },
     }
 
-    let result = bs.post('/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + groupCategoryId + '/groups/', group);
+    return bs.post('/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + GROUP_CATEGORY_ID + '/groups/', group);
+    
+}
 
-    return result;
+function updateGroup(timeSlot){
+    
+    let group = {
+        "Name": timeSlot.start.format('MMMM D, YYYY | h:mma') + ' - ' + timeSlot.end.format('h:mma'),
+        "Code": timeSlot.eventId,
+        "Description": { "Content": timeSlot.start.format('YYYY-MM-DD HH:MM') + '-' + timeSlot.end.format('YYYY-MM-DD HH:MM'), "Type": "Text" },
+    }
+
+    return bs.post('/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + GROUP_CATEGORY_ID + '/groups/', group);
+    
 }
 
 function createCalendarEvent(timeSlot){
@@ -436,11 +432,11 @@ function createCalendarEvent(timeSlot){
     let event = {
         "Title": title,
         "Description": "",
-        "StartDateTime": convertToUTC(timeSlot['start']),
-        "EndDateTime": convertToUTC(timeSlot['end']),
+        "StartDateTime": convertToUTC(timeSlot.start),
+        "EndDateTime": convertToUTC(timeSlot.end),
         //"StartDay": <string:LocalDateTime>|null,
         //"EndDay": <string:LocalDateTime>|null,
-        "GroupId": timeSlot['groupId'],
+        "GroupId": timeSlot.groupId,
         "RecurrenceInfo": {
             "RepeatType": 2,
             "RepeatEvery": 1,
@@ -453,7 +449,7 @@ function createCalendarEvent(timeSlot){
                 "Saturday": false,
                 "Sunday": false
             },
-            "RepeatUntilDate": convertToUTCDateTime(timeSlot['end'])
+            "RepeatUntilDate": convertToUTCDateTime(timeSlot.end)
         },
         //"LocationId": <number:D2LID>|null,
         "LocationName": "",
@@ -467,9 +463,8 @@ function createCalendarEvent(timeSlot){
         }
     };
 
-    let result = bs.post('/d2l/api/lp/(version)/(orgUnitId)/calendar/event/', event);
-
-    return result;
+    return bs.post('/d2l/api/lp/(version)/(orgUnitId)/calendar/event/', event);
+   
 }
 
 function loading(){
