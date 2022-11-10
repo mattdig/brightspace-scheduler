@@ -14,7 +14,7 @@
 const params = new Proxy(new URLSearchParams(window.location.search), {get: (searchParams, prop) => searchParams.get(prop)});
 let ORG_UNIT_ID = params.ou;
 let MODE = (window.location.search.indexOf('gc=') != -1 ? 'edit' : 'create');
-let GROUP_CATEGORY_ID = (mode == 'edit' ? params.gc : null);
+let GROUP_CATEGORY_ID = (MODE == 'edit' ? params.gc : null);
 </script>
 <style>
     input[type=text],label{width: 100%;}

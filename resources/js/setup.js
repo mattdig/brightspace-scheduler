@@ -1,4 +1,4 @@
-let bs = new Brightspace(orgUnitId);
+let bs = new Brightspace(ORG_UNIT_ID);
 
 let globalLatestTime = moment();
 let existingTimeSlots = [];
@@ -11,7 +11,7 @@ $(function() {
 });
 
 function setup(){
-    if(mode == 'edit'){ 
+    if(MODE == 'edit'){ 
         getExistingTimeSlots().then(function(){
             timeSlots = existingTimeSlots.slice();
             displayExistingTimeBlocks();
@@ -141,25 +141,24 @@ function initializeDatetime(datetimeElem){
 
     const now = moment();
 
-    // if(globalLatestTime.hours() <= 22){
-    //     globalLatestTime = globalLatestTime + moment.duration({hours:1});
-    // } else {
-    //     globalLatestTime = globalLatestTime + moment.duration({hours:9});
-    // }
-
+    if(globalLatestTime.hours() > 22){
+        globalLatestTime = moment(globalLatestTime).add(9, 'hours');
+    }
+    
+   
     $(datetimeElem).find('.date_input').datetimepicker({
         format: 'YYYY-MM-DD',
-        defaultDate: globalLatestTime,
-        minDate: globalLatestTime,
-        maxDate: moment().add(1, 'years')
+        defaultDate: moment(globalLatestTime),
+        minDate: moment(globalLatestTime),
+        maxDate: moment(globalLatestTime).add(1, 'years')
     });
 
     $(datetimeElem).find('.starttime_input').datetimepicker({
         format: 'LT',
         stepping: 15,
-        defaultDate: globalLatestTime,
-        minDate: moment().startOf('day'),
-        maxDate: moment().add(1, 'hours')
+        defaultDate: moment(globalLatestTime),
+        minDate: moment(globalLatestTime).startOf('day'),
+        maxDate: moment(globalLatestTime).add(1, 'hours')
     }).on('dp.hide', function(e){
         $(datetimeElem).find('.endtime_input').data('DateTimePicker').minDate(e.date.add(15, 'minute'));
         validateTimeFields(false);
@@ -168,9 +167,9 @@ function initializeDatetime(datetimeElem){
     $(datetimeElem).find('.endtime_input').datetimepicker({
         format: 'LT',
         stepping: 15,
-        defaultDate: globalLatestTime + moment.duration({hours:1}),
-        minDate: moment().subtract(1, 'hours'),
-        maxDate: moment().endOf('day'),
+        defaultDate: moment(globalLatestTime).add(1, 'hours'),
+        minDate: moment(globalLatestTime).subtract(1, 'hours'),
+        maxDate: moment(globalLatestTime).endOf('day'),
     }).on('dp.hide', function(e){
         $(datetimeElem).find('.starttime_input').data('DateTimePicker').maxDate(e.date.subtract(15, 'minute'));
         validateTimeFields(false);
