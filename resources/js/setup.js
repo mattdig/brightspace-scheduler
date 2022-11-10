@@ -52,17 +52,25 @@ function displayExistingTimeSlots(){
     $('#existingTimeBlocks').html(html);
 }
 
-function cancelTimeBlock(id){
-    unenrolFromGroup(id);
+async function cancelTimeBlock(id){
+    await unenrolFromGroup(id);
+    // TODO: remove from timeSlots
 }
 
-async function deleteTimeBlock(timeBlock){
+async function deleteTimeBlock(timeSlot){
     
-    await unenrolFromGroup(timeBlock.groupId);
-    await deleteCalendarEvent(timeBlock.eventId);
-    await deleteGroup(timeBlock.groupId);
+    await unenrolFromGroup(timeSlot.groupId);
+    await deleteCalendarEvent(timeSlot.eventId);
+    await deleteGroup(timeSlot.groupId);
 
-    $('#timeblock_' + id).remove();
+    $('#timeslot_' + timeSlot.groupId).remove();
+
+    // remove timeSlot from timeSlots
+    timeSlots = timeSlots.filter(function( obj ) {
+        return obj.groupId !== timeSlot.groupId;
+    });
+
+
 }
 
 function unenrolFromGroup(groupId,userId){
@@ -85,9 +93,9 @@ function deleteGroup(groupId){
 
 function addDatetime(){
 
-    let lastDatetime = $('.datetime_div').last();
+    let lastDatetime = $('.datetime__div').last();
     let newDatetime = lastDatetime.clone();
-    let newLength = $('.datetime_div').length + 1
+    let newLength = $('.datetime__div').length + 1
 
     newDatetime.attr('id', 'datetime_' + newLength);
     newDatetime.find('h3').text('Date & Time ' + newLength);
@@ -100,7 +108,7 @@ function addDatetime(){
     newDatetime.find('input.endtime_input').attr('id', 'endtime_' + newLength).attr('name', 'endtime_' + newLength).val('');
     
     newDatetime.insertAfter(lastDatetime);
-    initializeDatetime($('.datetime_div').last());   // initialize the new datetime
+    initializeDatetime($('.datetime__div').last());   // initialize the new datetime
 
 }
 
@@ -181,16 +189,15 @@ function initializeDatetime(datetimeElem){
 
 function updateGlobalLatestTime(newTime){
     
-    if(newTime == globalLatestTime){
-        if(globalLatestTime.hours() <= 22){
-            globalLatestTime = globalLatestTime + moment.duration({days:1});
-        } else {
-            globalLatestTime = globalLatestTime + moment.hours({hours:9});
-        }
-    } else {
-        if(newTime > globalLatestTime){
-            globalLatestTime = newTime;
-        }
+    if(newTime.isBefore(moment()))
+        globalLatestTime = moment();
+
+    if(newTime.isAfter(globalLatestTime)){
+        globalLatestTime = newTime;
+    }
+
+    if(globalLatestTime.hours() > 22){
+        globalLatestTime = moment(globalLatestTime).add(9, 'hours');
     }
     
 }
@@ -226,7 +233,7 @@ function validateTimeFields(withErrors){
     let selectedTab = $('.tab-pane.active').find('label').attr('for');
     let blockValue = parseInt($('#' + selectedTab).val());
 
-    $('.datetime_Div').each(function(){
+    $('.datetime__div').each(function(){
         let datetime = {};
         let format = "YYYY-MM-DD hh:mm A";
         let date = $(this).find('.date_input').val() + " ";
@@ -407,7 +414,7 @@ function createGroup(timeSlot){
     let group = {
         "Name": timeSlot.start.format('MMMM D, YYYY | h:mma') + ' - ' + timeSlot.end.format('h:mma'),
         "Code": "",
-        "Description": { "Content": timeSlot.start.format('YYYY-MM-DD HH:MM') + '-' + timeSlot.end.format('YYYY-MM-DD HH:MM'), "Type": "Text" },
+        "Description": { "Content": convertToUTCDateTime(timeSlot.start.toDate()) + '_' + convertToUTCDateTime(timeSlot.end.toDate()), "Type": "Text" },
     }
 
     return bs.post('/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + GROUP_CATEGORY_ID + '/groups/', group);
@@ -419,7 +426,7 @@ function updateGroup(timeSlot){
     let group = {
         "Name": timeSlot.start.format('MMMM D, YYYY | h:mma') + ' - ' + timeSlot.end.format('h:mma'),
         "Code": timeSlot.eventId,
-        "Description": { "Content": timeSlot.start.format('YYYY-MM-DD HH:MM') + '-' + timeSlot.end.format('YYYY-MM-DD HH:MM'), "Type": "Text" },
+        "Description": { "Content": convertToUTCDateTime(timeSlot.start.toDate()) + '_' + convertToUTCDateTime(timeSlot.end.toDate()), "Type": "Text" },
     }
 
     return bs.post('/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + GROUP_CATEGORY_ID + '/groups/', group);

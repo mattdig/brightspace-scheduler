@@ -90,7 +90,7 @@ let GROUP_CATEGORY_ID = (MODE == 'edit' ? params.gc : null);
                 </div>
                 <div class="row">
                     <div class="col-xs-12 col-sm-offset-2 col-sm-8">
-                        <p><input type="button" class="btn" value="Add another date &amp; time range" onclick="add_datetime()"/></p>
+                        <p><input type="button" class="btn" value="Add another date &amp; time range" onclick="addDatetime()"/></p>
                         <div>
                             <h3 id="total_time">Total time: 3 hours</h3>
                         </div>
@@ -117,8 +117,8 @@ let GROUP_CATEGORY_ID = (MODE == 'edit' ? params.gc : null);
                             <h2>Set the number meetings</h2>
                             <div class="tabs">
                                 <ul class="nav nav-tabs">
-                                    <li class="active"><a href="#tab1" data-toggle="tab" onclick="select_tab(this);">Time meeting</a></li>
-                                    <li><a href="#tab2" data-toggle="tab" onclick="select_tab(this);">Number of meetings</a></li>
+                                    <li class="active"><a href="#tab1" data-toggle="tab" onclick="selectTab(this);">Time meeting</a></li>
+                                    <li><a href="#tab2" data-toggle="tab" onclick="selectTab(this);">Number of meetings</a></li>
                                 </ul>
                                 <div class="tab-content">
                                     <div class="tab-pane active" id="tab1">
