@@ -116,29 +116,29 @@ let GROUP_CATEGORY_ID = (MODE == 'edit' ? params.gc : null);
                     </div>
                     
                     <div class="col-xs-12 col-sm-offset-2 col-sm-8">
-                        <div id="timeslots">
-                            <h2>Set the number meetings</h2>
-                            <div class="tabs">
-                                <ul class="nav nav-tabs">
-                                    <li class="active"><a href="#tab1" data-toggle="tab" onclick="selectTab(this);">Time meeting</a></li>
-                                    <li><a href="#tab2" data-toggle="tab" onclick="selectTab(this);">Number of meetings</a></li>
-                                </ul>
-                                <div class="tab-content">
-                                    <div class="tab-pane active" id="tab1">
-                                        <label for="timeslot_duration">
-                                            <p>The length of each meeting in minutes.</p>
-                                            <p><input type="text" name="timeslot_duration" id="timeslot_duration" class="selected_slot form-control" value="30" /></p>
-                                        </label>
-                                    </div>
-                                    <div class="tab-pane" id="tab2">
-                                        <label for="timeslot_number">
-                                            <p>The number of meetings to divide the total time into.</p>
-                                            <p><input type="text" name="timeslot_number" id="timeslot_number" class="selected_slot form-control" value="4" /></p>
-                                        </label>
-                                    </div>
+                        
+                        <h2>Set the number meetings</h2>
+                        <div id="timeslot_unit_tabs" class="tabs">
+                            <ul class="nav nav-tabs">
+                                <li class="active" data-unit="duration"><a href="#tab1" data-toggle="tab" onclick="selectTab(this);">Time of each meeting</a></li>
+                                <li data-unit="total"><a href="#tab2" data-toggle="tab" onclick="selectTab(this);">Number of meetings</a></li>
+                            </ul>
+                            <div class="tab-content">
+                                <div class="tab-pane active" id="tab1">
+                                    <label for="timeslot_duration">
+                                        <p>The length of each meeting in minutes.</p>
+                                        <p><input type="text" name="timeslot_duration" id="timeslot_duration" class="timeslot_unit form-control" value="30" /></p>
+                                    </label>
+                                </div>
+                                <div class="tab-pane" id="tab2">
+                                    <label for="timeslot_number">
+                                        <p>The number of meetings to divide the total time into.</p>
+                                        <p><input type="text" name="timeslot_number" id="timeslot_number" class="timeslot_unit form-control" value="4" /></p>
+                                    </label>
                                 </div>
                             </div>
                         </div>
+                        
                         <h4 id="total_timeslots">This will create 6 meeting times of 30 minutes each.</h4>
                         <p><input type="submit" class="btn btn-primary" value="Submit" /></p>
                         <!-- Button trigger modal -->

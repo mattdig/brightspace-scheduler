@@ -32,6 +32,14 @@ async function setup(){
 
     initializeDatetime( $('.datetime__div').first() );
 
+    $('#timeslot_duration').on('change', function(){
+        updateTotalTimeSlots();
+    });
+
+    $('#timeslot_number').on('change', function(){
+        updateTotalTimeSlots();
+    });
+
     if(MODE == 'edit'){ 
         existingTimeSlots = await getExistingTimeSlots();
         displayExistingTimeBlocks(existingTimeSlots);
@@ -114,24 +122,6 @@ async function deleteTimeSlot(timeSlot){
 
 }
 
-function unenrolFromGroup(groupId,userId){
-    
-    return bs.delete('/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + GROUP_CATEGORY_ID + '/groups/' + groupId + '/enrollments/' + userId);
-    
-}
-
-function deleteCalendarEvent(eventId){
-    
-    return bs.delete('/d2l/api/le/(version)/(orgUnitId)/calendar/event/' + eventId);
-
-}
-
-function deleteGroup(groupId){
-    
-    return bs.delete('/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + GROUP_CATEGORY_ID + '/groups/' + groupId);
-    
-}
-
 function addDatetime(){
 
     let lastDatetime = $('.datetime__div').last();
@@ -158,30 +148,67 @@ function selectTab(obj){
     $(obj).parent().addClass('active');
     $('.tabs').find('div').removeClass('active');
     $('.tabs').find($(obj).attr('href')).addClass('active');
-}
 
-function updateTotalTime(){
-    let totalTime = 0;
-    $('.datetime_span').each(function(){
-        let time = $(this).text();
-        if(time != ''){
-            totalTime += parseInt(time);
-        }
-    });
-    $('#totalTime').text('Total time: ' + totalTime + ' minutes');
-    
     updateTotalTimeSlots();
 }
 
 function updateTotalTimeSlots(){
     totalTimeSlots = 0;
-    let timeSlotDuration = parseInt($('#timeslot_duration').val()); 
-    
-    //console.log(timeSlotDuration);
+    let timeSlotDuration; 
+    let totalTime = 0;
 
-    timeBlocks.forEach(block => {
-        totalTimeSlots += parseInt(Math.floor(block.end.diff(block.start, 'minutes') / timeSlotDuration));
-    });
+    if($('#timeslot_unit_tabs').find('li.active').data('unit') == 'duration'){
+
+        timeSlotDuration = $('#timeslot_duration').val();
+
+        timeBlocks.forEach(block => {
+            totalTime += block.end.diff(block.start, 'minutes');
+            totalTimeSlots += parseInt(Math.floor(block.end.diff(block.start, 'minutes') / timeSlotDuration));
+        });
+    
+    } else {
+        totalTimeSlots = parseInt($('#timeslot_number').val());
+
+        let smallestTimeBlock = 0;
+        let totalSmallestUnits = 0;
+
+        timeBlocks.forEach(block => {
+            let blockTime = block.end.diff(block.start, 'minutes');
+            console.log(blockTime);
+            if(smallestTimeBlock == 0 || blockTime < smallestTimeBlock){
+                smallestTimeBlock = blockTime;
+            }
+        });
+
+        console.log(smallestTimeBlock);
+
+        timeBlocks.forEach(block => {
+            let unitsInBlock = block.end.diff(block.start, 'minutes') / smallestTimeBlock;
+            block.blockUnits = unitsInBlock;
+            totalSmallestUnits += unitsInBlock;
+        });
+
+        console.log(totalSmallestUnits);
+
+        let smallestBlockToTotal = totalSmallestUnits / totalTimeSlots;
+        timeSlotDuration = smallestTimeBlock * smallestBlockToTotal;
+        if(timeSlotDuration > smallestTimeBlock){
+            timeSlotDuration = smallestTimeBlock;
+        }
+
+        totalTime = timeSlotDuration * totalTimeSlots;
+
+    }
+
+    if(totalTime > 90){
+        //convert to hours with 2 decimal places
+        totalTime = parseFloat((totalTime / 60).toFixed(2));
+        units = 'hours';
+    } else {
+        units = 'minutes';
+    }
+
+    $('#total_time').text('Total time: ' + totalTime + ' ' + units);
 
     $('#total_timeslots').text('This will create ' + totalTimeSlots + ' meetings of ' + timeSlotDuration + ' minutes each.');
 }
@@ -196,7 +223,6 @@ function initializeDatetime(datetimeElem){
     let remainder = interval - (latestTime.minute() % interval);
     latestTime.add(remainder, "minutes");
 
-    
 
     $(datetimeElem).find('.date_input').datetimepicker({
         format: 'YYYY-MM-DD',
@@ -207,33 +233,6 @@ function initializeDatetime(datetimeElem){
         validateTimeFields(false);
     });
 
-    // let time = new Date(latestTime.year(), latestTime.month(), latestTime.date(), latestTime.hour(), latestTime.minute(), 0, 0);
-
-    // let starttime = new Date(latestTime.year(), latestTime.month(), latestTime.date(), 0, 0, 0, 0);
-
-    // $(datetimeElem).find('.starttime_input').datetimepicker({
-    //     format: 'h:mm A',
-    //     stepping: 30,
-    //     defaultDate: moment(time).clone(),
-    //     // minDate: starttime,
-    //     // maxDate: moment(time).clone().add(1, 'hours'),
-    // }).on('dp.hide', function(e){
-    //     $(datetimeElem).find('.endtime_input').data('DateTimePicker').minDate(moment(e.date).add(30, 'minutes'));
-    //     validateTimeFields(false);
-    // });
-    
-    // $(datetimeElem).find('.endtime_input').datetimepicker({
-    //     format: 'h:mm A',
-    //     stepping: 30,
-    //     defaultDate: moment(time).clone().add(1, 'hours'),
-    //     // minDate: moment(time).clone().add(30, 'minutes'),
-    //     // maxDate: moment(time).clone().endOf('day'),
-    // }).on('dp.hide', function(e){
-    //     $(datetimeElem).find('.starttime_input').data('DateTimePicker').maxDate(moment(e.date).subtract(30, 'minutes'));
-    //     validateTimeFields(false);
-    // });
-
-    // clear date from latestTime
     
     latestTime = moment(defaultDate + latestTime.format('HH:mm'), defaultDateTimeFormat);
     
@@ -331,6 +330,9 @@ function clearErrorMessage(id){
 
 
 function validateTimeFields(withErrors){
+
+    globalLatestTime = null;
+
     let valid = true;
     newTimeSlots = [];
     timeBlocks = [];
@@ -419,8 +421,6 @@ function validateTimeFields(withErrors){
 
     updateGlobalLatestTime(latestTime);
 
-    //console.log(globalLatestTime.format());
-
 }
 
 function compareStarttime(a, b){
@@ -465,8 +465,6 @@ function updateTimeSlots(timeBlock){
         timeSlots.push(time);
     }
 
-    //console.log(timeSlots);
-    
 //     $('#' + timeBlock.id).find('.totalTime').html(totalTime.format('HH:mm'));
 //     $('#' + timeBlock.id).find('.totalBlocks').html();
 }
@@ -587,6 +585,24 @@ function createCalendarEvent(timeSlot){
 
     return bs.post('/d2l/api/lp/(version)/(orgUnitId)/calendar/event/', event);
    
+}
+
+function unenrolFromGroup(groupId,userId){
+    
+    return bs.delete('/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + GROUP_CATEGORY_ID + '/groups/' + groupId + '/enrollments/' + userId);
+    
+}
+
+function deleteCalendarEvent(eventId){
+    
+    return bs.delete('/d2l/api/le/(version)/(orgUnitId)/calendar/event/' + eventId);
+
+}
+
+function deleteGroup(groupId){
+    
+    return bs.delete('/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + GROUP_CATEGORY_ID + '/groups/' + groupId);
+    
 }
 
 function loading(){
