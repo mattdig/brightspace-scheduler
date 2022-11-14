@@ -167,6 +167,7 @@ function updateTotalTimeSlots(){
         });
     
     } else {
+        
         totalTimeSlots = parseInt($('#timeslot_number').val());
 
         let smallestTimeBlock = 0;
