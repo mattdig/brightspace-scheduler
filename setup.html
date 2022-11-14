@@ -2,13 +2,16 @@
 <html lang="en">
 <head>
 <link rel="stylesheet" href="resources/css/bootstrap.3.3.6.min.css">
-<link rel="stylesheet" type="text/css" href="resources/css/bootstrap-datetimepicker.css" />
-<!-- link rel="stylesheet" href="resources/css/fontawesome.all.css" -->
-<link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.0.10/css/all.css" integrity="sha384-+d0P83n9kaQMCwj8F4RJB66tzIwOKmrdb46+porD/OvrJ+37WqIM7UoBtwHO6Nlg" crossorigin="anonymous">
+<link rel="stylesheet" type="text/css" href="resources/css/bootstrap-datetimepicker.css">
+<link rel="stylesheet" href="resources/css/jquery.timepicker.min.css">
+<link rel="stylesheet" href="resources/css/fontawesome.all.css">
+
 <script type="text/javascript" src="resources/js/jquery-2.2.4.min.js"></script></script>
 <script type="text/javascript" src="resources/js/bootstrap.3.3.6.min.js"></script>
 <script type="text/javascript" src="resources/js/moment.min.js"></script>
+<script type="text/javascript" src="resources/js/moment-timezone.min.js"></script>
 <script type="text/javascript" src="resources/js/bootstrap-datetimepicker.min.js"></script>
+<script type="text/javascript" src="resources/js/jquery.timepicker.min.js"></script>
 <script type="text/javascript" src="resources/js/brightspace.js"></script>    
 <script type="text/javascript">
 const params = new Proxy(new URLSearchParams(window.location.search), {get: (searchParams, prop) => searchParams.get(prop)});
@@ -78,13 +81,13 @@ let GROUP_CATEGORY_ID = (MODE == 'edit' ? params.gc : null);
                     <div class="col col-sm-2 col-xs-6">
                         <label for="starttime_1" class="starttime_label">
                             <p>Start&nbsp;Time</p>
-                            <p><input type="text" name="starttime_1" id="starttime_1" class="form-control starttime_input" required /></p>
+                            <p><select name="starttime_1" id="starttime_1" class="form-control starttime_input" required></select></p>
                         </label>
                     </div>
                     <div class="col col-sm-2 col-xs-6">
                         <label for="endtime_1" class="endtime_label">
                             <p>End&nbsp;Time</p>
-                            <p><input type="text" name="endtime_1" id="endtime_1" class="form-control endtime_input" required /></p>
+                            <p><select name="endtime_1" id="endtime_1" class="form-control endtime_input" required></select></p>
                         </label>
                     </div>
                 </div>

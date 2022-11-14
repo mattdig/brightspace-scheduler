@@ -1,50 +1,91 @@
+
+
 let bs = new Brightspace(ORG_UNIT_ID);
 
-let globalLatestTime = moment();
-let existingTimeSlots = [];
+let timeZone;
+
+let globalLatestTime;
+
 let timeBlocks = [];
-let timeSlots = [];
+
+let existingTimeSlots = [];
+let newTimeSlots = [];
+
 let totalTimeSlots = 0;
+
+let defaultDate = '2020-01-01 ';
+let defaultDateTimeFormat = 'YYYY-MM-DD HH:mm';
 
 $(function() {
     setup();
 });
 
-function setup(){
+async function setup(){
+
+    //let orgInfo = await bs.get('/d2l/api/lp/(version)/organization/info');
+
+    timeZone = 'America/Toronto'; //orgInfo.TimeZone;
+
+    moment.tz.setDefault(timeZone);
+
+    updateGlobalLatestTime(moment());
+
+    initializeDatetime( $('.datetime__div').first() );
+
     if(MODE == 'edit'){ 
-        getExistingTimeSlots().then(function(){
-            timeSlots = existingTimeSlots.slice();
-            displayExistingTimeBlocks();
-            updateTotalTime();
-            initializeDatetime( $('.datetime__div') );
-        });
+        existingTimeSlots = await getExistingTimeSlots();
+        displayExistingTimeBlocks(existingTimeSlots);
     } else {
-        initializeDatetime( $('.datetime__div') );
-        //showTimeblockEditor();
+        //initializeDatetime( $('.datetime__div') );
     }
 }
 
 async function getExistingTimeSlots(){
-    let result = await bs.get('/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + GROUP_CATEGORY_ID + '/groups/');
+    let groups = await bs.get('/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + GROUP_CATEGORY_ID + '/groups/');
     
-    result.forEach(element => {
-        existingTimeSlots.push(element);
+    groups.forEach(async function(group) {
+        
+        let utcTimes = group.Name.split('-');
+
+        let startTime = moment(utcTimes[0]);
+        let endTime = moment(utcTimes[1]);
+
+        let localDateTimeString = startTime.format('MMMM D, YYYY | h:mma') + ' - ' + endTime.format('h:mma');
+        
+        let timeslot = {
+            start: startTime,
+            end: endTime,
+            name: localDateTimeString,
+            groupid: group.GroupId,
+            eventId: group.Code,
+            student: false
+        };
+
+        if(group.Enrollments.length > 0){
+            timeslot.student = await bs.get('/d2l/api/lp/(version)/users/' + group.Enrollments[0].UserId);
+        }
+    
+        existingTimeSlots.push(timeslot);
     });
 }
 
-function displayExistingTimeSlots(){
+function displayExistingTimeSlots(timeSlots){
 
     let html = '';
-    existingTimeSlots.forEach(element => {
-        html += '<tr class="timeblock" id="timeBlock_' + element.id + '">';
-        html += '<td class="timeblock_student">' + element.student + '</td>';
-        html += '<td class="timeblock_starttime">' + element.starttime + '</td>';
-        html += '<td class="timeblock_endtime">' + element.endtime + '</td>';
-        html += '<td class="timeblock_actions">';
+    timeSlots.forEach(element => {
+        let student = false;
         if(element.student !== false){
-            html += '<button class="btn btn-danger btn-sm cancel-timeblock" onclick="canelTimeBlock(' + element.id + ')" data-id="' + element.id + '">Cancel</button>';
+            student = element.student.FirstName + ' ' + element.student.LastName + ' (' + element.student.OrgDefinedId + ')';
         }
-        html += '<button class="btn btn-danger btn-sm delete-timeblock" onclick="deleteTimeBlock(' + element.id + ')" data-id="' + element.id + '">Delete</button></td>';
+
+        html += '<tr class="timeslot" id="timeslot_' + element.groupId + '">';
+        html += '<td class="timeslot_student" data-studentid="">' + element.student + '</td>';
+        html += '<td class="timeslot_datetime">' + element.name + '</td>';
+        html += '<td class="timeslot_actions">';
+        if(element.student !== false){
+            html += '<button class="btn btn-danger btn-sm cancel-timeslot" onclick="canelTimeSlot(' + element.groupId + ')" data-id="' + element.groupId + '">Cancel</button>';
+        }
+        html += '<button class="btn btn-danger btn-sm delete-timeslot" onclick="deleteTimeSlot(' + element.groupId + ')" data-id="' + element.groupId + '">Delete</button></td>';
         html += '</td>';
         html += '</tr>';
     });
@@ -52,12 +93,12 @@ function displayExistingTimeSlots(){
     $('#existingTimeBlocks').html(html);
 }
 
-async function cancelTimeBlock(id){
-    await unenrolFromGroup(id);
-    // TODO: remove from timeSlots
+function cancelTimeSlot(id){
+    unenrolFromGroup(id);
+    $('#timeslot_' + id + ' .timeslot_student').html('');
 }
 
-async function deleteTimeBlock(timeSlot){
+async function deleteTimeSlot(timeSlot){
     
     await unenrolFromGroup(timeSlot.groupId);
     await deleteCalendarEvent(timeSlot.eventId);
@@ -65,9 +106,9 @@ async function deleteTimeBlock(timeSlot){
 
     $('#timeslot_' + timeSlot.groupId).remove();
 
-    // remove timeSlot from timeSlots
-    timeSlots = timeSlots.filter(function( obj ) {
-        return obj.groupId !== timeSlot.groupId;
+    // remove timeSlot from existingTimeSlots
+    existingTimeSlots = existingTimeSlots.filter(function( ets ) {
+        return ets.groupId !== timeSlot.groupId;
     });
 
 
@@ -99,9 +140,9 @@ function addDatetime(){
 
     newDatetime.attr('id', 'datetime_' + newLength);
     newDatetime.find('h3').text('Date & Time ' + newLength);
-    newDatetime.find('label.dateLabel').attr('for', 'date_' + newLength);
-    newDatetime.find('label.starttimeLabel').attr('for', 'starttime_' + newLength);
-    newDatetime.find('label.endtimeLabel').attr('for', 'endtime_' + newLength);
+    newDatetime.find('label.date_label').attr('for', 'date_' + newLength);
+    newDatetime.find('label.starttime_label').attr('for', 'starttime_' + newLength);
+    newDatetime.find('label.endtime_label').attr('for', 'endtime_' + newLength);
     
     newDatetime.find('input.date_input').attr('id', 'date_' + newLength).attr('name', 'date_' + newLength).val('');
     newDatetime.find('input.starttime_input').attr('id', 'starttime_' + newLength).attr('name', 'starttime_' + newLength).val('');
@@ -136,7 +177,7 @@ function updateTotalTimeSlots(){
     totalTimeSlots = 0;
     let timeSlotDuration = parseInt($('#timeslot_duration').val()); 
     
-    console.log(timeSlotDuration);
+    //console.log(timeSlotDuration);
 
     timeBlocks.forEach(block => {
         totalTimeSlots += parseInt(Math.floor(block.end.diff(block.start, 'minutes') / timeSlotDuration));
@@ -147,57 +188,126 @@ function updateTotalTimeSlots(){
 
 function initializeDatetime(datetimeElem){
 
-    const now = moment();
+    let latestTime = globalLatestTime.clone();
 
-    if(globalLatestTime.hours() > 22){
-        globalLatestTime = moment(globalLatestTime).add(9, 'hours');
-    }
+    let interval = 30;
+
+    // rount up to nearest interval minutes
+    let remainder = interval - (latestTime.minute() % interval);
+    latestTime.add(remainder, "minutes");
+
     
-   
+
     $(datetimeElem).find('.date_input').datetimepicker({
         format: 'YYYY-MM-DD',
-        defaultDate: moment(globalLatestTime),
-        minDate: moment(globalLatestTime),
-        maxDate: moment(globalLatestTime).add(1, 'years')
-    });
-
-    $(datetimeElem).find('.starttime_input').datetimepicker({
-        format: 'LT',
-        stepping: 15,
-        defaultDate: moment(globalLatestTime),
-        minDate: moment(globalLatestTime).startOf('day'),
-        maxDate: moment(globalLatestTime).add(1, 'hours')
+        defaultDate: latestTime.clone(),
+        minDate: latestTime.clone(),
+        maxDate: latestTime.clone().add(1, 'years')
     }).on('dp.hide', function(e){
-        $(datetimeElem).find('.endtime_input').data('DateTimePicker').minDate(e.date.add(15, 'minute'));
         validateTimeFields(false);
     });
 
-    $(datetimeElem).find('.endtime_input').datetimepicker({
-        format: 'LT',
-        stepping: 15,
-        defaultDate: moment(globalLatestTime).add(1, 'hours'),
-        minDate: moment(globalLatestTime).subtract(1, 'hours'),
-        maxDate: moment(globalLatestTime).endOf('day'),
-    }).on('dp.hide', function(e){
-        $(datetimeElem).find('.starttime_input').data('DateTimePicker').maxDate(e.date.subtract(15, 'minute'));
+    // let time = new Date(latestTime.year(), latestTime.month(), latestTime.date(), latestTime.hour(), latestTime.minute(), 0, 0);
+
+    // let starttime = new Date(latestTime.year(), latestTime.month(), latestTime.date(), 0, 0, 0, 0);
+
+    // $(datetimeElem).find('.starttime_input').datetimepicker({
+    //     format: 'h:mm A',
+    //     stepping: 30,
+    //     defaultDate: moment(time).clone(),
+    //     // minDate: starttime,
+    //     // maxDate: moment(time).clone().add(1, 'hours'),
+    // }).on('dp.hide', function(e){
+    //     $(datetimeElem).find('.endtime_input').data('DateTimePicker').minDate(moment(e.date).add(30, 'minutes'));
+    //     validateTimeFields(false);
+    // });
+    
+    // $(datetimeElem).find('.endtime_input').datetimepicker({
+    //     format: 'h:mm A',
+    //     stepping: 30,
+    //     defaultDate: moment(time).clone().add(1, 'hours'),
+    //     // minDate: moment(time).clone().add(30, 'minutes'),
+    //     // maxDate: moment(time).clone().endOf('day'),
+    // }).on('dp.hide', function(e){
+    //     $(datetimeElem).find('.starttime_input').data('DateTimePicker').maxDate(moment(e.date).subtract(30, 'minutes'));
+    //     validateTimeFields(false);
+    // });
+
+    // clear date from latestTime
+    
+    latestTime = moment(defaultDate + latestTime.format('HH:mm'), defaultDateTimeFormat);
+    
+    let minTime = moment(defaultDate + '00:00', defaultDateTimeFormat);
+    let maxTime = latestTime.clone().add(1, 'hours');
+
+    generateTimeOptions($(datetimeElem).find('.starttime_input'), latestTime, minTime, maxTime, interval);
+
+    minTime = latestTime.clone().add(30, 'minutes');
+    maxTime = moment(defaultDate + '23:59', defaultDateTimeFormat);
+
+    generateTimeOptions($(datetimeElem).find('.endtime_input'), latestTime.clone().add(1, 'hours'), minTime, maxTime, interval);
+
+    $(datetimeElem).find('.starttime_input').on('change', function(){
+        let object = $(datetimeElem).find('.endtime_input')
+        let time = moment(defaultDate + object.val(), defaultDateTimeFormat);
+        let startTime = moment(defaultDate + $(this).val(), defaultDateTimeFormat).add(interval, 'minutes');
+        let endTime = moment(defaultDate + '23:59', defaultDateTimeFormat);
+        generateTimeOptions(object, time, startTime, endTime, interval);
         validateTimeFields(false);
     });
 
+    $(datetimeElem).find('.endtime_input').on('change', function(){
+        let object = $(datetimeElem).find('.starttime_input')
+        let time = moment(defaultDate + object.val(), defaultDateTimeFormat);
+        let startTime = moment(defaultDate + '00:00', defaultDateTimeFormat);
+        let endTime = moment(defaultDate + $(this).val(), defaultDateTimeFormat);
+        generateTimeOptions(object, time, startTime, endTime, interval);
+        validateTimeFields(false);
+    });
+
+    // minTime = latestTime.clone().add(30, 'minutes');
+    // maxTime = moment([0, 0, 0, 23, 30, 0, 0]);
+
+    
     validateTimeFields(false);
 
 }
 
+function generateTimeOptions(object, defaultTime, startTime, endTime, interval){
+    let options = [];
+
+    if(defaultTime.isBefore(startTime)){
+        defaultTime = startTime.clone();
+    }
+
+    for(let i = 0; i < (24 * (60 / interval)); i++){
+        let time = startTime.clone().add(i * interval, 'minutes');
+
+        if(time.isBefore(endTime)){
+            let selected = time.isSame(defaultTime) ? 'selected="selected"' : '';
+            
+            options.push('<option value="' + time.format('HH:mm') + '" ' + selected + '>' + time.format('h:mm A') + '</option>');
+        }
+    }
+
+    $(object).empty().append(options.join(''));
+    
+}
+
 function updateGlobalLatestTime(newTime){
     
-    if(newTime.isBefore(moment()))
-        globalLatestTime = moment();
+    let now = moment();
 
-    if(newTime.isAfter(globalLatestTime)){
-        globalLatestTime = newTime;
+    if(globalLatestTime == null || newTime.isAfter(globalLatestTime)){
+        globalLatestTime = newTime.clone();
     }
 
     if(globalLatestTime.hours() > 22){
-        globalLatestTime = moment(globalLatestTime).add(9, 'hours');
+        globalLatestTime.add(1, 'days').hours(8).minutes(0);
+    }
+
+    if(globalLatestTime.isBefore(now)){
+        globalLatestTime = now.clone();
     }
     
 }
@@ -221,21 +331,20 @@ function clearErrorMessage(id){
 
 
 function validateTimeFields(withErrors){
-    valid = true;
-    timeSlots = [];
+    let valid = true;
+    newTimeSlots = [];
     timeBlocks = [];
-    totalTimeSlots = 0;
 
     let datetimes = [];
     
-    let latestTime = 0;
+    let latestTime = moment();
 
     let selectedTab = $('.tab-pane.active').find('label').attr('for');
     let blockValue = parseInt($('#' + selectedTab).val());
 
     $('.datetime__div').each(function(){
         let datetime = {};
-        let format = "YYYY-MM-DD hh:mm A";
+        let format = "YYYY-MM-DD HH:mm";
         let date = $(this).find('.date_input').val() + " ";
         datetime.id = $(this).attr('id');
         datetime.start = moment(date + $(this).find('.starttime_input').val(), format);
@@ -256,7 +365,7 @@ function validateTimeFields(withErrors){
         
         } else {
 
-            let splice_indexes = [];
+            let spliceIndexes = [];
 
             let noOverlap = datetimes.slice(i + 1).every(function(datetime2, j){
                 if(datetime1.id != datetime2.id && (
@@ -272,7 +381,7 @@ function validateTimeFields(withErrors){
                 } else {
 
                     if(datetime1.end.isSame(datetime2.start)){
-                        datetime1.end = datetime2.end;
+                        datetime1.end = datetime2.end.clone();
                         spliceIndexes.push(i + j + 1);
                     }
 
@@ -291,7 +400,7 @@ function validateTimeFields(withErrors){
                 });
                 
                 if(datetime1.end.isAfter(latestTime)){
-                    latestTime = datetime1.end;
+                    latestTime = datetime1.end.clone();
                 }
                 return true;
             }
@@ -309,6 +418,8 @@ function validateTimeFields(withErrors){
     }
 
     updateGlobalLatestTime(latestTime);
+
+    //console.log(globalLatestTime.format());
 
 }
 
@@ -354,7 +465,7 @@ function updateTimeSlots(timeBlock){
         timeSlots.push(time);
     }
 
-    console.log(timeSlots);
+    //console.log(timeSlots);
     
 //     $('#' + timeBlock.id).find('.totalTime').html(totalTime.format('HH:mm'));
 //     $('#' + timeBlock.id).find('.totalBlocks').html();
@@ -367,7 +478,7 @@ async function submit(){
         GROUP_CATEGORY_ID = groupCategory.groupCategoryId;
     }
 
-    if(groupCategoryId != null){
+    if(GROUP_CATEGORY_ID != null){
         newTimeSlots.forEach(async function(timeSlot){
             
             let group = await createGroup(timeSlot);
@@ -387,7 +498,12 @@ function createGroupCategory(){
     
     let title = $('#title').val();
     let description = $('#description').val();
-    let deadlineUTCDateTime = $('#deadlineUTCDateTime').val();
+
+    let format = "YYYY-MM-DD hh:mm A";
+    let deadlineDate = $(this).find('.deadline_date').val();
+    let deadlineTime = $(this).find('.deadline_time').val();
+    
+    let deadlineUTCDateTime = convertToUTCDateTimeString(moment(deadlineDate + " " + deadlineTime, format));
 
     let category = {
         "Name": title,
@@ -412,9 +528,9 @@ function createGroupCategory(){
 function createGroup(timeSlot){
     
     let group = {
-        "Name": timeSlot.start.format('MMMM D, YYYY | h:mma') + ' - ' + timeSlot.end.format('h:mma'),
+        "Name": convertToUTCDateTimeString(timeSlot.start) + '-' + convertToUTCDateTimeString(timeSlot.end),
         "Code": "",
-        "Description": { "Content": convertToUTCDateTime(timeSlot.start.toDate()) + '_' + convertToUTCDateTime(timeSlot.end.toDate()), "Type": "Text" },
+        "Description": { "Content": "", "Type": "Text" },
     }
 
     return bs.post('/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + GROUP_CATEGORY_ID + '/groups/', group);
@@ -424,9 +540,9 @@ function createGroup(timeSlot){
 function updateGroup(timeSlot){
     
     let group = {
-        "Name": timeSlot.start.format('MMMM D, YYYY | h:mma') + ' - ' + timeSlot.end.format('h:mma'),
+        "Name": convertToUTCDateTimeString(timeSlot.start) + '-' + convertToUTCDateTimeString(timeSlot.end),
         "Code": timeSlot.eventId,
-        "Description": { "Content": convertToUTCDateTime(timeSlot.start.toDate()) + '_' + convertToUTCDateTime(timeSlot.end.toDate()), "Type": "Text" },
+        "Description": { "Content": "", "Type": "Text" },
     }
 
     return bs.post('/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + GROUP_CATEGORY_ID + '/groups/', group);
@@ -438,8 +554,8 @@ function createCalendarEvent(timeSlot){
     let event = {
         "Title": title,
         "Description": "",
-        "StartDateTime": convertToUTC(timeSlot.start),
-        "EndDateTime": convertToUTC(timeSlot.end),
+        "StartDateTime": convertToUTCDateTimeString(timeSlot.start),
+        "EndDateTime": convertToUTCDateTimeString(timeSlot.end),
         //"StartDay": <string:LocalDateTime>|null,
         //"EndDay": <string:LocalDateTime>|null,
         "GroupId": timeSlot.groupId,
@@ -455,7 +571,7 @@ function createCalendarEvent(timeSlot){
                 "Saturday": false,
                 "Sunday": false
             },
-            "RepeatUntilDate": convertToUTCDateTime(timeSlot.end)
+            "RepeatUntilDate": convertToUTCDateTimeString(timeSlot.end)
         },
         //"LocationId": <number:D2LID>|null,
         "LocationName": "",
@@ -478,15 +594,10 @@ function loading(){
     $('#loading').toggle();
 }
 
-function convertToUTCDateTime(date){
+function convertToUTCDateTimeString(date){
 
-    var nowUtc = Date.UTC(date.getUTCFullYear(), date.getUTCMonth(),
-                date.getUTCDate(), date.getUTCHours(),
-                date.getUTCMinutes(), date.getUTCSeconds());
+    let utcDate = date.clone().utc();
 
-    console.log(nowUtc.toISOString());
-    console.log(nowUtc.format('YYYY-MM-DDTHH:mm:ss.fff') + 'Z');
-
-    return nowUtc.format('YYYY-MM-DDTHH:mm:ss.fff') + 'Z';
+    return utcDate.format('YYYY-MM-DDTHH:mm:00.000') + 'Z';
 
 }
