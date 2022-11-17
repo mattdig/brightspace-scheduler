@@ -32,13 +32,23 @@ async function setup(){
 
     initializeDatetime( $('.datetime__div').first() );
 
+    $('#deadline_date').datetimepicker({
+        format: 'YYYY-MM-DD',
+        defaultDate: moment(),
+        maxDate: moment().clone().add(1, 'years')
+    });
+
+    generateTimeOptions($('#deadline_time'));
+
+
+
     $('#timeslot_duration').on('change', function(){
         updateTotalTimeSlots();
     });
 
-    $('#timeslot_number').on('change', function(){
-        updateTotalTimeSlots();
-    });
+    // $('#timeslot_number').on('change', function(){
+    //     updateTotalTimeSlots();
+    // });
 
     if(MODE == 'edit'){ 
         existingTimeSlots = await getExistingTimeSlots();
@@ -154,18 +164,35 @@ function selectTab(obj){
 
 function updateTotalTimeSlots(){
     totalTimeSlots = 0;
-    let timeSlotDuration; 
+    newTimeSlots = [];
+    let timeSlotDuration = 0;
     let totalTime = 0;
 
-    if($('#timeslot_unit_tabs').find('li.active').data('unit') == 'duration'){
+    // gave up total number of timeslots, kept the code just in case
+    if(true){//($('#timeslot_unit_tabs').find('li.active').data('unit') == 'duration'){
 
-        timeSlotDuration = $('#timeslot_duration').val();
+        timeSlotDuration = parseInt($('#timeslot_duration').val());
 
         timeBlocks.forEach(block => {
             totalTime += block.end.diff(block.start, 'minutes');
-            totalTimeSlots += parseInt(Math.floor(block.end.diff(block.start, 'minutes') / timeSlotDuration));
+
+            if(timeSlotDuration >= 5){
+                let timeSlotsInBlock = parseInt(Math.floor(block.end.diff(block.start, 'minutes') / timeSlotDuration));
+
+                for(i = 0; i < timeSlotsInBlock; i++){
+                    let newTimeSlot = {
+                        start: block.start.clone().add(i * timeSlotDuration, 'minutes'),
+                        end: block.start.clone().add((i + 1) * timeSlotDuration, 'minutes'),
+                    };
+                    newTimeSlots.push(newTimeSlot);
+                }
+
+                totalTimeSlots += timeSlotsInBlock;
+            }
+
         });
-    
+
+    // total number was too hard to calculate, so just use the number of time slots in the first block
     } else {
         
         totalTimeSlots = parseInt($('#timeslot_number').val());
@@ -211,7 +238,14 @@ function updateTotalTimeSlots(){
 
     $('#total_time').text('Total time: ' + totalTime + ' ' + units);
 
-    $('#total_timeslots').text('This will create ' + totalTimeSlots + ' meetings of ' + timeSlotDuration + ' minutes each.');
+    if(totalTimeSlots > 0){
+        $('#total_timeslots').text('This will create ' + totalTimeSlots + ' time slots of ' + timeSlotDuration + ' minutes each.');
+        return true;
+    } else {
+        $('#total_timeslots').text('Please enter a valid time slot duration of at least 5 mintues.');
+        return false;
+    }
+
 }
 
 function initializeDatetime(datetimeElem){
@@ -273,10 +307,18 @@ function initializeDatetime(datetimeElem){
 
 }
 
-function generateTimeOptions(object, defaultTime, startTime, endTime, interval){
+function generateTimeOptions(object, defaultTime = moment([2020, 1, 1, 12, 0, 0, 0]), startTime = 0, endTime = 0, interval = 60){
     let options = [];
 
-    if(defaultTime.isBefore(startTime)){
+    if(startTime === 0){
+        startTime = moment([2020, 1, 1, 0, 0, 0, 0]);
+    }
+
+    if(endTime === 0){
+        endTime = moment([2020, 1, 1, 23, 59, 0, 0]);
+    }
+
+    if(defaultTime.isBefore(startTime) || defaultTime.isBefore(startTime)){
         defaultTime = startTime.clone();
     }
 
@@ -317,7 +359,7 @@ function errorMessage(message, id){
     if(typeof(id) == 'string')
         $('#' + id).addClass('error');
     else
-        id.addClass('error');
+        $(id).addClass('error');
     
     $('#messageModel').find('.modal-title').html('Error');
     $('#messageModal').find('.modal-body').html(message);
@@ -342,8 +384,8 @@ function validateTimeFields(withErrors){
     
     let latestTime = moment();
 
-    let selectedTab = $('.tab-pane.active').find('label').attr('for');
-    let blockValue = parseInt($('#' + selectedTab).val());
+    //let selectedTab = $('.tab-pane.active').find('label').attr('for');
+    //let blockValue = parseInt($('#' + selectedTab).val());
 
     $('.datetime__div').each(function(){
         let datetime = {};
@@ -370,7 +412,7 @@ function validateTimeFields(withErrors){
 
             let spliceIndexes = [];
 
-            let noOverlap = datetimes.slice(i + 1).every(function(datetime2, j){
+            let noOverlapWithBlocks = datetimes.slice(i + 1).every(function(datetime2, j){
                 if(datetime1.id != datetime2.id && (
                     datetime1.start.isAfter(datetime2.start) && datetime1.start.isBefore(datetime2.end) || 
                     datetime1.end.isAfter(datetime2.start) && datetime1.end.isBefore(datetime2.end) ||
@@ -392,35 +434,67 @@ function validateTimeFields(withErrors){
                 }
             });
 
-            if(noOverlap == false){
+            if(noOverlapWithBlocks == false){
                 return false;
-            } else {
-
-                timeBlocks.push(datetime1);
-
-                spliceIndexes.forEach(function(index){
-                    datetimes.splice(index, 1);
-                });
-                
-                if(datetime1.end.isAfter(latestTime)){
-                    latestTime = datetime1.end.clone();
-                }
-                return true;
             }
+
+            let noOverlapWithSlots = existingTimeSlots.every(function(datetime2, j){
+                if(
+                    datetime1.start.isAfter(datetime2.start) && datetime1.start.isBefore(datetime2.end) || 
+                    datetime1.end.isAfter(datetime2.start) && datetime1.end.isBefore(datetime2.end) ||
+                    datetime1.start.isSame(datetime2.start) || datetime1.end.isSame(datetime2.end)){
+                    
+                    if(withErrors){
+                        errorMessage('New time ranges must not overlap with existing time slots.', $('#' + datetime1.id).find('input'));
+                    }
+                    valid = false;
+                    return false;
+                } else {
+
+                    if(datetime1.end.isSame(datetime2.start)){
+                        datetime1.end = datetime2.end.clone();
+                        spliceIndexes.push(i + j + 1);
+                    }
+
+                    return true;
+                }
+            });
+
+            if(noOverlapWithSlots == false){
+                return false;
+            }
+            
+
+            timeBlocks.push(datetime1);
+
+            spliceIndexes.forEach(function(index){
+                datetimes.splice(index, 1);
+            });
+            
+            if(datetime1.end.isAfter(latestTime)){
+                latestTime = datetime1.end.clone();
+            }
+            return true;
+            
         }
     });
 
-    if(blockValue == ''){
-        $('#' + selectedTab).addClass('error');
-        valid = false;
-        return false;
-    }
+    // if(blockValue == ''){
+    //     $('#' + selectedTab).addClass('error');
+    //     valid = false;
+    //     return false;
+    // }
 
     if(valid){
-        updateTotalTimeSlots();
+        if(!updateTotalTimeSlots() && withErrors){
+            errorMessage('Please enter a time slot durationa of at least 5.', $('#timeslot_duration'));
+            valid = false;
+        }
     }
 
     updateGlobalLatestTime(latestTime);
+
+    return valid;
 
 }
 
@@ -437,20 +511,23 @@ function compareStarttime(a, b){
 
 function validateAllFields(){
 
-    $('input').removeClass('error');
-
-    let valid = true;
+    $(':input').removeClass('error');
 
     let title = $('#title').val();
     
-
     if(title == ''){
         $('#title').addClass('error');
-        valid = false;
         return false;
     }
     
-    validateTimeFields(true);
+    let deadlineDate = moment($('#deadline_date').val() + ' ' + $('#deadline_time').val(), 'YYYY-MM-DD HH:mm');
+    if(deadlineDate.isBefore(moment())){
+        errorMessage('Deadline must be after today.', [$('#deadline_date') , $('#deadline_time')]);
+    }
+
+    let valid = validateTimeFields(true);
+
+    return(valid && newTimeSlots.length > 0);
 
 }
 
@@ -470,27 +547,40 @@ function updateTimeSlots(timeBlock){
 //     $('#' + timeBlock.id).find('.totalBlocks').html();
 }
 
-async function submit(){
+function submitForm(){
 
-    if(mode == 'create'){
-        let groupCategory = await createGroupCategory();
-        GROUP_CATEGORY_ID = groupCategory.groupCategoryId;
+    if(!validateAllFields(true)){
+        return false;
+    } else {
+        errorMessage('Submitting...');
+        return false;
     }
 
-    if(GROUP_CATEGORY_ID != null){
-        newTimeSlots.forEach(async function(timeSlot){
+    // if(mode == 'create'){
+    //     let groupCategory = await createGroupCategory();
+    //     GROUP_CATEGORY_ID = groupCategory.groupCategoryId;
+    // }
+
+    // if(GROUP_CATEGORY_ID != null){
+    //     newTimeSlots.forEach(async function(timeSlot){
+
+    //         let group = await createGroup(timeSlot);
             
-            let group = await createGroup(timeSlot);
-            if(group != null){
-                timeSlot.groupId = group.GroupId;
-                let event = await createCalendarEvent(timeSlot);
-                timeSlot.eventId = event.EventId;
-                await updateGroup(timeSlot);
-            }
-        });
-    }
+    //         if(group != null){
+    //             timeSlot.groupId = group.GroupId;
+                
+    //             let event = await createCalendarEvent(timeSlot);
+                
+    //             timeSlot.eventId = event.EventId;
+                
+    //             await updateGroup(timeSlot);
+    //         }
 
-    window.location.reload();
+    //     });
+    // }
+
+    // window.location.reload();
+
 }
 
 function createGroupCategory(){

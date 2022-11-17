@@ -2,16 +2,15 @@
 <html lang="en">
 <head>
 <link rel="stylesheet" href="resources/css/bootstrap.3.3.6.min.css">
-<link rel="stylesheet" type="text/css" href="resources/css/bootstrap-datetimepicker.css">
-<link rel="stylesheet" href="resources/css/jquery.timepicker.min.css">
+<link rel="stylesheet" href="resources/css/bootstrap-datetimepicker.css">
 <link rel="stylesheet" href="resources/css/fontawesome.all.css">
+<link rel="stylesheet" href="resources/css/style.css">
 
 <script type="text/javascript" src="resources/js/jquery-2.2.4.min.js"></script></script>
 <script type="text/javascript" src="resources/js/bootstrap.3.3.6.min.js"></script>
 <script type="text/javascript" src="resources/js/moment.min.js"></script>
 <script type="text/javascript" src="resources/js/moment-timezone.min.js"></script>
 <script type="text/javascript" src="resources/js/bootstrap-datetimepicker.min.js"></script>
-<script type="text/javascript" src="resources/js/jquery.timepicker.min.js"></script>
 <script type="text/javascript" src="resources/js/brightspace.js"></script>    
 <script type="text/javascript">
 const params = new Proxy(new URLSearchParams(window.location.search), {get: (searchParams, prop) => searchParams.get(prop)});
@@ -19,132 +18,124 @@ let ORG_UNIT_ID = params.ou;
 let MODE = (window.location.search.indexOf('gc=') != -1 ? 'edit' : 'create');
 let GROUP_CATEGORY_ID = (MODE == 'edit' ? params.gc : null);
 </script>
-<style>
-    input[type=text],label{width: 100%;}
-    .nav-tabs{font-weight: bold;}
-    .tab-pane{padding: 10px 10px 0px 10px; margin-bottom: 1px solid #ccc;}
-    .error{background-color: lightcoral;}
-    #existing_timeslots{display: none;}
-</style>
 </head>
 <body class="content layout-2" role="document">
 	<div class="container-fluid">
 		<main>
-			<div class="row">
-                <div class="row title__div">
-                    <div class="col-xs-12 col-sm-offset-2 col-sm-8">
-                        <h1 id="title"></h1>
-                    </div>
-                </div>
-				<div class="col-xs-12 col-sm-offset-2 col-sm-8 create_title__div">
-                    <h1>Create a Signup Schedule</h1>
-                    <div>
-                        <label id="edit_title" for="title">
-                            <h2>Title</h2>
-                            <p>Title of the schedule</p>
-                            <p><input type="text" name="title" id="title"  class="form-control" required /></p>
-                        </label>
-                    </div>
-                    <div>
-                        <label id="edit_description" for="description">
-                            <h2>Description</h2>
-                            <p>Description of the schedule</p>
-                            <p><textarea name="description" id="description" class="form-control"></textarea></p>
-                        </label>
-                    </div>
-                </div>
-            </div>
-            <div class="row" id="existing_timeslots">
-                <div class="col-xs-12 col-sm-offset-2 col-sm-8">
-                    <h2>Current Available Time Slots</h2>
-                    <table id="existing_timeslots__table">
-                        <tr><th>Registration</th><th>Start</th><th>End</th><th>Actions</th></tr>
-                    </table>
-                </div>
-            </div>
-            <div id="edit_timeblocks">
+            <form method="post" onsubmit="event.preventDefault(); return submitForm();" action="./">
                 <div class="row">
-                    <div class="col-xs-12 col-sm-offset-2 col-sm-8">
-                        <h2>Range of dates and times</h2>
-                    </div>
-                </div>
-                <div class="row datetime__div" id="datetime_1">
-                    <div class="col-xs-12 col-sm-offset-2 col-sm-8">
-                        <h3>Date & Time 1</h3>
-                    </div>
-                    <div class="col col-sm-offset-2 col-sm-4">
-                        <label for="date_1" class="date_label">
-                            <p>Date</p>
-                            <p><input type="text" name="date_1" id="date_1" class="form-control date_input" required /></p>
-                        </label>
-                    </div>
-                    <div class="col col-sm-2 col-xs-6">
-                        <label for="starttime_1" class="starttime_label">
-                            <p>Start&nbsp;Time</p>
-                            <p><select name="starttime_1" id="starttime_1" class="form-control starttime_input" required></select></p>
-                        </label>
-                    </div>
-                    <div class="col col-sm-2 col-xs-6">
-                        <label for="endtime_1" class="endtime_label">
-                            <p>End&nbsp;Time</p>
-                            <p><select name="endtime_1" id="endtime_1" class="form-control endtime_input" required></select></p>
-                        </label>
-                    </div>
-                </div>
-                <div class="row">
-                    <div class="col-xs-12 col-sm-offset-2 col-sm-8">
-                        <p><input type="button" class="btn" value="Add another date &amp; time range" onclick="addDatetime()"/></p>
+                    <div class="col-xs-12 col-sm-offset-2 col-sm-8 create_title__div">
+                        <h1>Create a Signup Schedule</h1>
                         <div>
-                            <h3 id="total_time">Total time: 3 hours</h3>
+                            <label id="edit_title" for="title">
+                                <h2>Title</h2>
+                                <p>Title of the schedule</p>
+                                <p><input type="text" name="title" id="title"  class="form-control" required /></p>
+                            </label>
                         </div>
-                    
                         <div>
-                            <h3>Signup Deadline</h3>
+                            <label id="edit_description" for="description">
+                                <h2>Description</h2>
+                                <p>Description of the schedule</p>
+                                <p><textarea name="description" id="description" class="form-control"></textarea></p>
+                            </label>
                         </div>
                     </div>
-                    <div class="col col-sm-offset-2 col-sm-4">
-                        <label for="date_1" class="date_label">
-                            <p>Date</p>
-                            <input type="text" name="deadline_date" id="deadline_date" class="form-control date_input" />
-                        </label>
-                    </div>
-                    <div class="col col-sm-2">
-                        <label for="starttime_1" class="starttime_label">
-                            <p>Time</p>
-                            <input type="text" name="deadline_time" id="deadline_time" class="form-control time_input" />
-                        </label>
-                    </div>
-                    
+                </div>
+                <div class="row" id="existing_timeslots">
                     <div class="col-xs-12 col-sm-offset-2 col-sm-8">
+                        <h2>Current Available Time Slots</h2>
+                        <table id="existing_timeslots__table">
+                            <tr><th>Registration</th><th>Start</th><th>End</th><th>Actions</th></tr>
+                        </table>
+                    </div>
+                </div>
+                <div id="edit_timeblocks">
+                    <div class="row">
+                        <div class="col-xs-12 col-sm-offset-2 col-sm-8">
+                            <h2>Range of dates and times</h2>
+                        </div>
+                    </div>
+                    <div class="row datetime__div" id="datetime_1">
+                        <div class="col-xs-12 col-sm-offset-2 col-sm-8">
+                            <h3>Date & Time 1</h3>
+                        </div>
+                        <div class="col col-sm-offset-2 col-sm-4">
+                            <label for="date_1" class="date_label">
+                                <p>Date</p>
+                                <p><input type="text" name="date_1" id="date_1" class="form-control date_input" required /></p>
+                            </label>
+                        </div>
+                        <div class="col col-sm-2 col-xs-6">
+                            <label for="starttime_1" class="starttime_label">
+                                <p>Start&nbsp;Time</p>
+                                <p><select name="starttime_1" id="starttime_1" class="form-control starttime_input" required></select></p>
+                            </label>
+                        </div>
+                        <div class="col col-sm-2 col-xs-6">
+                            <label for="endtime_1" class="endtime_label">
+                                <p>End&nbsp;Time</p>
+                                <p><select name="endtime_1" id="endtime_1" class="form-control endtime_input" required></select></p>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-xs-12 col-sm-offset-2 col-sm-8">
+                            <p><input type="button" class="btn" value="Add another date &amp; time range" onclick="addDatetime()"/></p>
+                            <div>
+                                <h3 id="total_time">Total time: 3 hours</h3>
+                            </div>
                         
-                        <h2>Set the number meetings</h2>
-                        <div id="timeslot_unit_tabs" class="tabs">
-                            <ul class="nav nav-tabs">
-                                <li class="active" data-unit="duration"><a href="#tab1" data-toggle="tab" onclick="selectTab(this);">Time of each meeting</a></li>
-                                <li data-unit="total"><a href="#tab2" data-toggle="tab" onclick="selectTab(this);">Number of meetings</a></li>
-                            </ul>
-                            <div class="tab-content">
-                                <div class="tab-pane active" id="tab1">
-                                    <label for="timeslot_duration">
-                                        <p>The length of each meeting in minutes.</p>
-                                        <p><input type="text" name="timeslot_duration" id="timeslot_duration" class="timeslot_unit form-control" value="30" /></p>
-                                    </label>
-                                </div>
-                                <div class="tab-pane" id="tab2">
-                                    <label for="timeslot_number">
-                                        <p>The number of meetings to divide the total time into.</p>
-                                        <p><input type="text" name="timeslot_number" id="timeslot_number" class="timeslot_unit form-control" value="4" /></p>
-                                    </label>
-                                </div>
+                            <div>
+                                <h3>Signup Deadline</h3>
                             </div>
                         </div>
+                        <div class="col col-sm-offset-2 col-sm-4">
+                            <label for="date_1" class="date_label">
+                                <p>Date</p>
+                                <input type="text" name="deadline_date" id="deadline_date" class="form-control date_input" />
+                            </label>
+                        </div>
+                        <div class="col col-sm-2">
+                            <label for="starttime_1" class="starttime_label">
+                                <p>Time</p>
+                                <select name="deadline_time" id="deadline_time" class="form-control time_input"></select>
+                            </label>
+                        </div>
                         
-                        <h4 id="total_timeslots">This will create 6 meeting times of 30 minutes each.</h4>
-                        <p><input type="submit" class="btn btn-primary" value="Submit" /></p>
-                        <!-- Button trigger modal -->
+                        <div class="col-xs-12 col-sm-offset-2 col-sm-8">
+                            
+                            <h2>Set the duration of each time slot</h2>
+                            <!--div id="timeslot_unit_tabs" class="tabs">
+                                <ul class="nav nav-tabs">
+                                    <li class="active" data-unit="duration"><a href="#tab1" data-toggle="tab" onclick="selectTab(this);">Time of each meeting</a></li>
+                                    <li data-unit="total"><a href="#tab2" data-toggle="tab" onclick="selectTab(this);">Number of meetings</a></li>
+                                </ul>
+                                <div class="tab-content">
+                                    <div class="tab-pane active" id="tab1"-->
+                                        <label for="timeslot_duration">
+                                            <p>The length of each time slot in minutes</p>
+                                            <p><input type="text" name="timeslot_duration" id="timeslot_duration" class="col-sm-2timeslot_unit form-control" value="30" /></p>
+                                        </label>
+                                    <!--/div>
+                                    <div class="tab-pane" id="tab2">
+                                        <label for="timeslot_number">
+                                            <p>The number of meetings to divide the total time into.</p>
+                                            <p><input type="text" name="timeslot_number" id="timeslot_number" class="timeslot_unit form-control" value="4" /></p>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div-->
+                            
+                            <h4 id="total_timeslots">This will create 2 time slots of 30 minutes each.</h4>
+                            <p>
+                                <br />
+                                <input type="submit" class="btn btn-primary" value="Submit" /></p>
+                            <!-- Button trigger modal -->
+                        </div>
                     </div>
                 </div>
-			</div>
+            </form>
 		</main>
 	</div>
     <!-- Modal -->
