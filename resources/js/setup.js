@@ -13,9 +13,6 @@ let newTimeSlots = [];
 
 let totalTimeSlots = 0;
 
-let defaultDate = '2020-01-01 ';
-let defaultDateTimeFormat = 'YYYY-MM-DD HH:mm';
-
 $(function() {
     setup();
 });
@@ -269,32 +266,32 @@ function initializeDatetime(datetimeElem){
     });
 
     
-    latestTime = moment(defaultDate + latestTime.format('HH:mm'), defaultDateTimeFormat);
+    latestTime = momentFromTime(latestTime.format('HH:mm'));
     
-    let minTime = moment(defaultDate + '00:00', defaultDateTimeFormat);
+    let minTime = momentFromTime('00:00');
     let maxTime = latestTime.clone().add(1, 'hours');
 
     generateTimeOptions($(datetimeElem).find('.starttime_input'), latestTime, minTime, maxTime, interval);
 
     minTime = latestTime.clone().add(30, 'minutes');
-    maxTime = moment(defaultDate + '23:59', defaultDateTimeFormat);
+    maxTime = momentFromTime('23:59');
 
     generateTimeOptions($(datetimeElem).find('.endtime_input'), latestTime.clone().add(1, 'hours'), minTime, maxTime, interval);
 
     $(datetimeElem).find('.starttime_input').on('change', function(){
         let object = $(datetimeElem).find('.endtime_input')
-        let time = moment(defaultDate + object.val(), defaultDateTimeFormat);
-        let startTime = moment(defaultDate + $(this).val(), defaultDateTimeFormat).add(interval, 'minutes');
-        let endTime = moment(defaultDate + '23:59', defaultDateTimeFormat);
+        let time = momentFromTime(object.val());
+        let startTime = momentFromTime($(this).val()).add(interval, 'minutes');
+        let endTime = momentFromTime('23:59');
         generateTimeOptions(object, time, startTime, endTime, interval);
         validateTimeFields(false);
     });
 
     $(datetimeElem).find('.endtime_input').on('change', function(){
         let object = $(datetimeElem).find('.starttime_input')
-        let time = moment(defaultDate + object.val(), defaultDateTimeFormat);
-        let startTime = moment(defaultDate + '00:00', defaultDateTimeFormat);
-        let endTime = moment(defaultDate + $(this).val(), defaultDateTimeFormat);
+        let time = momentFromTime(object.val());
+        let startTime = momentFromTime('00:00');
+        let endTime = momentFromTime($(this).val());
         generateTimeOptions(object, time, startTime, endTime, interval);
         validateTimeFields(false);
     });
@@ -307,15 +304,20 @@ function initializeDatetime(datetimeElem){
 
 }
 
-function generateTimeOptions(object, defaultTime = moment([2020, 1, 1, 12, 0, 0, 0]), startTime = 0, endTime = 0, interval = 60){
+function generateTimeOptions(object, defaultTime = false, startTime = 0, endTime = 0, interval = 60){
+
     let options = [];
 
+    if(!defaultTime){
+        defaultTime = momentFromTime('12:00');
+    }
+
     if(startTime === 0){
-        startTime = moment([2020, 1, 1, 0, 0, 0, 0]);
+        startTime = momentFromTime('00:00');
     }
 
     if(endTime === 0){
-        endTime = moment([2020, 1, 1, 23, 59, 0, 0]);
+        endTime = momentFromTime('23:59');
     }
 
     if(defaultTime.isBefore(startTime) || defaultTime.isBefore(startTime)){
@@ -699,6 +701,15 @@ function deleteGroup(groupId){
 function loading(){
     $('.main').children().toggle();
     $('#loading').toggle();
+}
+
+function momentFromTime(time){
+
+    let defaultDate = '2020-01-01 ';
+    let defaultDateTimeFormat = 'YYYY-MM-DD HH:mm';
+
+    return moment(defaultDate + time, defaultDateTimeFormat);
+
 }
 
 function convertToUTCDateTimeString(date){
