@@ -27,7 +27,9 @@ async function setup(){
 
     updateGlobalLatestTime(moment());
 
-    initializeDatetime( $('.datetime__div').first() );
+    let firstDateTime = $('.datetime__div').first();
+    initializeDatetime(firstDateTime);
+    firstDateTime.find('.btn-remove').on('click', removeDatetime);
 
     $('#deadline_date').datetimepicker({
         format: 'YYYY-MM-DD',
@@ -130,24 +132,158 @@ async function deleteTimeSlot(timeSlot){
 }
 
 function addDatetime(){
-
     let lastDatetime = $('.datetime__div').last();
-    let newDatetime = lastDatetime.clone();
-    let newLength = $('.datetime__div').length + 1
-
-    newDatetime.attr('id', 'datetime_' + newLength);
-    newDatetime.find('h3').text('Date & Time ' + newLength);
-    newDatetime.find('label.date_label').attr('for', 'date_' + newLength);
-    newDatetime.find('label.starttime_label').attr('for', 'starttime_' + newLength);
-    newDatetime.find('label.endtime_label').attr('for', 'endtime_' + newLength);
-    
-    newDatetime.find('input.date_input').attr('id', 'date_' + newLength).attr('name', 'date_' + newLength).val('');
-    newDatetime.find('input.starttime_input').attr('id', 'starttime_' + newLength).attr('name', 'starttime_' + newLength).val('');
-    newDatetime.find('input.endtime_input').attr('id', 'endtime_' + newLength).attr('name', 'endtime_' + newLength).val('');
-    
-    newDatetime.insertAfter(lastDatetime);
+    let newDateTime = orderDatetimeElems(lastDatetime.clone(), $('.datetime__div').length + 1);
+    newDateTime.find('.btn-remove').on('click', removeDatetime);
+    newDateTime.insertAfter(lastDatetime);
     initializeDatetime($('.datetime__div').last());   // initialize the new datetime
+}
 
+function removeDatetime(element){
+    if($('.datetime__div').length > 1){
+        let target = $(element.target);
+        $('#datetime_' + target.data('counter')).remove();
+        orderDatetimeElems();
+        validateTimeFields();
+    }
+}
+
+function orderDatetimeElems(element = null, counter = null){
+
+    if(element == null){
+        element = $('.datetime__div');
+    }
+
+    element.each(function(index, elem){
+
+        if(counter != null){
+            index = counter;
+        } else {
+            index = index + 1;
+        }
+
+        elem = $(elem);
+
+        elem.attr('id', 'datetime_' + index);
+        elem.find('h3').find('span').text('Date & Time ' + index);
+        elem.find('h3').find('button').data('counter', index);
+        elem.find('label.date_label').attr('for', 'date_' + index);
+        elem.find('label.starttime_label').attr('for', 'starttime_' + index);
+        elem.find('label.endtime_label').attr('for', 'endtime_' + index);
+        
+        elem.find('input.date_input').attr('id', 'date_' + index).attr('name', 'date_' + index);
+        elem.find('select.starttime_input').attr('id', 'starttime_' + index).attr('name', 'starttime_' + index);
+        elem.find('select.endtime_input').attr('id', 'endtime_' + index).attr('name', 'endtime_' + index);
+    });
+
+    return element;
+}
+
+function initializeDatetime(datetimeElem){
+
+    //let latestTime = globalLatestTime.clone();
+
+    let latestTime = moment();
+    let initialeTimes = true;
+
+    if($('.datetime__div').length > 1){
+        initialeTimes = false;
+        let lastDatetime = $('.datetime__div').last().prev();
+        latestTime = moment(lastDatetime.find('.date_input').val() + ' ' + lastDatetime.find('.starttime_input').val(), 'YYYY-MM-DD HH:mm').add(1, 'days');
+    }
+
+    let interval = 30;
+
+    let remainder = latestTime.minutes() % interval;
+    
+    if(remainder < interval / 2){
+        latestTime.subtract(remainder, 'minutes');
+    } else {latestTime.add(interval - remainder, 'minutes');}
+    
+    $(datetimeElem).find('.date_input').val('').datetimepicker({
+        format: 'YYYY-MM-DD',
+        defaultDate: moment(latestTime),
+        minDate: moment().subtract(1, 'days'),
+        maxDate: moment().add(1, 'years')
+    }).on('dp.hide', function(e){
+        validateTimeFields(false);
+    });
+
+    
+    
+
+    if(initialeTimes){
+        latestTime = momentFromTime(latestTime.format('HH:mm'));
+    
+        let minTime = momentFromTime('00:00');
+        let maxTime = latestTime.clone().add(1, 'hours');
+
+        generateTimeOptions($(datetimeElem).find('.starttime_input'), latestTime, minTime, maxTime, interval);
+
+        minTime = latestTime.clone().add(30, 'minutes');
+        maxTime = momentFromTime('23:59');
+
+        generateTimeOptions($(datetimeElem).find('.endtime_input'), latestTime.clone().add(1, 'hours'), minTime, maxTime, interval);
+    }
+
+    $(datetimeElem).find('.starttime_input').on('change', function(){
+        let object = $(datetimeElem).find('.endtime_input')
+        let time = momentFromTime(object.val());
+        let startTime = momentFromTime($(this).val()).add(interval, 'minutes');
+        let endTime = momentFromTime('23:59');
+        generateTimeOptions(object, time, startTime, endTime, interval);
+        validateTimeFields(false);
+    });
+
+    $(datetimeElem).find('.endtime_input').on('change', function(){
+        let object = $(datetimeElem).find('.starttime_input')
+        let time = momentFromTime(object.val());
+        let startTime = momentFromTime('00:00');
+        let endTime = momentFromTime($(this).val());
+        generateTimeOptions(object, time, startTime, endTime, interval);
+        validateTimeFields(false);
+    });
+
+    // minTime = latestTime.clone().add(30, 'minutes');
+    // maxTime = moment([0, 0, 0, 23, 30, 0, 0]);
+
+    
+    validateTimeFields(false);
+
+}
+
+function generateTimeOptions(object, defaultTime = false, startTime = 0, endTime = 0, interval = 60){
+
+    let options = [];
+
+    if(!defaultTime){
+        defaultTime = momentFromTime('12:00');
+    }
+
+    if(startTime === 0){
+        startTime = momentFromTime('00:00');
+    }
+
+    if(endTime === 0){
+        endTime = momentFromTime('23:59');
+    }
+
+    if(defaultTime.isBefore(startTime) || defaultTime.isBefore(startTime)){
+        defaultTime = startTime.clone();
+    }
+
+    for(let i = 0; i < (24 * (60 / interval)); i++){
+        let time = startTime.clone().add(i * interval, 'minutes');
+
+        if(time.isBefore(endTime)){
+            let selected = time.isSame(defaultTime) ? 'selected="selected"' : '';
+            
+            options.push('<option value="' + time.format('HH:mm') + '" ' + selected + '>' + time.format('h:mm A') + '</option>');
+        }
+    }
+
+    $(object).empty().append(options.join(''));
+    
 }
 
 function selectTab(obj){
@@ -245,98 +381,7 @@ function updateTotalTimeSlots(){
 
 }
 
-function initializeDatetime(datetimeElem){
 
-    let latestTime = globalLatestTime.clone();
-
-    let interval = 30;
-
-    // rount up to nearest interval minutes
-    let remainder = interval - (latestTime.minute() % interval);
-    latestTime.add(remainder, "minutes");
-
-
-    $(datetimeElem).find('.date_input').datetimepicker({
-        format: 'YYYY-MM-DD',
-        defaultDate: latestTime.clone(),
-        minDate: latestTime.clone(),
-        maxDate: latestTime.clone().add(1, 'years')
-    }).on('dp.hide', function(e){
-        validateTimeFields(false);
-    });
-
-    
-    latestTime = momentFromTime(latestTime.format('HH:mm'));
-    
-    let minTime = momentFromTime('00:00');
-    let maxTime = latestTime.clone().add(1, 'hours');
-
-    generateTimeOptions($(datetimeElem).find('.starttime_input'), latestTime, minTime, maxTime, interval);
-
-    minTime = latestTime.clone().add(30, 'minutes');
-    maxTime = momentFromTime('23:59');
-
-    generateTimeOptions($(datetimeElem).find('.endtime_input'), latestTime.clone().add(1, 'hours'), minTime, maxTime, interval);
-
-    $(datetimeElem).find('.starttime_input').on('change', function(){
-        let object = $(datetimeElem).find('.endtime_input')
-        let time = momentFromTime(object.val());
-        let startTime = momentFromTime($(this).val()).add(interval, 'minutes');
-        let endTime = momentFromTime('23:59');
-        generateTimeOptions(object, time, startTime, endTime, interval);
-        validateTimeFields(false);
-    });
-
-    $(datetimeElem).find('.endtime_input').on('change', function(){
-        let object = $(datetimeElem).find('.starttime_input')
-        let time = momentFromTime(object.val());
-        let startTime = momentFromTime('00:00');
-        let endTime = momentFromTime($(this).val());
-        generateTimeOptions(object, time, startTime, endTime, interval);
-        validateTimeFields(false);
-    });
-
-    // minTime = latestTime.clone().add(30, 'minutes');
-    // maxTime = moment([0, 0, 0, 23, 30, 0, 0]);
-
-    
-    validateTimeFields(false);
-
-}
-
-function generateTimeOptions(object, defaultTime = false, startTime = 0, endTime = 0, interval = 60){
-
-    let options = [];
-
-    if(!defaultTime){
-        defaultTime = momentFromTime('12:00');
-    }
-
-    if(startTime === 0){
-        startTime = momentFromTime('00:00');
-    }
-
-    if(endTime === 0){
-        endTime = momentFromTime('23:59');
-    }
-
-    if(defaultTime.isBefore(startTime) || defaultTime.isBefore(startTime)){
-        defaultTime = startTime.clone();
-    }
-
-    for(let i = 0; i < (24 * (60 / interval)); i++){
-        let time = startTime.clone().add(i * interval, 'minutes');
-
-        if(time.isBefore(endTime)){
-            let selected = time.isSame(defaultTime) ? 'selected="selected"' : '';
-            
-            options.push('<option value="' + time.format('HH:mm') + '" ' + selected + '>' + time.format('h:mm A') + '</option>');
-        }
-    }
-
-    $(object).empty().append(options.join(''));
-    
-}
 
 function updateGlobalLatestTime(newTime){
     
@@ -364,7 +409,7 @@ function errorMessage(message, id){
         $(id).addClass('error');
     
     $('#messageModel').find('.modal-title').html('Error');
-    $('#messageModal').find('.modal-body').html(message);
+    $('#messageModal').find('.modal-body').html('<p>' + message + '</p>');
     $('#messageModal').modal('show');
 
 }
@@ -525,6 +570,7 @@ function validateAllFields(){
     let deadlineDate = moment($('#deadline_date').val() + ' ' + $('#deadline_time').val(), 'YYYY-MM-DD HH:mm');
     if(deadlineDate.isBefore(moment())){
         errorMessage('Deadline must be after today.', [$('#deadline_date') , $('#deadline_time')]);
+        return false;
     }
 
     let valid = validateTimeFields(true);
@@ -549,39 +595,55 @@ function updateTimeSlots(timeBlock){
 //     $('#' + timeBlock.id).find('.totalBlocks').html();
 }
 
-function submitForm(){
+async function submitForm(){
 
     if(!validateAllFields(true)){
         return false;
-    } else {
-        errorMessage('Submitting...');
-        return false;
     }
 
-    // if(mode == 'create'){
-    //     let groupCategory = await createGroupCategory();
-    //     GROUP_CATEGORY_ID = groupCategory.groupCategoryId;
-    // }
+    let groupCategory;
 
-    // if(GROUP_CATEGORY_ID != null){
-    //     newTimeSlots.forEach(async function(timeSlot){
+    console.log(MODE);
 
-    //         let group = await createGroup(timeSlot);
+    if(MODE == 'create'){
+        groupCategory = await createGroupCategory();
+
+        GROUP_CATEGORY_ID = groupCategory.CategoryId;
+    }
+
+    console.log(GROUP_CATEGORY_ID, groupCategory);
+
+    return false;
+
+    if(GROUP_CATEGORY_ID != null){
+
+        let groupsInCategory;
+
+        if(MODE == 'create'){
+            groupsInCategory = await getGroupsInCategory();
+        }
+
+        newTimeSlots.forEach(async function(index, timeSlot){
+
+                let group;
+
+                if(MODE == 'create'){
+                    group = groupsInCategory[index];
+                } else {
+                    group = await createGroup(timeSlot);
+                }
             
-    //         if(group != null){
-    //             timeSlot.groupId = group.GroupId;
+                timeSlot.groupId = group.GroupId;
                 
-    //             let event = await createCalendarEvent(timeSlot);
+                let event = await createCalendarEvent(timeSlot);
                 
-    //             timeSlot.eventId = event.EventId;
+                timeSlot.eventId = event.EventId;
                 
-    //             await updateGroup(timeSlot);
-    //         }
+                await updateGroup(timeSlot);
+        });
+    }
 
-    //     });
-    // }
-
-    // window.location.reload();
+    window.location.reload();
 
 }
 
@@ -590,9 +652,9 @@ function createGroupCategory(){
     let title = $('#title').val();
     let description = $('#description').val();
 
-    let format = "YYYY-MM-DD hh:mm A";
-    let deadlineDate = $(this).find('.deadline_date').val();
-    let deadlineTime = $(this).find('.deadline_time').val();
+    let format = "YYYY-MM-DD HH:mm";
+    let deadlineDate = $('#deadline_date').val();
+    let deadlineTime = $('#deadline_time').val();
     
     let deadlineUTCDateTime = convertToUTCDateTimeString(moment(deadlineDate + " " + deadlineTime, format));
 
@@ -600,15 +662,15 @@ function createGroupCategory(){
         "Name": title,
         "Description": {"Content": description, "Type":"Html"}, //{"Content": <string>,"Type": "Text|Html"}
         "EnrollmentStyle": 4, //SelfEnrollmentNumberOfGroups
-        //"EnrollmentQuantity": <number>|null,
+        "EnrollmentQuantity": null,
         "AutoEnroll": false,
         "RandomizeEnrollments": false,
-        "NumberOfGroups": 0,
+        "NumberOfGroups": newTimeSlots.length,
         "MaxUsersPerGroup": 1,
         "AllocateAfterExpiry": false,
         "SelfEnrollmentExpiryDate": deadlineUTCDateTime, //<string:UTCDateTime>( yyyy-MM-ddTHH:mm:ss.fffZ )|null,
-        //"GroupPrefix": <string>|null,
-        //"RestrictedByOrgUnitId": <number:D2LID>|null,
+        "GroupPrefix": null,
+        "RestrictedByOrgUnitId": null,
         "DescriptionsVisibleToEnrolees": false  // Added with LP API version 1.42
     };
     
@@ -651,8 +713,8 @@ function createCalendarEvent(timeSlot){
         //"EndDay": <string:LocalDateTime>|null,
         "GroupId": timeSlot.groupId,
         "RecurrenceInfo": {
-            "RepeatType": 2,
-            "RepeatEvery": 1,
+            "RepeatType": 1,
+            "RepeatEvery": 0,
             "RepeatOnInfo": {
                 "Monday": false,
                 "Tuesday": false,

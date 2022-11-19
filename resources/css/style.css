@@ -1,22 +1,20 @@
 /*import brightspace fonts*/
-@font-face{
-    font-family: 'Lato';
-    src: url('https://s.brightspace.com/lib/fonts/0.5.0/assets/Lato-400.woff2');
-}
-
-@font-face {
-    font-family: 'Lato';
-    src: url('https://s.brightspace.com/lib/fonts/0.5.0/assets/Lato-700.woff2');
-    font-weight: bold;
- }
-
-
+@font-face{font-family: 'Lato';src: url('https://s.brightspace.com/lib/fonts/0.5.0/assets/Lato-400.woff2');}
+@font-face {font-family: 'Lato';src: url('https://s.brightspace.com/lib/fonts/0.5.0/assets/Lato-700.woff2');font-weight: bold;}
 *{font-family: Lato, 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;}
+/*styles*/
 input[type=text],label{width: 100%;}
 .btn{padding:0.8em 2em; font-weight: bold;}
+.btn-red{background-color: #d0021b; color: #fff;}
+.btn-red:hover,.btn-red:focus{background-color: #b4001a; color: #fff;}
+.btn-secondary:hover{background-color: #ddd; color: #000;}
+.btn-sml{display:inline-block; padding:0.1em 0.4em; margin-bottom:6px;}
 .nav-tabs{font-weight: bold;}
 .tab-pane{padding: 10px 10px 0px 10px; margin-bottom: 1px solid #ccc;}
 .error{background-color: lightcoral;}
 #existing_timeslots{display: none;}
+.datetime_title{margin-bottom: 5px;}
 .timeslot_unit{width:100%; max-width: 363px;}
 #total_timeslots{font-weight: bold;}
+.modal-header{border:none;}
+.modal p{color:#000; font-size: 1.2em;}

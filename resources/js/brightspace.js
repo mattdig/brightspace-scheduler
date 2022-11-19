@@ -1,7 +1,12 @@
 class Brightspace{
 
     constructor(orgUnitId = false){
-        this.ou = orgUnitId;
+        
+        if(orgUnitId !== false && orgUnitId !== null){
+            this.ou = orgUnitId;
+        }else{
+            this.ou = false;
+        }
 
         this.versions = {
             le : '1.53',
@@ -46,6 +51,8 @@ class Brightspace{
             data.d2l_referrer = token.referrerToken;
             data.d2l_hitcode = token.hitCodePrefix + "100000001";
             data = new URLSearchParams(data).toString();
+        } else if (verb != 'get') {
+            data = JSON.stringify(data);
         }
         
         return new Promise((resolve, reject) => {
@@ -84,6 +91,7 @@ class Brightspace{
                             response = response.substr(first + 2);
                         }
                     }
+
                     if(response.substr(0, 1) == '{'){
                         resolve(JSON.parse(response));
                     } else {
@@ -91,10 +99,15 @@ class Brightspace{
                     }
 
                 } else {
-                    reject({
-                        status: xhr.status,
-                        statusText: xhr.statusText
-                    });
+
+                    let response = xhr.response;
+
+                    if(response.substr(0, 1) == '{'){
+                        response = JSON.parse(response);
+                    } else {
+                        response = {'Error': response};
+                    }
+                    resolve(response);
                 }
             }
 
