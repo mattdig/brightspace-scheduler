@@ -1,5 +1,3 @@
-
-
 let bs = new Brightspace(ORG_UNIT_ID);
 
 let timeZone;
@@ -19,10 +17,19 @@ $(function() {
 
 async function setup(){
 
-    //let orgInfo = await bs.get('/d2l/api/lp/(version)/organization/info');
+    if(ORG_UNIT_ID !== null){
+        let orgInfo = await bs.get('/d2l/api/lp/(version)/organization/info');
 
-    timeZone = 'America/Toronto'; //orgInfo.TimeZone;
+        if(!orgInfo || orgInfo.TimeZone == null){
+            timeZone = 'America/Toronto';
+        } else {
+            timeZone = orgInfo.TimeZone;
 
+            // let orgUnitInfo = await bs.get('/d2l/api/lp/(version)/courses/(orgUnitId)');
+            // $('#course_title').html(orgUnitInfo.Name);
+        }
+    }
+    
     moment.tz.setDefault(timeZone);
 
     updateGlobalLatestTime(moment());
@@ -51,9 +58,15 @@ async function setup(){
 
     if(MODE == 'edit'){ 
         existingTimeSlots = await getExistingTimeSlots();
-        displayExistingTimeBlocks(existingTimeSlots);
+        displayExistingTimeSlots(existingTimeSlots);
     } else {
         //initializeDatetime( $('.datetime__div') );
+    }
+}
+
+function updateEventTitle(element){
+    if($('#event_title').val() == ''){
+        $('#event_title').val(element.value);
     }
 }
 
@@ -566,6 +579,13 @@ function validateAllFields(){
         $('#title').addClass('error');
         return false;
     }
+
+    let event_title = $('#event_title').val();
+    
+    if(event_title == ''){
+        $('#event_title').addClass('error');
+        return false;
+    }
     
     let deadlineDate = moment($('#deadline_date').val() + ' ' + $('#deadline_time').val(), 'YYYY-MM-DD HH:mm');
     if(deadlineDate.isBefore(moment())){
@@ -649,8 +669,8 @@ async function submitForm(){
 
 function createGroupCategory(){
     
-    let title = $('#title').val();
-    let description = $('#description').val();
+    let title = $('#title').val().trim();
+    let description = $('#description').val().trim();
 
     let format = "YYYY-MM-DD HH:mm";
     let deadlineDate = $('#deadline_date').val();
@@ -704,39 +724,62 @@ function updateGroup(timeSlot){
 
 function createCalendarEvent(timeSlot){
 
+    let event_title = $('#event_title').val().trim();
+
     let event = {
-        "Title": title,
+        "Title": event_title,
         "Description": "",
         "StartDateTime": convertToUTCDateTimeString(timeSlot.start),
         "EndDateTime": convertToUTCDateTimeString(timeSlot.end),
-        //"StartDay": <string:LocalDateTime>|null,
-        //"EndDay": <string:LocalDateTime>|null,
+        "StartDay": null,
+        "EndDay": null,
         "GroupId": timeSlot.groupId,
-        "RecurrenceInfo": {
-            "RepeatType": 1,
-            "RepeatEvery": 0,
-            "RepeatOnInfo": {
-                "Monday": false,
-                "Tuesday": false,
-                "Wednesday": false,
-                "Thursday": false,
-                "Friday": false,
-                "Saturday": false,
-                "Sunday": false
-            },
-            "RepeatUntilDate": convertToUTCDateTimeString(timeSlot.end)
-        },
-        //"LocationId": <number:D2LID>|null,
+        "RecurrenceInfo": null,
+        "LocationId": null,
         "LocationName": "",
-        //"AssociatedEntity": { <composite:Calendar.AssociatedEntity> },
+        "AssociatedEntity": null,
         "VisibilityRestrictions": {
             "Type": 1,
-            // "Range": <number>|null,
-            // "HiddenRangeUnitType": <number:HIDDENUNITT>|null,
-            // "StartDate": <string:UTCDateTime>|null,
-            // "EndDate": <string:UTCDateTime>|null,
+            "Range": null,
+            "HiddenRangeUnitType": null,
+            "StartDate": null,
+            "EndDate": null
         }
     };
+
+    // let event = {
+    //     "Title": title,
+    //     "Description": "",
+    //     "StartDateTime": convertToUTCDateTimeString(timeSlot.start),
+    //     "EndDateTime": convertToUTCDateTimeString(timeSlot.end),
+    //     //"StartDay": <string:LocalDateTime>|null,
+    //     //"EndDay": <string:LocalDateTime>|null,
+    //     "GroupId": timeSlot.groupId,
+    //     "RecurrenceInfo": {
+    //         "RepeatType": 1,
+    //         "RepeatEvery": 0,
+    //         "RepeatOnInfo": {
+    //             "Monday": false,
+    //             "Tuesday": false,
+    //             "Wednesday": false,
+    //             "Thursday": false,
+    //             "Friday": false,
+    //             "Saturday": false,
+    //             "Sunday": false
+    //         },
+    //         "RepeatUntilDate": convertToUTCDateTimeString(timeSlot.end)
+    //     },
+    //     //"LocationId": <number:D2LID>|null,
+    //     "LocationName": "",
+    //     //"AssociatedEntity": { <composite:Calendar.AssociatedEntity> },
+    //     "VisibilityRestrictions": {
+    //         "Type": 1,
+    //         // "Range": <number>|null,
+    //         // "HiddenRangeUnitType": <number:HIDDENUNITT>|null,
+    //         // "StartDate": <string:UTCDateTime>|null,
+    //         // "EndDate": <string:UTCDateTime>|null,
+    //     }
+    // };
 
     return bs.post('/d2l/api/lp/(version)/(orgUnitId)/calendar/event/', event);
    

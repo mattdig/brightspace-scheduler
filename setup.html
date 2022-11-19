@@ -28,9 +28,16 @@ let GROUP_CATEGORY_ID = (MODE == 'edit' ? params.gc : null);
                         <h1>Create a Signup Schedule</h1>
                         <div>
                             <label id="edit_title" for="title">
-                                <h2>Title</h2>
+                                <h2>Signup Schedule Title</h2>
                                 <p>Title of the schedule</p>
-                                <p><input type="text" name="title" id="title"  class="form-control" required /></p>
+                                <p><input type="text" name="title" id="title"  class="form-control" required onchange="updateEventTitle(this)" /></p>
+                            </label>
+                        </div>
+                        <div>
+                            <label id="edit_event_title" for="event_title">
+                                <h2>Calendar Event Title</h2>
+                                <p>This title will appear in your students' calendar for this event</p>
+                                <p><input type="text" name="event_title" id="event_title"  class="form-control" required /></p>
                             </label>
                         </div>
                         <div>
@@ -87,7 +94,7 @@ let GROUP_CATEGORY_ID = (MODE == 'edit' ? params.gc : null);
                             </div>
                         
                             <div>
-                                <h3>Signup Deadline</h3>
+                                <h2>Signup Deadline</h2>
                             </div>
                         </div>
                         <div class="col col-sm-offset-2 col-sm-4">
