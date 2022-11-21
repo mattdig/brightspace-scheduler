@@ -1,5 +1,9 @@
 let bs = new Brightspace(ORG_UNIT_ID);
 
+let orgUnitInfo;
+
+let targetModule;
+
 let timeZone;
 
 let globalLatestTime;
@@ -20,14 +24,13 @@ async function setup(){
     if(ORG_UNIT_ID !== null){
         let orgInfo = await bs.get('/d2l/api/lp/(version)/organization/info');
 
-        if(!orgInfo || orgInfo.TimeZone == null){
-            timeZone = 'America/Toronto';
-        } else {
-            timeZone = orgInfo.TimeZone;
+        timeZone = orgInfo.TimeZone;
+        
+        //orgUnitInfo = await bs.get('/d2l/api/lp/(version)/courses/(orgUnitId)');
 
-            // let orgUnitInfo = await bs.get('/d2l/api/lp/(version)/courses/(orgUnitId)');
-            // $('#course_title').html(orgUnitInfo.Name);
-        }
+        let modules = bs.get("/d2l/api/le/1.37/(orgUnitId)/content/root/");
+
+        targetModule = modules[0];
     }
     
     moment.tz.setDefault(timeZone);
@@ -414,12 +417,14 @@ function updateGlobalLatestTime(newTime){
     
 }
 
-function errorMessage(message, id){
+function errorMessage(message, id = false){
     
-    if(typeof(id) == 'string')
-        $('#' + id).addClass('error');
-    else
-        $(id).addClass('error');
+    if(id){
+        if(typeof(id) == 'string')
+            $('#' + id).addClass('error');
+        else
+            $(id).addClass('error');
+    }
     
     $('#messageModel').find('.modal-title').html('Error');
     $('#messageModal').find('.modal-body').html('<p>' + message + '</p>');
@@ -463,7 +468,7 @@ function validateTimeFields(withErrors){
         if(datetime1.start.isAfter(datetime1.end) || datetime1.start.isSame(datetime1.end)){
 
             if(withErrors){
-                errorMessage('Start time must be before end time.', $('#' + datetime1.id).find('input'));
+                errorMessage('Start time must be before end time.', $('#' + datetime1.id).find('select'));
             }
             valid = false;
             return false;
@@ -479,7 +484,7 @@ function validateTimeFields(withErrors){
                     datetime1.start.isSame(datetime2.start) || datetime1.end.isSame(datetime2.end))){
                     
                     if(withErrors){
-                        errorMessage('Datetimes must not overlap.', $('#' + datetime2.id).find('input'));
+                        errorMessage('Datetimes must not overlap.', $('#' + datetime2.id).find(':input'));
                     }
                     valid = false;
                     return false;
@@ -505,7 +510,7 @@ function validateTimeFields(withErrors){
                     datetime1.start.isSame(datetime2.start) || datetime1.end.isSame(datetime2.end)){
                     
                     if(withErrors){
-                        errorMessage('New time ranges must not overlap with existing time slots.', $('#' + datetime1.id).find('input'));
+                        errorMessage('New time ranges must not overlap with existing time slots.', $('#' + datetime1.id).find(':input'));
                     }
                     valid = false;
                     return false;
@@ -621,6 +626,11 @@ async function submitForm(){
         return false;
     }
 
+    if(ORG_UNIT_ID == null){
+        errorMessage('All fields are valid, but Org Unit Id is not defined');
+        return false;
+    }
+
     let groupCategory;
 
     console.log(MODE);
@@ -663,7 +673,7 @@ async function submitForm(){
         });
     }
 
-    window.location.reload();
+    window.location.href = '/d2l/le/content/' + ORG_UNIT_ID + '/viewContent/' + newTopic.Id + '/View'; 
 
 }
 
@@ -783,6 +793,33 @@ function createCalendarEvent(timeSlot){
 
     return bs.post('/d2l/api/lp/(version)/(orgUnitId)/calendar/event/', event);
    
+}
+
+function createTopic(){
+
+
+    let title = $('#title').val().trim();
+
+    let content = "<!DOCTYPE html><html><body>Hello world!</body></html>";
+    
+    let topic = [
+        {
+            "IsHidden": false,
+            "IsLocked": false,
+            "ShortTitle": null,
+            "Type": 1,
+            "DueDate": null,
+            "Url": orgUnitPath + "file.html",
+            "StartDate": null,
+            "TopicType": 1,
+            "EndDate": null,
+            "Title": title
+        },
+        content
+    ];
+
+    return bs.post('/d2l/api/le/(version)/(orgUnitId)/content/modules/' + moduleId + '/structure/?renameFileIfExists=true', topic);
+
 }
 
 function unenrolFromGroup(groupId,userId){

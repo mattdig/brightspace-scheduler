@@ -19,7 +19,7 @@ class Brightspace{
         return response;
     }
 
-    post(url, data){
+    post(url, data, ){
         let response = this.send('post', url, data);
         return response;
     }
@@ -41,7 +41,10 @@ class Brightspace{
 
     async send(verb, url, data = false, type = 'json'){
 
+        let dataString = '';
         let token = false;
+
+        let boundary = 'xxBOUNDARYxx';
 
         if(verb !== 'get'){
             token = await this.getToken();
@@ -50,9 +53,29 @@ class Brightspace{
         if(type == 'form'){
             data.d2l_referrer = token.referrerToken;
             data.d2l_hitcode = token.hitCodePrefix + "100000001";
-            data = new URLSearchParams(data).toString();
+            dataString = new URLSearchParams(data).toString();
         } else if (verb != 'get') {
-            data = JSON.stringify(data);
+
+            if(typeof data == 'object' && data[0] === undefined){
+                dataString = JSON.stringify(data);
+            } else if(typeof data == 'array' || data[0] !== undefined){
+                dataString = '';
+                data.forEach(function(item){
+                    dataString += '--' + boundary + '\r\n';
+                    if(typeof item == 'object'){
+                        dataString += 'Content-Type: application/json\r\n\r\n' + 
+                                      JSON.stringify(item) + '\r\n';
+                    } else if (typeof item == 'string' && item.substring(0, 1) == '<'){
+                        dataString += 'Content-Disposition: form-data; name=""; filename="file.htm"\r\nContent-Type: text/html\r\n\r\n' + 
+                                      item + '\r\n';
+                    } else {
+                        dataString += 'Content-Disposition: form-data; name=""; filename="file.txt"\r\nContent-Type: text/plain\r\n\r\n' + 
+                                      item + '\r\n';
+                    }
+                });
+                dataString += '--' + boundary + '--';
+
+            }
         }
         
         return new Promise((resolve, reject) => {
@@ -67,9 +90,11 @@ class Brightspace{
                 xhr.setRequestHeader('X-Csrf-Token', token.referrerToken);
             }
 
-            if(data !== false){
+            if(dataString !== ''){
                 if(type == 'form'){
-                   xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                } else if(dataString.substring(0,boundary.length + 2) == '--' + boundary){
+                    xhr.setRequestHeader("Content-Type", "multipart/mixed; boundary=" + boundary);
                 } else {
                     xhr.setRequestHeader('Content-Type', 'application/json');
                 }
@@ -86,13 +111,13 @@ class Brightspace{
                         let second = response.indexOf('{', first + 1);
 
                         if(second > -1){
-                            response = response.substr(second); 
+                            response = response.substring(second); 
                         } else {
-                            response = response.substr(first + 2);
+                            response = response.substring(first + 2);
                         }
                     }
 
-                    if(response.substr(0, 1) == '{'){
+                    if(response.substring(0, 1) == '{'){
                         resolve(JSON.parse(response));
                     } else {
                         resolve(response);
@@ -100,9 +125,10 @@ class Brightspace{
 
                 } else {
 
+                    // nothing is rejected because we want to handle the error in the calling function
                     let response = xhr.response;
 
-                    if(response.substr(0, 1) == '{'){
+                    if(response.substring(0, 1) == '{'){
                         response = JSON.parse(response);
                     } else {
                         response = {'Error': response};
@@ -111,8 +137,8 @@ class Brightspace{
                 }
             }
 
-            if(data !== false){
-                xhr.send(data);
+            if(dataString !== ''){
+                xhr.send(dataString);
             } else {
                 xhr.send();
             }
