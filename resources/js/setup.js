@@ -820,8 +820,8 @@ function createCalendarEvent(timeSlot){
 
 async function createTopic(){
 
-    let content = await fetch('resources/html/landing.html');
-    console.log(content);
+    let response = await fetch(PLUGIN_PATH + '/resources/html/landing.html');
+    let content = await response.text();
     content = content.replace(/\(pluginPath\)/g, PLUGIN_PATH);
     content = content.replace(/\(orgUnitId\)/g, ORG_UNIT_ID);
     content = content.replace(/\(groupCategoryId\)/g, GROUP_CATEGORY_ID);
