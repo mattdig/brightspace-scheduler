@@ -1,5 +1,9 @@
 let bs = new Brightspace(ORG_UNIT_ID);
 
+let PLUGIN_PATH;
+
+let HOST_NAME;
+
 let orgUnitInfo;
 
 let targetModule;
@@ -21,13 +25,29 @@ $(function() {
 
 async function setup(){
 
+    HOST_NAME = window.location.hostname;
+
+    PLUGIN_PATH = window.location.pathname.substring(0, window.location.pathname.lastIndexOf("/"));
+
+    let myEnrollment = await bs.get('/d2l/api/lp/(version)/enrollments/myenrollments/(orgUnitId)/access');
+    let isInstructor = myEnrollment.Access.LISRoles.some(element => {
+        let isLeanrer = (element.indexOf('Learner') > -1 || element.indexOf('Student') > -1);
+        return !isLeanrer;
+    });
+
+    if(!isInstructor){
+        alert("Yer a wizard, Harry! But you're not an instructor, so you can't use this tool.");
+        window.location.href = PLUGIN_PATH + '/signup.html?ou=' + ORG_UNIT_ID + '&gc=' + GROUP_CATEGORY_ID;
+        return false;
+    }
+
     if(ORG_UNIT_ID !== null){
         let orgInfo = await bs.get('/d2l/api/lp/(version)/organization/info');
 
         timeZone = orgInfo.TimeZone;
         
-        //orgUnitInfo = await bs.get('/d2l/api/lp/(version)/courses/(orgUnitId)');
-
+        orgUnitInfo = await bs.get('/d2l/api/lp/(version)/courses/(orgUnitId)');
+        
         let modules = bs.get("/d2l/api/le/1.37/(orgUnitId)/content/root/");
 
         targetModule = modules[0];
@@ -631,19 +651,18 @@ async function submitForm(){
         return false;
     }
 
-    let groupCategory;
 
-    console.log(MODE);
+    let groupCategory;
+    let newTopic;
 
     if(MODE == 'create'){
         groupCategory = await createGroupCategory();
 
         GROUP_CATEGORY_ID = groupCategory.CategoryId;
+
+        newTopic = await createTopic();
     }
 
-    console.log(GROUP_CATEGORY_ID, groupCategory);
-
-    return false;
 
     if(GROUP_CATEGORY_ID != null){
 
@@ -673,7 +692,11 @@ async function submitForm(){
         });
     }
 
-    window.location.href = '/d2l/le/content/' + ORG_UNIT_ID + '/viewContent/' + newTopic.Id + '/View'; 
+    if(MODE == 'create'){
+        window.location.href = '/d2l/le/content/' + ORG_UNIT_ID + '/viewContent/' + newTopic.Id + '/View'; 
+    } else {
+        window.location.reload();
+    }
 
 }
 
@@ -690,7 +713,7 @@ function createGroupCategory(){
 
     let category = {
         "Name": title,
-        "Description": {"Content": description, "Type":"Html"}, //{"Content": <string>,"Type": "Text|Html"}
+        "Description": {"Content": description, "Type":"Text"}, //{"Content": <string>,"Type": "Text|Html"}
         "EnrollmentStyle": 4, //SelfEnrollmentNumberOfGroups
         "EnrollmentQuantity": null,
         "AutoEnroll": false,
@@ -795,21 +818,22 @@ function createCalendarEvent(timeSlot){
    
 }
 
-function createTopic(){
+async function createTopic(){
 
-
-    let title = $('#title').val().trim();
-
-    let content = "<!DOCTYPE html><html><body>Hello world!</body></html>";
+    let content = await fetch('resources/html/landing.html');
+    console.log(content);
+    content = content.replace(/\(pluginPath\)/g, PLUGIN_PATH);
+    content = content.replace(/\(orgUnitId\)/g, ORG_UNIT_ID);
+    content = content.replace(/\(groupCategoryId\)/g, GROUP_CATEGORY_ID);
     
     let topic = [
         {
-            "IsHidden": false,
+            "IsHidden": true,
             "IsLocked": false,
             "ShortTitle": null,
             "Type": 1,
             "DueDate": null,
-            "Url": orgUnitPath + "file.html",
+            "Url": orgUnitInfo.Path + "Scheduler.html",
             "StartDate": null,
             "TopicType": 1,
             "EndDate": null,
@@ -818,8 +842,57 @@ function createTopic(){
         content
     ];
 
-    return bs.post('/d2l/api/le/(version)/(orgUnitId)/content/modules/' + moduleId + '/structure/?renameFileIfExists=true', topic);
+    return bs.post('/d2l/api/le/(version)/(orgUnitId)/content/modules/' + targetModule + '/structure/?renameFileIfExists=true', topic);
 
+}
+
+function sendEmail(address, subject, body){
+
+    let calendarSubscription = bs.get('/d2l/le/calendar/37161/subscribe/subscribeDialogLaunch?subscriptionOptionId=-1');
+    let feedToken = calendarSubscription.match(/feed\.ics\?token\=([a-zA-Z0-9]+)/)[1];
+    let feedUrl = feedToken;
+
+    body = body.replace(/\(feedUrl\)/g, feedUrl);
+
+    let formData = {
+        "ToAddresses$items$Value":address,
+        "ToAddresses$items$Key": "",
+        "ToAddresses$items$ActionType": "Add",
+        "ToAddresses$items`1$Value": "",
+        "ToAddresses$items`1$Key": "",
+        "ToAddresses$items`1$ActionType": "",
+        "AutoCompleteTo$SelectionInfo$value": address,
+        "AutoCompleteTo$SelectionInfo$key": "",
+        "CcAddresses$items$Value": "",
+        "CcAddresses$items$Key": "",
+        "CcAddresses$items$ActionType": "None",
+        "AutoCompleteCc$SelectionInfo$value": "",
+        "AutoCompleteCc$SelectionInfo$key": -1,
+        "BccAddresses$items$Value": "",
+        "BccAddresses$items$Key": "",
+        "BccAddresses$items$ActionType": "None",
+        "AutoCompleteBcc$SelectionInfo$value": "",
+        "AutoCompleteBcc$SelectionInfo$key": -1,
+        "AddedToAddresses": "",
+        "AddedCcAddresses": "",
+        "AddedBccAddresses": "",
+        "DraftMessageId": 0,
+        "ParentMessageId": 0,
+        "ParentMessageStatus": 0,
+        "Subject": subject,
+        "BodyHtml$id": "BodyHtml",
+        "BodyHtml$htmlOrgUnitId": ORG_UNIT_ID,
+        "BodyHtml$html":body,
+        "Priority": 3,
+        "Attachments$files$ActionType": "None",
+        "Attachments$files$PluginKey": "",
+        "Attachments$files$Id": "",
+        "Attachments$files$FileSize": "",
+        "isXhr": true,
+        "requestId": 18
+    };
+
+    return bs.submit(url, formData);
 }
 
 function unenrolFromGroup(groupId,userId){

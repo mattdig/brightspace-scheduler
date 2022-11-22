@@ -4,7 +4,7 @@
 *{font-family: Lato, 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;}
 /*styles*/
 input[type=text],label{width: 100%;}
-h3{font-weight: bold;}
+h3,h4{font-weight: bold;}
 .btn{padding:0.8em 2em; font-weight: bold;}
 .btn-red{background-color: #d0021b; color: #fff;}
 .btn-red:hover,.btn-red:focus{background-color: #b4001a; color: #fff;}
@@ -16,6 +16,5 @@ h3{font-weight: bold;}
 #existing_timeslots{display: none;}
 .datetime_title{margin-bottom: 5px;}
 .timeslot_unit{width:100%; max-width: 363px;}
-#total_timeslots{font-weight: bold;}
 .modal-header{border:none;}
 .modal p{color:#000; font-size: 1.2em;}
