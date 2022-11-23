@@ -9,7 +9,7 @@ h3,h4{font-weight: bold;}
 .btn-red{background-color: #d0021b; color: #fff;}
 .btn-red:hover,.btn-red:focus{background-color: #b4001a; color: #fff;}
 .btn-secondary:hover{background-color: #ddd; color: #000;}
-.btn-sml{display:inline-block; padding:0.1em 0.4em; margin-bottom:6px;}
+.btn-sm{font-size:inherit; display:inline-block; padding:0.1em 0.4em; margin-bottom:6px;}
 .nav-tabs{font-weight: bold;}
 .tab-pane{padding: 10px 10px 0px 10px; margin-bottom: 1px solid #ccc;}
 .error{background-color: lightcoral;}

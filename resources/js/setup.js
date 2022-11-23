@@ -6,7 +6,7 @@ let HOST_NAME;
 
 let orgUnitInfo;
 
-let targetModule;
+let targetModuleId;
 
 let timeZone;
 
@@ -48,9 +48,9 @@ async function setup(){
         
         orgUnitInfo = await bs.get('/d2l/api/lp/(version)/courses/(orgUnitId)');
         
-        let modules = bs.get("/d2l/api/le/1.37/(orgUnitId)/content/root/");
+        let modules = await bs.get("/d2l/api/le/(version)/(orgUnitId)/content/root/");
 
-        targetModule = modules[0];
+        targetModuleId = modules[0].Id;
     }
     
     moment.tz.setDefault(timeZone);
@@ -79,9 +79,11 @@ async function setup(){
     //     updateTotalTimeSlots();
     // });
 
+    console.log(MODE);
+
     if(MODE == 'edit'){ 
-        existingTimeSlots = await getExistingTimeSlots();
-        displayExistingTimeSlots(existingTimeSlots);
+        await getExistingTimeSlots();
+        displayExistingTimeSlots();
     } else {
         //initializeDatetime( $('.datetime__div') );
     }
@@ -93,39 +95,50 @@ function updateEventTitle(element){
     }
 }
 
-async function getExistingTimeSlots(){
+async function getGroupsInCategory(){
     let groups = await bs.get('/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + GROUP_CATEGORY_ID + '/groups/');
-    
-    groups.forEach(async function(group) {
+    return groups;
+}
+
+async function getExistingTimeSlots(){
+
+    let groups = await getGroupsInCategory();
         
-        let utcTimes = group.Name.split('-');
+    for(const group of groups){
+        
+        let data = group.Code.split('_');
 
-        let startTime = moment(utcTimes[0]);
-        let endTime = moment(utcTimes[1]);
+        let startTime = moment.utc(data[0], 'YYYYMMDDHHmm').tz(timeZone);
+        let endTime = moment.utc(data[1], 'YYYYMMDDHHmm').tz(timeZone);
 
-        let localDateTimeString = startTime.format('MMMM D, YYYY | h:mma') + ' - ' + endTime.format('h:mma');
+        let localDateTimeFormat = startTime.format('MMM Do YYYY, h:mm A') + ' - ' + endTime.format('h:mm A');
         
         let timeslot = {
             start: startTime,
             end: endTime,
-            name: localDateTimeString,
-            groupid: group.GroupId,
-            eventId: group.Code,
+            name: localDateTimeFormat,
+            groupId: group.GroupId,
+            eventId: data[2],
             student: false
         };
 
         if(group.Enrollments.length > 0){
-            timeslot.student = await bs.get('/d2l/api/lp/(version)/users/' + group.Enrollments[0].UserId);
+            timeslot.student = await bs.get('/d2l/api/lp/(version)/users/' + group.Enrollments[0]);
         }
     
         existingTimeSlots.push(timeslot);
-    });
+    };
 }
 
-function displayExistingTimeSlots(timeSlots){
+function displayExistingTimeSlots(){
 
-    let html = '';
-    timeSlots.forEach(element => {
+    if(existingTimeSlots.length == 0){
+        return false;
+    }
+
+    let html = '<tr><th>Registration</th><th>Date & Time</th><th>Actions</th></tr>';
+
+    existingTimeSlots.forEach(element => {
         let student = false;
         if(element.student !== false){
             student = element.student.FirstName + ' ' + element.student.LastName + ' (' + element.student.OrgDefinedId + ')';
@@ -136,14 +149,15 @@ function displayExistingTimeSlots(timeSlots){
         html += '<td class="timeslot_datetime">' + element.name + '</td>';
         html += '<td class="timeslot_actions">';
         if(element.student !== false){
-            html += '<button class="btn btn-danger btn-sm cancel-timeslot" onclick="canelTimeSlot(' + element.groupId + ')" data-id="' + element.groupId + '">Cancel</button>';
+            html += '<button class="btn btn-red btn-sm cancel-timeslot" onclick="canelTimeSlot(' + element.groupId + ')" data-id="' + element.groupId + '">Cancel</button>';
         }
-        html += '<button class="btn btn-danger btn-sm delete-timeslot" onclick="deleteTimeSlot(' + element.groupId + ')" data-id="' + element.groupId + '">Delete</button></td>';
+        html += '<button class="btn btn-red btn-sm delete-timeslot" onclick="deleteTimeSlot(' + element.groupId + ')" data-id="' + element.groupId + '">Delete</button></td>';
         html += '</td>';
         html += '</tr>';
     });
 
-    $('#existingTimeBlocks').html(html);
+    $('#existing_timeslots__table').html(html);
+    $('#existing_timeslots').show();
 }
 
 function cancelTimeSlot(id){
@@ -350,6 +364,8 @@ function updateTotalTimeSlots(){
 
                 for(i = 0; i < timeSlotsInBlock; i++){
                     let newTimeSlot = {
+                        groupId: null,
+                        eventId: null,
                         start: block.start.clone().add(i * timeSlotDuration, 'minutes'),
                         end: block.start.clone().add((i + 1) * timeSlotDuration, 'minutes'),
                     };
@@ -435,25 +451,6 @@ function updateGlobalLatestTime(newTime){
         globalLatestTime = now.clone();
     }
     
-}
-
-function errorMessage(message, id = false){
-    
-    if(id){
-        if(typeof(id) == 'string')
-            $('#' + id).addClass('error');
-        else
-            $(id).addClass('error');
-    }
-    
-    $('#messageModel').find('.modal-title').html('Error');
-    $('#messageModal').find('.modal-body').html('<p>' + message + '</p>');
-    $('#messageModal').modal('show');
-
-}
-
-function clearErrorMessage(id){
-    $('#' + id).removeClass('error');
 }
 
 
@@ -572,7 +569,7 @@ function validateTimeFields(withErrors){
 
     if(valid){
         if(!updateTotalTimeSlots() && withErrors){
-            errorMessage('Please enter a time slot durationa of at least 5.', $('#timeslot_duration'));
+            errorMessage('Please enter a time slot duration of at least 5.', $('#timeslot_duration'));
             valid = false;
         }
     }
@@ -657,9 +654,7 @@ async function submitForm(){
 
     if(MODE == 'create'){
         groupCategory = await createGroupCategory();
-
         GROUP_CATEGORY_ID = groupCategory.CategoryId;
-
         newTopic = await createTopic();
     }
 
@@ -672,7 +667,7 @@ async function submitForm(){
             groupsInCategory = await getGroupsInCategory();
         }
 
-        newTimeSlots.forEach(async function(index, timeSlot){
+        for(const [index,timeSlot] of newTimeSlots.entries()){
 
                 let group;
 
@@ -681,22 +676,33 @@ async function submitForm(){
                 } else {
                     group = await createGroup(timeSlot);
                 }
-            
+
                 timeSlot.groupId = group.GroupId;
                 
-                let event = await createCalendarEvent(timeSlot);
+                let newEvent = await createCalendarEvent(timeSlot);
                 
-                timeSlot.eventId = event.EventId;
+                timeSlot.eventId = newEvent.CalendarEventId;
                 
-                await updateGroup(timeSlot);
-        });
+                let updatedGroup = await updateGroup(timeSlot);
+
+        };
     }
 
-    if(MODE == 'create'){
-        window.location.href = '/d2l/le/content/' + ORG_UNIT_ID + '/viewContent/' + newTopic.Id + '/View'; 
-    } else {
-        window.location.reload();
-    }
+    errorMessage('Form submitted successfully.',null,function(){
+        if(MODE == 'create'){
+            window.location.href = '/d2l/le/content/' + ORG_UNIT_ID + '/viewContent/' + newTopic.Id + '/View'; 
+        } else {
+            window.location.reload();
+        }
+    });
+
+    setTimeout(function(){
+        if(MODE == 'create'){
+            window.location.href = '/d2l/le/content/' + ORG_UNIT_ID + '/viewContent/' + newTopic.Id + '/View'; 
+        } else {
+            window.location.reload();
+        }
+    }, 5000);
 
 }
 
@@ -714,7 +720,7 @@ function createGroupCategory(){
     let category = {
         "Name": title,
         "Description": {"Content": description, "Type":"Text"}, //{"Content": <string>,"Type": "Text|Html"}
-        "EnrollmentStyle": 4, //SelfEnrollmentNumberOfGroups
+        "EnrollmentStyle": 5, //PeoplePerNumberOfGroupsSelfEnrollment
         "EnrollmentQuantity": null,
         "AutoEnroll": false,
         "RandomizeEnrollments": false,
@@ -724,7 +730,7 @@ function createGroupCategory(){
         "SelfEnrollmentExpiryDate": deadlineUTCDateTime, //<string:UTCDateTime>( yyyy-MM-ddTHH:mm:ss.fffZ )|null,
         "GroupPrefix": null,
         "RestrictedByOrgUnitId": null,
-        "DescriptionsVisibleToEnrolees": false  // Added with LP API version 1.42
+        "DescriptionsVisibleToEnrolees": true  // Added with LP API version 1.42
     };
     
     return bs.post('/d2l/api/lp/(version)/(orgUnitId)/groupcategories/', category);
@@ -734,7 +740,7 @@ function createGroupCategory(){
 function createGroup(timeSlot){
     
     let group = {
-        "Name": convertToUTCDateTimeString(timeSlot.start) + '-' + convertToUTCDateTimeString(timeSlot.end),
+        "Name": timeSlot.start.format('MMM Do YYYY h:mm A') + '-' + timeSlot.end.format('h:mm A'),
         "Code": "",
         "Description": { "Content": "", "Type": "Text" },
     }
@@ -746,18 +752,21 @@ function createGroup(timeSlot){
 function updateGroup(timeSlot){
     
     let group = {
-        "Name": convertToUTCDateTimeString(timeSlot.start) + '-' + convertToUTCDateTimeString(timeSlot.end),
-        "Code": timeSlot.eventId,
-        "Description": { "Content": "", "Type": "Text" },
-    }
+        "Name": timeSlot.start.format('MMM Do YYYY, h:mm A') + '-' + timeSlot.end.format('h:mm A'),
+        "Code": convertToUTCDateTimeString(timeSlot.start, true) + '_' + convertToUTCDateTimeString(timeSlot.end, true) + '_' + timeSlot.eventId,
+        "Description": { "Content": "", "Type": "Text" }
+    };
 
-    return bs.post('/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + GROUP_CATEGORY_ID + '/groups/', group);
+    return bs.put('/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + GROUP_CATEGORY_ID + '/groups/' + timeSlot.groupId, group);
     
 }
 
 function createCalendarEvent(timeSlot){
 
     let event_title = $('#event_title').val().trim();
+    if(event_title == ''){
+        event_title = $('#title').val().trim();
+    }
 
     let event = {
         "Title": event_title,
@@ -814,13 +823,15 @@ function createCalendarEvent(timeSlot){
     //     }
     // };
 
-    return bs.post('/d2l/api/lp/(version)/(orgUnitId)/calendar/event/', event);
+    return bs.post('/d2l/api/le/(version)/(orgUnitId)/calendar/event/', event);
    
 }
 
 async function createTopic(){
 
-    let response = await fetch(PLUGIN_PATH + '/resources/html/landing.html');
+    let title = $('#title').val().trim();
+
+    let response = await fetch(PLUGIN_PATH + '/resources/html/landing.tpl');
     let content = await response.text();
     content = content.replace(/\(pluginPath\)/g, PLUGIN_PATH);
     content = content.replace(/\(orgUnitId\)/g, ORG_UNIT_ID);
@@ -828,7 +839,7 @@ async function createTopic(){
     
     let topic = [
         {
-            "IsHidden": true,
+            "IsHidden": false,
             "IsLocked": false,
             "ShortTitle": null,
             "Type": 1,
@@ -842,13 +853,13 @@ async function createTopic(){
         content
     ];
 
-    return bs.post('/d2l/api/le/(version)/(orgUnitId)/content/modules/' + targetModule + '/structure/?renameFileIfExists=true', topic);
+    return bs.post('/d2l/api/le/(version)/(orgUnitId)/content/modules/' + targetModuleId + '/structure/?renameFileIfExists=true', topic);
 
 }
 
 function sendEmail(address, subject, body){
 
-    let calendarSubscription = bs.get('/d2l/le/calendar/37161/subscribe/subscribeDialogLaunch?subscriptionOptionId=-1');
+    let calendarSubscription = bs.get('/d2l/le/calendar/(orgUnitId)/subscribe/subscribeDialogLaunch?subscriptionOptionId=-1');
     let feedToken = calendarSubscription.match(/feed\.ics\?token\=([a-zA-Z0-9]+)/)[1];
     let feedUrl = feedToken;
 
@@ -918,6 +929,30 @@ function loading(){
     $('#loading').toggle();
 }
 
+function errorMessage(message, id = null, callback = null){
+    
+    if(id !== null){
+        if(typeof(id) == 'string')
+            $('#' + id).addClass('error');
+        else
+            $(id).addClass('error');
+    }
+    
+    $('#messageModel').find('.modal-title').html('Error');
+    $('#messageModal').find('.modal-body').html('<p>' + message + '</p>');
+
+    if(callback !== null){
+        $('#messageModal').find('.modal-footer').find('btn-primary').on('click', callback);
+    }
+
+    $('#messageModal').modal('show');
+
+}
+
+function clearErrorMessage(id){
+    $('#' + id).removeClass('error');
+}
+
 function momentFromTime(time){
 
     let defaultDate = '2020-01-01 ';
@@ -927,10 +962,18 @@ function momentFromTime(time){
 
 }
 
-function convertToUTCDateTimeString(date){
+function convertToUTCDateTimeString(date, safe = false){
 
     let utcDate = date.clone().utc();
 
-    return utcDate.format('YYYY-MM-DDTHH:mm:00.000') + 'Z';
+    let format;
+
+    if(safe){
+        format = 'YYYYMMDDHHmm';
+    } else {
+        format = 'YYYY-MM-DDTHH:mm:00.000';
+    }
+
+    return utcDate.format(format) + (safe ? '' : 'Z');
 
 }

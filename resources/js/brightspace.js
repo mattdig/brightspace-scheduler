@@ -117,7 +117,7 @@ class Brightspace{
                         }
                     }
 
-                    if(response.substring(0, 1) == '{'){
+                    if(response.substring(0, 1) == '{' || response.substring(0, 1) == '['){
                         resolve(JSON.parse(response));
                     } else {
                         resolve(response);
