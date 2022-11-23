@@ -5,15 +5,28 @@
 /*styles*/
 input[type=text],label{width: 100%;}
 h3,h4{font-weight: bold;}
-.btn{padding:0.8em 2em; font-weight: bold;}
+.btn{padding:0.8em 2em; font-weight: bold; border-radius: 0.5em;}
 .btn-red{background-color: #d0021b; color: #fff;}
 .btn-red:hover,.btn-red:focus{background-color: #b4001a; color: #fff;}
 .btn-secondary:hover{background-color: #ddd; color: #000;}
-.btn-sm{font-size:inherit; display:inline-block; padding:0.1em 0.4em; margin-bottom:6px;}
+.btn-sm{font-size:16px; display:inline-block; padding:0.1em 0.4em; margin-bottom:6px; border-radius: 0.25em;}
 .nav-tabs{font-weight: bold;}
 .tab-pane{padding: 10px 10px 0px 10px; margin-bottom: 1px solid #ccc;}
 .error{background-color: lightcoral;}
-#existing_timeslots{display: none;}
+#existing_timeslots,#signup_schedule__form,#edit_timeblocks{display: none;}
+#existing_timeslots__table{
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 16px;
+    margin-bottom: 20px;
+}
+#existing_timeslots__table td, #existing_timeslots__table th{
+    padding: 10px;
+    border: 1px solid #bbb;
+}
+tr.timeslot:hover{
+    background-color: #ffd;
+}
 .datetime_title{margin-bottom: 5px;}
 .timeslot_unit{width:100%; max-width: 363px;}
 .modal-header{border:none;}

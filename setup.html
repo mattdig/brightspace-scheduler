@@ -22,10 +22,17 @@ let GROUP_CATEGORY_ID = (MODE == 'edit' ? params.gc : null);
 <body class="content layout-2" role="document">
 	<div class="container-fluid">
 		<main>
-            <form method="post" onsubmit="event.preventDefault(); return submitForm();" action="./">
+            <div class="row" id="existing_timeslots">
+                <div class="col-xs-12 col-sm-offset-2 col-sm-8">
+                    <h2 id="existing_timeslots__heading">Current Available Time Slots</h2>
+                    <table id="existing_timeslots__table">
+                    </table>
+                </div>
+            </div>
+            <form id="signup_schedule__form" method="post" onsubmit="event.preventDefault(); return submitForm();" action="./">
                 <div class="row">
                     <div class="col-xs-12 col-sm-offset-2 col-sm-8 create_title__div">
-                        <h1>Create a Signup Schedule</h1>
+                        <h1 id="form_title">Signup Schedule</h1>
                         <div>
                             <label id="edit_title" for="title">
                                 <h2>Signup Schedule Title</h2>
@@ -49,11 +56,23 @@ let GROUP_CATEGORY_ID = (MODE == 'edit' ? params.gc : null);
                         </div>
                     </div>
                 </div>
-                <div class="row" id="existing_timeslots">
-                    <div class="col-xs-12 col-sm-offset-2 col-sm-8">
-                        <h2>Current Available Time Slots</h2>
-                        <table id="existing_timeslots__table">
-                        </table>
+                <div class="row" id="deadline__div">
+                    <div class="col-xs-12 col-sm-offset-2 col-sm-8">                        
+                        <div>
+                            <h2>Signup Deadline</h2>
+                        </div>
+                    </div>
+                    <div class="col col-sm-offset-2 col-sm-4">
+                        <label for="date_1" class="date_label">
+                            <p>Date</p>
+                            <input type="text" name="deadline_date" id="deadline_date" class="form-control date_input" />
+                        </label>
+                    </div>
+                    <div class="col col-sm-2">
+                        <label for="starttime_1" class="starttime_label">
+                            <p>Time</p>
+                            <select name="deadline_time" id="deadline_time" class="form-control time_input"></select>
+                        </label>
                     </div>
                 </div>
                 <div id="edit_timeblocks">
@@ -62,53 +81,41 @@ let GROUP_CATEGORY_ID = (MODE == 'edit' ? params.gc : null);
                             <h2>Range of dates and times</h2>
                         </div>
                     </div>
-                    <div class="row datetime__div" id="datetime_1">
-                        <div class="col-xs-12 col-sm-offset-2 col-sm-8">
-                            <h3 class="datetime_title"><span>Date & Time 1</span> <button type="button" class="btn btn-remove btn-red btn-sm" data-counter="1">Remove</button></h3>
+
+                    <div class="datetime__div" id="datetime_1">
+                        <div class="row">
+                            <div class="col-xs-12 col-sm-offset-2 col-sm-8">
+                                <h3 class="datetime_title"><span>Date & Time 1</span> <button type="button" class="btn btn-remove btn-red btn-sm" data-counter="1">Remove</button></h3>
+                            </div>
                         </div>
-                        <div class="col col-sm-offset-2 col-sm-4">
-                            <label for="date_1" class="date_label">
-                                <p>Date</p>
-                                <p><input type="text" name="date_1" id="date_1" class="form-control date_input" required /></p>
-                            </label>
-                        </div>
-                        <div class="col col-sm-2 col-xs-6">
-                            <label for="starttime_1" class="starttime_label">
-                                <p>Start&nbsp;Time</p>
-                                <p><select name="starttime_1" id="starttime_1" class="form-control starttime_input" required></select></p>
-                            </label>
-                        </div>
-                        <div class="col col-sm-2 col-xs-6">
-                            <label for="endtime_1" class="endtime_label">
-                                <p>End&nbsp;Time</p>
-                                <p><select name="endtime_1" id="endtime_1" class="form-control endtime_input" required></select></p>
-                            </label>
+                        <div class="row">
+                            <div class="col col-sm-offset-2 col-sm-4">
+                                <label for="date_1" class="date_label">
+                                    <p>Date</p>
+                                    <p><input type="text" name="date_1" id="date_1" class="form-control date_input" required /></p>
+                                </label>
+                            </div>
+                            <div class="col col-sm-2 col-xs-6">
+                                <label for="starttime_1" class="starttime_label">
+                                    <p>Start&nbsp;Time</p>
+                                    <p><select name="starttime_1" id="starttime_1" class="form-control starttime_input" required></select></p>
+                                </label>
+                            </div>
+                            <div class="col col-sm-2 col-xs-6">
+                                <label for="endtime_1" class="endtime_label">
+                                    <p>End&nbsp;Time</p>
+                                    <p><select name="endtime_1" id="endtime_1" class="form-control endtime_input" required></select></p>
+                                </label>
+                            </div>
                         </div>
                     </div>
                     <div class="row">
                         <div class="col-xs-12 col-sm-offset-2 col-sm-8">
                             <p><input type="button" class="btn btn-secondary" value="Add another date &amp; time range" onclick="addDatetime()"/></p>
-                            <div>
-                                <h3 id="total_time">Total time: 3 hours</h3>
-                            </div>
-                        
-                            <div>
-                                <h2>Signup Deadline</h2>
-                            </div>
+                            <h3 id="total_time">Total time: 3 hours</h3>                        
                         </div>
-                        <div class="col col-sm-offset-2 col-sm-4">
-                            <label for="date_1" class="date_label">
-                                <p>Date</p>
-                                <input type="text" name="deadline_date" id="deadline_date" class="form-control date_input" />
-                            </label>
-                        </div>
-                        <div class="col col-sm-2">
-                            <label for="starttime_1" class="starttime_label">
-                                <p>Time</p>
-                                <select name="deadline_time" id="deadline_time" class="form-control time_input"></select>
-                            </label>
-                        </div>
-                        
+                    </div>
+                    <div class="row">
                         <div class="col-xs-12 col-sm-offset-2 col-sm-8">
                             
                             <h2>Set the duration of each time slot</h2>
@@ -134,14 +141,25 @@ let GROUP_CATEGORY_ID = (MODE == 'edit' ? params.gc : null);
                             </div-->
                             
                             <h3 id="total_timeslots">This will create 2 time slots of 30 minutes each.</h3>
-                            <p>
-                                <br />
-                                <input type="submit" class="btn btn-primary" value="Submit" /></p>
-                            <!-- Button trigger modal -->
                         </div>
                     </div>
                 </div>
+                <div class="row" id="second_add_datetime">
+                    <div class="col-xs-12 col-sm-offset-2 col-sm-8">
+                        <p><input type="button" class="btn btn-secondary" value="Add another date &amp; time range" onclick="$('#second_add_datetime').hide(); addDatetime()"/></p>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-xs-12 col-sm-offset-2 col-sm-8">
+                        <p><br><input type="submit" class="btn btn-primary" value="Save" /></p>
+                    </div>
+                </div>                
             </form>
+            <div class="row">
+                <div class="col-xs-12 col-sm-offset-2 col-sm-8">
+                    <p><br><input type="button" class="btn btn-primary" value="Edit Schedule" onclick="$(this).hide(); $('#signup_schedule__form').show();" /></p>
+                </div>
+            </div>
 		</main>
 	</div>
     <!-- Modal -->

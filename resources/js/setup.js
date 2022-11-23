@@ -79,10 +79,21 @@ async function setup(){
     //     updateTotalTimeSlots();
     // });
 
-    if(MODE == 'edit'){ 
+    if(MODE == 'edit'){
+        $('#form_title').html('Edit Signup Schedule');
+        let groupCategory = await bs.get('/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + GROUP_CATEGORY_ID);
+        $('#title').val(groupCategory.Name);
+
+        $('#description').val(groupCategory.Description.Text);
+        
         await getExistingTimeSlots();
+        let calendarEvent = await bs.get('/d2l/api/le/(version)/(orgUnitId)/calendar/event/' + existingTimeSlots[0].eventId);
+        $('#event_title').val(calendarEvent.Title);
+        
         displayExistingTimeSlots();
     } else {
+        $('#form_title').html('Create New Signup Schedule');
+        $('#edit_timeblocks').show();
         //initializeDatetime( $('.datetime__div') );
     }
 }
@@ -109,7 +120,7 @@ async function getExistingTimeSlots(){
         let startTime = moment.utc(data[0], 'YYYYMMDDHHmm').tz(timeZone);
         let endTime = moment.utc(data[1], 'YYYYMMDDHHmm').tz(timeZone);
 
-        let localDateTimeFormat = startTime.format('MMM Do YYYY, h:mm A') + ' - ' + endTime.format('h:mm A');
+        let localDateTimeFormat = startTime.format('MMM[&nbsp;]Do[&nbsp;]YYYY, h:mm[&nbsp;]A') + '&nbsp;-&nbsp;' + endTime.format('h:mm[&nbsp;]A');
         
         let timeslot = {
             start: startTime,
@@ -117,41 +128,39 @@ async function getExistingTimeSlots(){
             name: localDateTimeFormat,
             groupId: group.GroupId,
             eventId: data[2],
-            student: ''
+            student: (group.Enrollments.length > 0 ? group.Enrollments[0] : false)
         };
 
-        console.log(group);
-
-        if(group.Enrollments.length > 0){
-            timeslot.student = await bs.get('/d2l/api/lp/(version)/users/' + group.Enrollments[0]);
-        }
-    
         existingTimeSlots.push(timeslot);
     };
 }
 
-function displayExistingTimeSlots(){
+async function displayExistingTimeSlots(){
 
     if(existingTimeSlots.length == 0){
         return false;
     }
 
+    let classList = await getClassList();
+
     let html = '<tr><th>Registration</th><th>Date & Time</th><th>Actions</th></tr>';
 
     existingTimeSlots.forEach(element => {
-        let student = false;
+        
+        let student = '&nbsp;-&nbsp;';
+        
         if(element.student !== false){
-            student = element.student.FirstName + ' ' + element.student.LastName + ' (' + element.student.OrgDefinedId + ')';
+            student = classList[element.student].FirstName + ' ' + classList[element.student].LastName + ' (' + classList[element.student].OrgDefinedId + ')';
         }
 
         html += '<tr class="timeslot" id="timeslot_' + element.groupId + '">';
-        html += '<td class="timeslot_student" data-studentid="">' + element.student + '</td>';
+        html += '<td class="timeslot_student" data-studentid="">' + student + '</td>';
         html += '<td class="timeslot_datetime">' + element.name + '</td>';
         html += '<td class="timeslot_actions">';
         if(element.student !== false){
-            html += '<button class="btn btn-red btn-sm cancel-timeslot" onclick="canelTimeSlot(' + element.groupId + ')" data-id="' + element.groupId + '">Cancel</button>';
+            html += '<button class="btn btn-secondary btn-sm cancel-timeslot" onclick="canelTimeSlot(' + element.groupId + ')" data-id="' + element.groupId + '">Cancel Registration</button> ';
         }
-        html += '<button class="btn btn-red btn-sm delete-timeslot" onclick="deleteTimeSlot(' + element.groupId + ')" data-id="' + element.groupId + '">Delete</button></td>';
+        html += '<button class="btn btn-red btn-sm delete-timeslot" onclick="deleteTimeSlot(' + element.groupId + ')" data-id="' + element.groupId + '">Delete Time Slot</button></td>';
         html += '</td>';
         html += '</tr>';
     });
@@ -160,33 +169,16 @@ function displayExistingTimeSlots(){
     $('#existing_timeslots').show();
 }
 
-function cancelTimeSlot(id){
-    unenrolFromGroup(id);
-    $('#timeslot_' + id + ' .timeslot_student').html('');
-}
-
-async function deleteTimeSlot(timeSlot){
-    
-    await unenrolFromGroup(timeSlot.groupId);
-    await deleteCalendarEvent(timeSlot.eventId);
-    await deleteGroup(timeSlot.groupId);
-
-    $('#timeslot_' + timeSlot.groupId).remove();
-
-    // remove timeSlot from existingTimeSlots
-    existingTimeSlots = existingTimeSlots.filter(function( ets ) {
-        return ets.groupId !== timeSlot.groupId;
-    });
-
-
-}
-
 function addDatetime(){
-    let lastDatetime = $('.datetime__div').last();
-    let newDateTime = orderDatetimeElems(lastDatetime.clone(), $('.datetime__div').length + 1);
-    newDateTime.find('.btn-remove').on('click', removeDatetime);
-    newDateTime.insertAfter(lastDatetime);
-    initializeDatetime($('.datetime__div').last());   // initialize the new datetime
+    if($('#edit_timeblocks').is(':visible')){
+        let lastDatetime = $('.datetime__div').last();
+        let newDateTime = orderDatetimeElems(lastDatetime.clone(), $('.datetime__div').length + 1);
+        newDateTime.find('.btn-remove').on('click', removeDatetime);
+        newDateTime.insertAfter(lastDatetime);
+        initializeDatetime($('.datetime__div').last());   // initialize the new datetime
+    } else {
+        $('#edit_timeblocks').show();
+    }
 }
 
 function removeDatetime(element){
@@ -195,6 +187,9 @@ function removeDatetime(element){
         $('#datetime_' + target.data('counter')).remove();
         orderDatetimeElems();
         validateTimeFields();
+    } else if($('.datetime__div').length == 1 && MODE == 'edit'){
+        $('#edit_timeblocks').hide();
+        $('#second_add_datetime').show();
     }
 }
 
@@ -469,15 +464,20 @@ function validateTimeFields(withErrors){
     //let selectedTab = $('.tab-pane.active').find('label').attr('for');
     //let blockValue = parseInt($('#' + selectedTab).val());
 
-    $('.datetime__div').each(function(){
-        let datetime = {};
-        let format = "YYYY-MM-DD HH:mm";
-        let date = $(this).find('.date_input').val() + " ";
-        datetime.id = $(this).attr('id');
-        datetime.start = moment(date + $(this).find('.starttime_input').val(), format);
-        datetime.end = moment(date + $(this).find('.endtime_input').val(), format);
-        datetimes.push(datetime);
-    });
+    if($('#edit_timeblocks').is(':visible')){
+        console.log('validating time blocks');
+        $('.datetime__div').each(function(){
+            let datetime = {};
+            let format = "YYYY-MM-DD HH:mm";
+            let date = $(this).find('.date_input').val() + " ";
+            datetime.id = $(this).attr('id');
+            datetime.start = moment(date + $(this).find('.starttime_input').val(), format);
+            datetime.end = moment(date + $(this).find('.endtime_input').val(), format);
+            datetimes.push(datetime);
+        });
+    } else {
+        return true;
+    }
 
     datetimes.sort(compareStarttime);
 
@@ -648,6 +648,7 @@ async function submitForm(){
         return false;
     }
 
+    return false;
 
     let groupCategory;
     let newTopic;
@@ -656,8 +657,10 @@ async function submitForm(){
         groupCategory = await createGroupCategory();
         GROUP_CATEGORY_ID = groupCategory.CategoryId;
         newTopic = await createTopic();
+    } else {
+        await updateGroupCategory();
+        await updateTopic();
     }
-
 
     if(GROUP_CATEGORY_ID != null){
 
@@ -752,7 +755,7 @@ function createGroup(timeSlot){
 function updateGroup(timeSlot){
     
     let group = {
-        "Name": timeSlot.start.format('MMM Do YYYY, h:mm A') + '-' + timeSlot.end.format('h:mm A'),
+        "Name": timeSlot.start.format('MMM Do YYYY h:mm A') + '-' + timeSlot.end.format('h:mm A'),
         "Code": convertToUTCDateTimeString(timeSlot.start, true) + '_' + convertToUTCDateTimeString(timeSlot.end, true) + '_' + timeSlot.eventId,
         "Description": { "Content": "", "Type": "Text" }
     };
@@ -906,10 +909,25 @@ function sendEmail(address, subject, body){
     return bs.submit(url, formData);
 }
 
+async function deleteTimeSlot(timeSlot){
+    await cancelTimeSlot(timeSlot.groupId);
+    await deleteCalendarEvent(timeSlot.eventId);
+    await deleteGroup(timeSlot.groupId);
+
+    // remove timeSlot from existingTimeSlots
+    existingTimeSlots = existingTimeSlots.filter(function( ets ) {
+        return ets.groupId !== timeSlot.groupId;
+    });
+}
+
+function cancelTimeSlot(id){
+    $('#timeslot_' + id + ' .timeslot_student').html('');
+    return unenrolFromGroup(id);
+}
+
+
 function unenrolFromGroup(groupId,userId){
-    
     return bs.delete('/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + GROUP_CATEGORY_ID + '/groups/' + groupId + '/enrollments/' + userId);
-    
 }
 
 function deleteCalendarEvent(eventId){
@@ -922,6 +940,14 @@ function deleteGroup(groupId){
     
     return bs.delete('/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + GROUP_CATEGORY_ID + '/groups/' + groupId);
     
+}
+
+async function getClassList(){
+    let classList = [];
+    for(student of await bs.get('/d2l/api/le/(version)/(orgUnitId)/classlist/')){
+        classList[student.Identifier] = student;
+    }
+    return classList;
 }
 
 function loading(){
