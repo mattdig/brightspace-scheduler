@@ -79,8 +79,6 @@ async function setup(){
     //     updateTotalTimeSlots();
     // });
 
-    console.log(MODE);
-
     if(MODE == 'edit'){ 
         await getExistingTimeSlots();
         displayExistingTimeSlots();
@@ -119,8 +117,10 @@ async function getExistingTimeSlots(){
             name: localDateTimeFormat,
             groupId: group.GroupId,
             eventId: data[2],
-            student: false
+            student: ''
         };
+
+        console.log(group);
 
         if(group.Enrollments.length > 0){
             timeslot.student = await bs.get('/d2l/api/lp/(version)/users/' + group.Enrollments[0]);
