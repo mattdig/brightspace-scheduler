@@ -3,6 +3,7 @@
 @font-face {font-family: 'Lato';src: url('https://s.brightspace.com/lib/fonts/0.5.0/assets/Lato-700.woff2');font-weight: bold;}
 *{font-family: Lato, 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;}
 /*styles*/
+.container-fluid{padding-bottom:20px;}
 input[type=text],label{width: 100%;}
 h3,h4{font-weight: bold;}
 .btn{padding:0.8em 2em; font-weight: bold; border-radius: 0.5em;}
@@ -12,22 +13,13 @@ h3,h4{font-weight: bold;}
 .btn-sm{font-size:16px; display:inline-block; padding:0.1em 0.4em; margin-bottom:6px; border-radius: 0.25em;}
 .nav-tabs{font-weight: bold;}
 .tab-pane{padding: 10px 10px 0px 10px; margin-bottom: 1px solid #ccc;}
-.error{background-color: lightcoral;}
-#existing_timeslots,#signup_schedule__form,#edit_timeblocks{display: none;}
-#existing_timeslots__table{
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 16px;
-    margin-bottom: 20px;
-}
-#existing_timeslots__table td, #existing_timeslots__table th{
-    padding: 10px;
-    border: 1px solid #bbb;
-}
-tr.timeslot:hover{
-    background-color: #ffd;
-}
+.error{background-color: #ffbbbb;}
+#existing_timeslots,#signup_schedule__form,#edit_timeblocks,#edit_schedule,#add_new_timeblocks{display: none;}
+#existing_timeslots__table{width: 100%;border-collapse: collapse;font-size: 16px;margin-bottom: 20px;}
+#existing_timeslots__table td, #existing_timeslots__table th{padding: 10px;border: 1px solid #bbb;}
+tr.timeslot:hover{background-color: #ffd;}
 .datetime_title{margin-bottom: 5px;}
 .timeslot_unit{width:100%; max-width: 363px;}
+#add_new_timeblocks{margin-top:20px;}
 .modal-header{border:none;}
 .modal p{color:#000; font-size: 1.2em;}

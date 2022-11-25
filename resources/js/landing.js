@@ -1,5 +1,4 @@
 let bs = new Brightspace(ORG_UNIT_ID);
-
 async function redirect(){
     let myEnrollment = await bs.get('/d2l/api/lp/(version)/enrollments/myenrollments/(orgUnitId)/access');
     let isInstructor = myEnrollment.Access.LISRoles.every(element => {
@@ -8,7 +7,6 @@ async function redirect(){
 
     let redirect = PLUGIN_PATH + '/' + (isInstructor ? 'setup' : 'signup') + '.html?ou=' + ORG_UNIT_ID + '&gc=' + GROUP_CATEGORY_ID;
     
-    window.location.href = redirect;
+    window.location.replace(redirect);
 }
-
 redirect();

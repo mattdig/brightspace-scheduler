@@ -9,7 +9,7 @@ class Brightspace{
         }
 
         this.versions = {
-            le : '1.53',
+            le : '1.66',
             lp : '1.42'
         };
     }
@@ -44,7 +44,7 @@ class Brightspace{
         let dataString = '';
         let token = false;
 
-        let boundary = 'xxBOUNDARYxx';
+        let boundary = '------' + Math.random().toString().substring(2);
 
         if(verb !== 'get'){
             token = await this.getToken();

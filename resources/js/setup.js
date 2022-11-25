@@ -2,7 +2,11 @@ let bs = new Brightspace(ORG_UNIT_ID);
 
 let PLUGIN_PATH;
 
+let TOPIC_ID;
+
 let HOST_NAME;
+
+let SUBMITTING = false;
 
 let orgUnitInfo;
 
@@ -55,50 +59,71 @@ async function setup(){
     
     moment.tz.setDefault(timeZone);
 
-    updateGlobalLatestTime(moment());
-
-    let firstDateTime = $('.datetime__div').first();
-    initializeDatetime(firstDateTime);
-    firstDateTime.find('.btn-remove').on('click', removeDatetime);
-
-    $('#deadline_date').datetimepicker({
-        format: 'YYYY-MM-DD',
-        defaultDate: moment(),
-        maxDate: moment().clone().add(1, 'years')
-    });
-
-    generateTimeOptions($('#deadline_time'));
-
-
-
-    $('#timeslot_duration').on('change', function(){
-        updateTotalTimeSlots();
-    });
+    //updateGlobalLatestTime(moment());
 
     // $('#timeslot_number').on('change', function(){
     //     updateTotalTimeSlots();
     // });
 
+    // not supported by api
+    //generateTimeOptions($('#deadline_time'));
+
     if(MODE == 'edit'){
+
+        let url = window.parent.location.href;
+        let match = url.match(/\/viewContent\/(\d+)\//);
+        TOPIC_ID = match[1];
+        
+        let topic = await bs.get('/d2l/api/le/(version)/(orgUnitId)/content/topics/' + TOPIC_ID);
+        console.log(topic);
+
         $('#form_title').html('Edit Signup Schedule');
+
+        // deadline not supported by api
+        // TODO: switch to fetching the HTML page for the form and parsing it
         let groupCategory = await bs.get('/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + GROUP_CATEGORY_ID);
         $('#title').val(groupCategory.Name);
 
         $('#description').val(groupCategory.Description.Text);
+
+        // not supported by api
+        // $('#deadline_date').val(moment.utc(groupCategory.SelfEnrollmentExpiryDate, 'YYYY-MM-DDTHH:mm:ss.fffZ').tz(timeZone).format('YYYY-MM-DD'));
+        // $('#deadline_time').val(moment.utc(groupCategory.SelfEnrollmentExpiryDate, 'YYYY-MM-DDTHH:mm:ss.fffZ').tz(timeZone).format('HH:mm'));
         
         await getExistingTimeSlots();
         let calendarEvent = await bs.get('/d2l/api/le/(version)/(orgUnitId)/calendar/event/' + existingTimeSlots[0].eventId);
         $('#event_title').val(calendarEvent.Title);
         
-        displayExistingTimeSlots();
+        await displayExistingTimeSlots();
+
+        $('#add_new_timeblocks').show();
+
+        $('#edit_schedule').show();
+
     } else {
         $('#form_title').html('Create New Signup Schedule');
         $('#edit_timeblocks').show();
-        //initializeDatetime( $('.datetime__div') );
+        $('#signup_schedule__form').show();
     }
+
+    let firstDateTime = $('.datetime__div').first();
+    initializeDatetime(firstDateTime);
+    firstDateTime.find('.btn-remove').on('click', removeDatetime);
+
+    // not supported by api
+    // $('#deadline_date').datetimepicker({
+    //     format: 'YYYY-MM-DD',
+    //     defaultDate: moment(),
+    //     maxDate: moment().clone().add(1, 'years')
+    // });
+
+    $('#timeslot_duration').on('change', function(){
+        updateTotalTimeSlots();
+    });
+
 }
 
-function updateEventTitle(element){
+async function updateEventTitle(element){
     if($('#event_title').val() == ''){
         $('#event_title').val(element.value);
     }
@@ -141,32 +166,47 @@ async function displayExistingTimeSlots(){
         return false;
     }
 
+    let duration = 0;
+
     let classList = await getClassList();
 
     let html = '<tr><th>Registration</th><th>Date & Time</th><th>Actions</th></tr>';
 
-    existingTimeSlots.forEach(element => {
+    $('#existing_timeslots__table').html(html);
+
+    existingTimeSlots.forEach(timeSlot => {
         
         let student = '&nbsp;-&nbsp;';
         
-        if(element.student !== false){
-            student = classList[element.student].FirstName + ' ' + classList[element.student].LastName + ' (' + classList[element.student].OrgDefinedId + ')';
+        if(timeSlot.student !== false){
+            student = classList[timeSlot.student].FirstName + ' ' + classList[timeSlot.student].LastName + ' (' + classList[timeSlot.student].OrgDefinedId + ')';
         }
 
-        html += '<tr class="timeslot" id="timeslot_' + element.groupId + '">';
-        html += '<td class="timeslot_student" data-studentid="">' + student + '</td>';
-        html += '<td class="timeslot_datetime">' + element.name + '</td>';
-        html += '<td class="timeslot_actions">';
-        if(element.student !== false){
-            html += '<button class="btn btn-secondary btn-sm cancel-timeslot" onclick="canelTimeSlot(' + element.groupId + ')" data-id="' + element.groupId + '">Cancel Registration</button> ';
+        if(duration == 0){
+            duration = timeSlot.end.diff(timeSlot.start, 'minutes');
         }
-        html += '<button class="btn btn-red btn-sm delete-timeslot" onclick="deleteTimeSlot(' + element.groupId + ')" data-id="' + element.groupId + '">Delete Time Slot</button></td>';
+
+        html = '<tr class="timeslot" id="timeslot_' + timeSlot.groupId + '">';
+        html += '<td class="timeslot_student">' + student + '</td>';
+        html += '<td class="timeslot_datetime">' + timeSlot.name + '</td>';
+        html += '<td class="timeslot_actions">';
+        if(timeSlot.student !== false){
+            html += '<button class="btn btn-secondary btn-sm cancel-timeslot" data-id="' + timeSlot.groupId + '">Cancel Registration</button> ';
+        }
+        html += '<button class="btn btn-red btn-sm delete-timeslot" data-id="' + timeSlot.groupId + '">Delete Time Slot</button></td>';
         html += '</td>';
         html += '</tr>';
-    });
 
-    $('#existing_timeslots__table').html(html);
+        $('#existing_timeslots__table').append(html);
+        $('#existing_timeslots__table #timeslot_' + timeSlot.groupId).find('.cancel-timeslot').on('click', function(){cancelTimeSlot(timeSlot)});
+        $('#existing_timeslots__table #timeslot_' + timeSlot.groupId).find('.delete-timeslot').on('click', function(){deleteTimeSlot(timeSlot)});
+    });
+    
     $('#existing_timeslots').show();
+    $('#timeslot_duration').val(duration);
+
+    return true;
+
 }
 
 function addDatetime(){
@@ -178,6 +218,7 @@ function addDatetime(){
         initializeDatetime($('.datetime__div').last());   // initialize the new datetime
     } else {
         $('#edit_timeblocks').show();
+        validateTimeFields();
     }
 }
 
@@ -189,7 +230,7 @@ function removeDatetime(element){
         validateTimeFields();
     } else if($('.datetime__div').length == 1 && MODE == 'edit'){
         $('#edit_timeblocks').hide();
-        $('#second_add_datetime').show();
+        $('#add_new_timeblocks').show();
     }
 }
 
@@ -229,10 +270,10 @@ function initializeDatetime(datetimeElem){
     //let latestTime = globalLatestTime.clone();
 
     let latestTime = moment();
-    let initialeTimes = true;
+    let initializeTimes = true;
 
     if($('.datetime__div').length > 1){
-        initialeTimes = false;
+        initializeTimes = false;
         let lastDatetime = $('.datetime__div').last().prev();
         latestTime = moment(lastDatetime.find('.date_input').val() + ' ' + lastDatetime.find('.starttime_input').val(), 'YYYY-MM-DD HH:mm').add(1, 'days');
     }
@@ -257,7 +298,7 @@ function initializeDatetime(datetimeElem){
     
     
 
-    if(initialeTimes){
+    if(initializeTimes){
         latestTime = momentFromTime(latestTime.format('HH:mm'));
     
         let minTime = momentFromTime('00:00');
@@ -465,7 +506,6 @@ function validateTimeFields(withErrors){
     //let blockValue = parseInt($('#' + selectedTab).val());
 
     if($('#edit_timeblocks').is(':visible')){
-        console.log('validating time blocks');
         $('.datetime__div').each(function(){
             let datetime = {};
             let format = "YYYY-MM-DD HH:mm";
@@ -498,6 +538,8 @@ function validateTimeFields(withErrors){
                 if(datetime1.id != datetime2.id && (
                     datetime1.start.isAfter(datetime2.start) && datetime1.start.isBefore(datetime2.end) || 
                     datetime1.end.isAfter(datetime2.start) && datetime1.end.isBefore(datetime2.end) ||
+                    datetime2.start.isAfter(datetime1.start) && datetime2.start.isBefore(datetime1.end) || 
+                    datetime2.end.isAfter(datetime1.start) && datetime2.end.isBefore(datetime1.end) ||
                     datetime1.start.isSame(datetime2.start) || datetime1.end.isSame(datetime2.end))){
                     
                     if(withErrors){
@@ -521,13 +563,18 @@ function validateTimeFields(withErrors){
             }
 
             let noOverlapWithSlots = existingTimeSlots.every(function(datetime2, j){
-                if(
-                    datetime1.start.isAfter(datetime2.start) && datetime1.start.isBefore(datetime2.end) || 
+                
+                console.log(datetime1.start.format() + ' - ' + datetime1.end.format());
+                console.log(datetime2.start.format() + ' - ' + datetime2.end.format());
+
+                if( datetime1.start.isAfter(datetime2.start) && datetime1.start.isBefore(datetime2.end) || 
                     datetime1.end.isAfter(datetime2.start) && datetime1.end.isBefore(datetime2.end) ||
+                    datetime2.start.isAfter(datetime1.start) && datetime2.start.isBefore(datetime1.end) || 
+                    datetime2.end.isAfter(datetime1.start) && datetime2.end.isBefore(datetime1.end) ||
                     datetime1.start.isSame(datetime2.start) || datetime1.end.isSame(datetime2.end)){
                     
                     if(withErrors){
-                        errorMessage('New time ranges must not overlap with existing time slots.', $('#' + datetime1.id).find(':input'));
+                        errorMessage('New time ranges must not overlap with existing time slots.', $('#' + datetime1.id).find('.timeblock_datetime_input'));
                     }
                     valid = false;
                     return false;
@@ -574,7 +621,7 @@ function validateTimeFields(withErrors){
         }
     }
 
-    updateGlobalLatestTime(latestTime);
+    //updateGlobalLatestTime(latestTime);
 
     return valid;
 
@@ -609,11 +656,12 @@ function validateAllFields(){
         return false;
     }
     
-    let deadlineDate = moment($('#deadline_date').val() + ' ' + $('#deadline_time').val(), 'YYYY-MM-DD HH:mm');
-    if(deadlineDate.isBefore(moment())){
-        errorMessage('Deadline must be after today.', [$('#deadline_date') , $('#deadline_time')]);
-        return false;
-    }
+    // not supported by api
+    // let deadlineDate = moment($('#deadline_date').val() + ' ' + $('#deadline_time').val(), 'YYYY-MM-DD HH:mm');
+    // if(deadlineDate.isBefore(moment())){
+    //     errorMessage('Deadline must be after today.', [$('#deadline_date') , $('#deadline_time')]);
+    //     return false;
+    // }
 
     let valid = validateTimeFields(true);
 
@@ -639,73 +687,89 @@ function updateTimeSlots(timeBlock){
 
 async function submitForm(){
 
-    if(!validateAllFields(true)){
-        return false;
-    }
+    if(!SUBMITTING){
 
-    if(ORG_UNIT_ID == null){
-        errorMessage('All fields are valid, but Org Unit Id is not defined');
-        return false;
-    }
+        SUBMITTING = true;
 
-    return false;
-
-    let groupCategory;
-    let newTopic;
-
-    if(MODE == 'create'){
-        groupCategory = await createGroupCategory();
-        GROUP_CATEGORY_ID = groupCategory.CategoryId;
-        newTopic = await createTopic();
-    } else {
-        await updateGroupCategory();
-        await updateTopic();
-    }
-
-    if(GROUP_CATEGORY_ID != null){
-
-        let groupsInCategory;
-
-        if(MODE == 'create'){
-            groupsInCategory = await getGroupsInCategory();
+        if(!validateAllFields(true)){
+            SUBMITTING = false;
+            return false;
         }
 
-        for(const [index,timeSlot] of newTimeSlots.entries()){
+        if(true || ORG_UNIT_ID == null){
+            errorMessage('All fields are valid, but Org Unit Id is not defined');
+            SUBMITTING = false;
+            return false;
+        }
 
-                let group;
+        let groupCategory;
+        let newTopic;
 
-                if(MODE == 'create'){
-                    group = groupsInCategory[index];
-                } else {
-                    group = await createGroup(timeSlot);
+        if(MODE == 'create'){
+            groupCategory = await createGroupCategory();
+
+            GROUP_CATEGORY_ID = groupCategory.CategoryId;
+            newTopic = await createTopic();
+        } else {
+            await updateGroupCategory();
+            await updateTopic();
+        }
+
+
+        if(GROUP_CATEGORY_ID != null){
+
+            let groupsInCategory;
+
+            if(MODE == 'create'){
+                groupsInCategory = await getGroupsInCategory();
+            } else {
+                for (timeSlot in existingTimeSlots){
+                    await updateCalendarEvent(timeSlot);
                 }
+            }
 
-                timeSlot.groupId = group.GroupId;
-                
-                let newEvent = await createCalendarEvent(timeSlot);
-                
-                timeSlot.eventId = newEvent.CalendarEventId;
-                
-                let updatedGroup = await updateGroup(timeSlot);
+            console.log(newTimeSlots);
+            SUBMITTING = false;
+            return false;
 
-        };
+            for(const [index,timeSlot] of newTimeSlots.entries()){
+
+                    let group;
+
+                    if(MODE == 'create'){
+                        group = groupsInCategory[index];
+                    } else {
+                        group = await createGroup(timeSlot);
+                    }
+
+                    timeSlot.groupId = group.GroupId;
+                    
+                    let newEvent = await createCalendarEvent(timeSlot);
+                    
+                    timeSlot.eventId = newEvent.CalendarEventId;
+                    
+                    await updateGroup(timeSlot);
+
+            };
+        }
+
+        errorMessage('Form submitted successfully.',null,function(){
+            if(MODE == 'create'){
+                window.location.href = '/d2l/le/content/' + ORG_UNIT_ID + '/viewContent/' + newTopic.Id + '/View'; 
+            } else {
+                window.location.reload();
+            }
+        });
+
+        setTimeout(function(){
+            if(MODE == 'create'){
+                window.location.href = '/d2l/le/content/' + ORG_UNIT_ID + '/viewContent/' + newTopic.Id + '/View'; 
+            } else {
+                window.location.reload();
+            }
+        }, 5000);
+
     }
-
-    errorMessage('Form submitted successfully.',null,function(){
-        if(MODE == 'create'){
-            window.location.href = '/d2l/le/content/' + ORG_UNIT_ID + '/viewContent/' + newTopic.Id + '/View'; 
-        } else {
-            window.location.reload();
-        }
-    });
-
-    setTimeout(function(){
-        if(MODE == 'create'){
-            window.location.href = '/d2l/le/content/' + ORG_UNIT_ID + '/viewContent/' + newTopic.Id + '/View'; 
-        } else {
-            window.location.reload();
-        }
-    }, 5000);
 
 }
 
@@ -714,30 +778,65 @@ function createGroupCategory(){
     let title = $('#title').val().trim();
     let description = $('#description').val().trim();
 
-    let format = "YYYY-MM-DD HH:mm";
-    let deadlineDate = $('#deadline_date').val();
-    let deadlineTime = $('#deadline_time').val();
+    // DEADLINE NOT SUPPORTED BY API
+    // TODO: SWITCH TO SUBMITTING FORM DATA
+    // let format = "YYYY-MM-DD HH:mm";
+    // let deadlineDate = $('#deadline_date').val();
+    // let deadlineTime = $('#deadline_time').val();
     
-    let deadlineUTCDateTime = convertToUTCDateTimeString(moment(deadlineDate + " " + deadlineTime, format));
+    // let deadlineUTCDateTime = convertToUTCDateTimeString(moment(deadlineDate + " " + deadlineTime, format));
 
     let category = {
         "Name": title,
-        "Description": {"Content": description, "Type":"Text"}, //{"Content": <string>,"Type": "Text|Html"}
-        "EnrollmentStyle": 5, //PeoplePerNumberOfGroupsSelfEnrollment
+        "Description": {"Content": description, "Type":"Text"},
+        "EnrollmentStyle": "PeoplePerNumberOfGroupsSelfEnrollment",
         "EnrollmentQuantity": null,
         "AutoEnroll": false,
         "RandomizeEnrollments": false,
         "NumberOfGroups": newTimeSlots.length,
         "MaxUsersPerGroup": 1,
         "AllocateAfterExpiry": false,
-        "SelfEnrollmentExpiryDate": deadlineUTCDateTime, //<string:UTCDateTime>( yyyy-MM-ddTHH:mm:ss.fffZ )|null,
+        "SelfEnrollmentExpiryDate": null, //deadlineUTCDateTime, //<string:UTCDateTime>( yyyy-MM-ddTHH:mm:ss.fffZ )|null,
         "GroupPrefix": null,
         "RestrictedByOrgUnitId": null,
-        "DescriptionsVisibleToEnrolees": true  // Added with LP API version 1.42
+        "DescriptionsVisibleToEnrolees": true
     };
     
     return bs.post('/d2l/api/lp/(version)/(orgUnitId)/groupcategories/', category);
     
+}
+
+async function updateGroupCategory(){
+
+    let title = $('#title').val().trim();
+    let description = $('#description').val().trim();
+
+    // DEADLINE NOT SUPPORTED BY API
+    // TODO: SWITCH TO SUBMITTING FORM DATA
+    // let format = "YYYY-MM-DD HH:mm";
+    // let deadlineDate = $('#deadline_date').val();
+    // let deadlineTime = $('#deadline_time').val();
+    
+    // let deadlineUTCDateTime = convertToUTCDateTimeString(moment(deadlineDate + " " + deadlineTime, format));
+
+    let category = {
+        "Name": title,
+        "Description": {"Content": description, "Type":"Text"},
+        "EnrollmentStyle": "PeoplePerNumberOfGroupsSelfEnrollment",
+        "EnrollmentQuantity": null,
+        "AutoEnroll": false,
+        "RandomizeEnrollments": false,
+        "NumberOfGroups": null,
+        "MaxUsersPerGroup": 1,
+        "AllocateAfterExpiry": false,
+        "SelfEnrollmentExpiryDate": null, //deadlineUTCDateTime, //<string:UTCDateTime>( yyyy-MM-ddTHH:mm:ss.fffZ )|null,
+        "GroupPrefix": null,
+        "RestrictedByOrgUnitId": null,
+        "DescriptionsVisibleToEnrolees": true
+    };
+    
+    return bs.put('/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + GROUP_CATEGORY_ID, category);
+
 }
 
 function createGroup(timeSlot){
@@ -752,7 +851,7 @@ function createGroup(timeSlot){
     
 }
 
-function updateGroup(timeSlot){
+async function updateGroup(timeSlot){
     
     let group = {
         "Name": timeSlot.start.format('MMM Do YYYY h:mm A') + '-' + timeSlot.end.format('h:mm A'),
@@ -792,43 +891,40 @@ function createCalendarEvent(timeSlot){
         }
     };
 
-    // let event = {
-    //     "Title": title,
-    //     "Description": "",
-    //     "StartDateTime": convertToUTCDateTimeString(timeSlot.start),
-    //     "EndDateTime": convertToUTCDateTimeString(timeSlot.end),
-    //     //"StartDay": <string:LocalDateTime>|null,
-    //     //"EndDay": <string:LocalDateTime>|null,
-    //     "GroupId": timeSlot.groupId,
-    //     "RecurrenceInfo": {
-    //         "RepeatType": 1,
-    //         "RepeatEvery": 0,
-    //         "RepeatOnInfo": {
-    //             "Monday": false,
-    //             "Tuesday": false,
-    //             "Wednesday": false,
-    //             "Thursday": false,
-    //             "Friday": false,
-    //             "Saturday": false,
-    //             "Sunday": false
-    //         },
-    //         "RepeatUntilDate": convertToUTCDateTimeString(timeSlot.end)
-    //     },
-    //     //"LocationId": <number:D2LID>|null,
-    //     "LocationName": "",
-    //     //"AssociatedEntity": { <composite:Calendar.AssociatedEntity> },
-    //     "VisibilityRestrictions": {
-    //         "Type": 1,
-    //         // "Range": <number>|null,
-    //         // "HiddenRangeUnitType": <number:HIDDENUNITT>|null,
-    //         // "StartDate": <string:UTCDateTime>|null,
-    //         // "EndDate": <string:UTCDateTime>|null,
-    //     }
-    // };
-
     return bs.post('/d2l/api/le/(version)/(orgUnitId)/calendar/event/', event);
    
 }
+
+async function updateCalendarEvent(timeSlot){
+    let event_title = $('#event_title').val().trim();
+    if(event_title == ''){
+        event_title = $('#title').val().trim();
+    }
+
+    let event = {
+        "Title": event_title,
+        "Description": "",
+        "StartDateTime": convertToUTCDateTimeString(timeSlot.start),
+        "EndDateTime": convertToUTCDateTimeString(timeSlot.end),
+        "StartDay": null,
+        "EndDay": null,
+        "GroupId": timeSlot.groupId,
+        "RecurrenceInfo": null,
+        "LocationId": null,
+        "LocationName": "",
+        "AssociatedEntity": null,
+        "VisibilityRestrictions": {
+            "Type": 1,
+            "Range": null,
+            "HiddenRangeUnitType": null,
+            "StartDate": null,
+            "EndDate": null
+        }
+    };
+
+    return bs.put('/d2l/api/le/(version)/(orgUnitId)/calendar/event/' + timeSlot.eventId, event);
+}
+
 
 async function createTopic(){
 
@@ -857,6 +953,27 @@ async function createTopic(){
     ];
 
     return bs.post('/d2l/api/le/(version)/(orgUnitId)/content/modules/' + targetModuleId + '/structure/?renameFileIfExists=true', topic);
+
+}
+
+async function updateTopic(){
+
+    let title = $('#title').val().trim();
+
+    let topic = await bs.get('/d2l/api/le/(version)/(orgUnitId)/content/topics/' + TOPIC_ID);
+
+    topic = {
+        "Title": title,
+        "ShortTitle": "",
+        "Type": 1,
+        "TopicType": 1,
+        "Url": topic.Url,
+        "IsHidden": false,
+        "IsLocked": false,
+        "MajorUpdateText": ""        
+    }
+
+    return bs.put('/d2l/api/le/(version)/(orgUnitId)/content/topics/' + TOPIC_ID, topic);
 
 }
 
@@ -909,25 +1026,39 @@ function sendEmail(address, subject, body){
     return bs.submit(url, formData);
 }
 
-async function deleteTimeSlot(timeSlot){
-    await cancelTimeSlot(timeSlot.groupId);
+async function deleteTimeSlot(timeSlot, requiresConfirmation = true){
+
+    if(requiresConfirmation && !confirm('Are you sure you want to delete this time slot?\n\nIt will remove all registrations and associated events for this time.')){
+        return false;
+    }
+
+    $('#timeslot_' + timeSlot.groupId).remove();
+
+    await cancelTimeSlot(timeSlot, false);
     await deleteCalendarEvent(timeSlot.eventId);
     await deleteGroup(timeSlot.groupId);
 
     // remove timeSlot from existingTimeSlots
     existingTimeSlots = existingTimeSlots.filter(function( ets ) {
-        return ets.groupId !== timeSlot.groupId;
+        return ets.groupId !== timeSlotId;
     });
+
 }
 
-function cancelTimeSlot(id){
-    $('#timeslot_' + id + ' .timeslot_student').html('');
-    return unenrolFromGroup(id);
+function cancelTimeSlot(timeSlot, requiresConfirmation = true){
+    if(requiresConfirmation && !confirm('Are you sure you cancel this registration?\n\nThe student will be removed and they will be able to select a different time.')){
+        return false;
+    }
+
+    timeSlot.student = false;
+    $('#timeslot_' + groupId + ' .timeslot_student').html('&nbsp;-&nbsp;');
+    $('#timeslot_' + groupId).find('.cancel-timeslot').remove();
+    return unenrolFromGroup(groupId, student);
 }
 
 
-function unenrolFromGroup(groupId,userId){
-    return bs.delete('/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + GROUP_CATEGORY_ID + '/groups/' + groupId + '/enrollments/' + userId);
+function unenrolFromGroup(groupId, student){
+    return bs.delete('/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + GROUP_CATEGORY_ID + '/groups/' + groupId + '/enrollments/' + student);
 }
 
 function deleteCalendarEvent(eventId){
@@ -970,6 +1101,11 @@ function errorMessage(message, id = null, callback = null){
     if(callback !== null){
         $('#messageModal').find('.modal-footer').find('btn-primary').on('click', callback);
     }
+
+    // is it in an iframe?
+    let theWindow = window.self === window.top ? window : window.parent;
+
+    $('#messageModal').css('top', $(theWindow).scrollTop() + 'px');
 
     $('#messageModal').modal('show');
 

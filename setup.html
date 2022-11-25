@@ -56,7 +56,7 @@ let GROUP_CATEGORY_ID = (MODE == 'edit' ? params.gc : null);
                         </div>
                     </div>
                 </div>
-                <div class="row" id="deadline__div">
+                <!--div class="row" id="deadline__div">
                     <div class="col-xs-12 col-sm-offset-2 col-sm-8">                        
                         <div>
                             <h2>Signup Deadline</h2>
@@ -74,7 +74,7 @@ let GROUP_CATEGORY_ID = (MODE == 'edit' ? params.gc : null);
                             <select name="deadline_time" id="deadline_time" class="form-control time_input"></select>
                         </label>
                     </div>
-                </div>
+                </div-->
                 <div id="edit_timeblocks">
                     <div class="row">
                         <div class="col-xs-12 col-sm-offset-2 col-sm-8">
@@ -92,19 +92,19 @@ let GROUP_CATEGORY_ID = (MODE == 'edit' ? params.gc : null);
                             <div class="col col-sm-offset-2 col-sm-4">
                                 <label for="date_1" class="date_label">
                                     <p>Date</p>
-                                    <p><input type="text" name="date_1" id="date_1" class="form-control date_input" required /></p>
+                                    <p><input type="text" name="date_1" id="date_1" class="form-control date_input timeblock_datetime_input" required /></p>
                                 </label>
                             </div>
                             <div class="col col-sm-2 col-xs-6">
                                 <label for="starttime_1" class="starttime_label">
                                     <p>Start&nbsp;Time</p>
-                                    <p><select name="starttime_1" id="starttime_1" class="form-control starttime_input" required></select></p>
+                                    <p><select name="starttime_1" id="starttime_1" class="form-control starttime_input timeblock_datetime_input" required></select></p>
                                 </label>
                             </div>
                             <div class="col col-sm-2 col-xs-6">
                                 <label for="endtime_1" class="endtime_label">
                                     <p>End&nbsp;Time</p>
-                                    <p><select name="endtime_1" id="endtime_1" class="form-control endtime_input" required></select></p>
+                                    <p><select name="endtime_1" id="endtime_1" class="form-control endtime_input timeblock_datetime_input" required></select></p>
                                 </label>
                             </div>
                         </div>
@@ -144,9 +144,9 @@ let GROUP_CATEGORY_ID = (MODE == 'edit' ? params.gc : null);
                         </div>
                     </div>
                 </div>
-                <div class="row" id="second_add_datetime">
+                <div class="row" id="add_new_timeblocks">
                     <div class="col-xs-12 col-sm-offset-2 col-sm-8">
-                        <p><input type="button" class="btn btn-secondary" value="Add another date &amp; time range" onclick="$('#second_add_datetime').hide(); addDatetime()"/></p>
+                        <p><input type="button" class="btn btn-secondary" value="Add another date &amp; time range" onclick="$('#add_new_timeblocks').hide(); addDatetime()"/></p>
                     </div>
                 </div>
                 <div class="row">
@@ -155,9 +155,9 @@ let GROUP_CATEGORY_ID = (MODE == 'edit' ? params.gc : null);
                     </div>
                 </div>                
             </form>
-            <div class="row">
+            <div class="row" id="edit_schedule">
                 <div class="col-xs-12 col-sm-offset-2 col-sm-8">
-                    <p><br><input type="button" class="btn btn-primary" value="Edit Schedule" onclick="$(this).hide(); $('#signup_schedule__form').show();" /></p>
+                    <p><br><input type="button" class="btn btn-primary" value="Edit Schedule" onclick="$('#edit_schedule').hide(); $('#signup_schedule__form').show();" /></p>
                 </div>
             </div>
 		</main>
