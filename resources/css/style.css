@@ -17,9 +17,11 @@ h3,h4{font-weight: bold;}
 #existing_timeslots,#signup_schedule__form,#edit_timeblocks,#edit_schedule,#add_new_timeblocks{display: none;}
 #existing_timeslots__table{width: 100%;border-collapse: collapse;font-size: 16px;margin-bottom: 20px;}
 #existing_timeslots__table td, #existing_timeslots__table th{padding: 10px;border: 1px solid #bbb;}
+.student_timeslot_actions{display:none;}
 tr.timeslot:hover{background-color: #ffd;}
 .datetime_title{margin-bottom: 5px;}
 .timeslot_unit{width:100%; max-width: 363px;}
 #add_new_timeblocks{margin-top:20px;}
+#my_selection{display:none;}
 .modal-header{border:none;}
 .modal p{color:#000; font-size: 1.2em;}
