@@ -6,6 +6,39 @@
 .container-fluid{padding-bottom:20px;}
 input[type=text],label{width: 100%;}
 h3,h4{font-weight: bold;}
+table {
+    border-collapse:separate;
+    border:1px solid #bbb;
+    border-radius:6px;
+}
+tr:first-child th:first-child{
+    border-top-left-radius:6px;
+}
+tr:first-child th:last-child{
+    border-top-right-radius:6px;
+}
+td, th {
+    border-left:1px solid #bbb;
+    border-top:1px solid #bbb;
+    padding:10px 20px;
+    vertical-align:middle;
+    text-align: center;
+    height:3.5em;
+}
+th {
+    border-top: none;
+    font-weight: bold;
+    background-color: #f9fbff;
+}
+td:first-child, th:first-child {
+    border-left: none;
+}
+tr:last-child td:first-child {
+    border-bottom-left-radius:6px;
+}
+tr:last-child td:last-child {
+    border-bottom-right-radius:6px;
+}
 .btn{padding:0.8em 2em; font-weight: bold; border-radius: 0.5em;}
 .btn-red{background-color: #d0021b; color: #fff;}
 .btn-red:hover,.btn-red:focus{background-color: #b4001a; color: #fff;}
@@ -15,8 +48,7 @@ h3,h4{font-weight: bold;}
 .tab-pane{padding: 10px 10px 0px 10px; margin-bottom: 1px solid #ccc;}
 .error{background-color: #ffbbbb;}
 #existing_timeslots,#signup_schedule__form,#edit_timeblocks,#edit_schedule,#add_new_timeblocks{display: none;}
-#existing_timeslots__table{width: 100%;border-collapse: collapse;font-size: 16px;margin-bottom: 20px;}
-#existing_timeslots__table td, #existing_timeslots__table th{padding: 10px;border: 1px solid #bbb;}
+#existing_timeslots__table{width: 100%;font-size: 16px;margin-bottom: 20px;}
 .student_timeslot_actions{display:none;}
 tr.timeslot:hover{background-color: #ffd;}
 .datetime_title{margin-bottom: 5px;}

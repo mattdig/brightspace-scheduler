@@ -75,6 +75,8 @@ async function displayGroupsInCategory(groups){
     
     if(MY_TIME === false){
         $('.student_timeslot_actions').show();
+    } else {
+        $('.student_timeslot_actions').remove();
     }
     $('#existing_timeslots').show();
     

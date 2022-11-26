@@ -388,25 +388,28 @@ function updateTotalTimeSlots(){
 
         timeSlotDuration = parseInt($('#timeslot_duration').val());
 
+        if(timeSlotDuration < 5){
+            $('#total_timeslots').text('Please enter a valid time slot duration of at least 5 mintues.');
+            return false;
+        }
+
         timeBlocks.forEach(block => {
             totalTime += block.end.diff(block.start, 'minutes');
 
-            if(timeSlotDuration >= 5){
-                let timeSlotsInBlock = parseInt(Math.floor(block.end.diff(block.start, 'minutes') / timeSlotDuration));
+            let timeSlotsInBlock = parseInt(Math.floor(block.end.diff(block.start, 'minutes') / timeSlotDuration));
 
-                for(i = 0; i < timeSlotsInBlock; i++){
-                    let newTimeSlot = {
-                        groupId: null,
-                        eventId: null,
-                        start: block.start.clone().add(i * timeSlotDuration, 'minutes'),
-                        end: block.start.clone().add((i + 1) * timeSlotDuration, 'minutes'),
-                    };
-                    newTimeSlots.push(newTimeSlot);
-                }
-
-                totalTimeSlots += timeSlotsInBlock;
+            for(i = 0; i < timeSlotsInBlock; i++){
+                let newTimeSlot = {
+                    groupId: null,
+                    eventId: null,
+                    start: block.start.clone().add(i * timeSlotDuration, 'minutes'),
+                    end: block.start.clone().add((i + 1) * timeSlotDuration, 'minutes'),
+                };
+                newTimeSlots.push(newTimeSlot);
             }
 
+            totalTimeSlots += timeSlotsInBlock;
+            
         });
 
     // total number was too hard to calculate, so just use the number of time slots in the first block
@@ -459,7 +462,7 @@ function updateTotalTimeSlots(){
         $('#total_timeslots').text('This will create ' + totalTimeSlots + ' time slots of ' + timeSlotDuration + ' minutes each.');
         return true;
     } else {
-        $('#total_timeslots').text('Please enter a valid time slot duration of at least 5 mintues.');
+        $('#total_timeslots').text('No new timeslots will be created.');
         return false;
     }
 
@@ -607,13 +610,11 @@ function validateTimeFields(withErrors){
     //     return false;
     // }
 
-    if(valid){
-        if(!updateTotalTimeSlots() && withErrors){
-            errorMessage('Please enter a time slot duration of at least 5.', $('#timeslot_duration'));
-            valid = false;
-        }
+    if(!updateTotalTimeSlots() && withErrors){
+        errorMessage('Please enter a time slot duration of at least 5.', $('#timeslot_duration'));
+        valid = false;
     }
-
+    
     //updateGlobalLatestTime(latestTime);
 
     return valid;
@@ -704,6 +705,7 @@ async function submitForm(){
 
             GROUP_CATEGORY_ID = groupCategory.CategoryId;
             newTopic = await createTopic();
+            TOPIC_ID = newTopic.Id;
         } else {
             result = await updateGroupCategory();
             result = await updateTopic();
@@ -743,24 +745,19 @@ async function submitForm(){
             };
         }
 
-        errorMessage('Form submitted successfully.',null,function(){
-            if(MODE == 'create'){
-                window.location.href = '/d2l/le/content/' + ORG_UNIT_ID + '/viewContent/' + newTopic.Id + '/View'; 
-            } else {
-                window.location.reload();
-            }
-        });
-
-        setTimeout(function(){
-            if(MODE == 'create'){
-                window.location.href = '/d2l/le/content/' + ORG_UNIT_ID + '/viewContent/' + newTopic.Id + '/View'; 
-            } else {
-                window.location.reload();
-            }
-        }, 5000);
+        errorMessage('Form submitted successfully.',null,reloadAfterSave);
+        setTimeout(reloadAfterSave, 5000);
 
     }
 
+}
+
+function reloadAfterSave(){
+    if(MODE == 'create'){
+        window.location.href = '/d2l/le/content/' + ORG_UNIT_ID + '/viewContent/' + TOPIC_ID + '/View'; 
+    } else {
+        window.location.reload();
+    }
 }
 
 function createGroupCategory(){
@@ -1086,7 +1083,7 @@ function errorMessage(message, id = null, callback = null){
     $('#messageModal').find('.modal-body').html('<p>' + message + '</p>');
 
     if(callback !== null){
-        $('#messageModal').find('.modal-footer').find('btn-primary').on('click', callback);
+        $('#messageModal').find('.modal-footer').find('.btn-primary').on('click', callback);
     }
 
     // is it in an iframe?
