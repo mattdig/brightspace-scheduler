@@ -73,10 +73,6 @@ async function setup(){
         let url = window.parent.location.href;
         let match = url.match(/\/viewContent\/(\d+)\//);
         TOPIC_ID = match[1];
-        
-        let topic = await bs.get('/d2l/api/le/(version)/(orgUnitId)/content/topics/' + TOPIC_ID);
-        console.log(topic);
-
         $('#form_title').html('Edit Signup Schedule');
 
         // deadline not supported by api
@@ -564,9 +560,6 @@ function validateTimeFields(withErrors){
 
             let noOverlapWithSlots = existingTimeSlots.every(function(datetime2, j){
                 
-                console.log(datetime1.start.format() + ' - ' + datetime1.end.format());
-                console.log(datetime2.start.format() + ' - ' + datetime2.end.format());
-
                 if( datetime1.start.isAfter(datetime2.start) && datetime1.start.isBefore(datetime2.end) || 
                     datetime1.end.isAfter(datetime2.start) && datetime1.end.isBefore(datetime2.end) ||
                     datetime2.start.isAfter(datetime1.start) && datetime2.start.isBefore(datetime1.end) || 
@@ -696,7 +689,8 @@ async function submitForm(){
             return false;
         }
 
-        if(true || ORG_UNIT_ID == null){
+        if(ORG_UNIT_ID == null){
+            console.log(newTimeSlots);
             errorMessage('All fields are valid, but Org Unit Id is not defined');
             SUBMITTING = false;
             return false;
@@ -711,8 +705,8 @@ async function submitForm(){
             GROUP_CATEGORY_ID = groupCategory.CategoryId;
             newTopic = await createTopic();
         } else {
-            await updateGroupCategory();
-            await updateTopic();
+            result = await updateGroupCategory();
+            result = await updateTopic();
         }
 
 
@@ -723,14 +717,10 @@ async function submitForm(){
             if(MODE == 'create'){
                 groupsInCategory = await getGroupsInCategory();
             } else {
-                for (timeSlot in existingTimeSlots){
-                    await updateCalendarEvent(timeSlot);
+                for (timeSlot of existingTimeSlots){
+                    result = await updateCalendarEvent(timeSlot);
                 }
             }
-
-            console.log(newTimeSlots);
-            SUBMITTING = false;
-            return false;
 
             for(const [index,timeSlot] of newTimeSlots.entries()){
 
@@ -1045,32 +1035,29 @@ async function deleteTimeSlot(timeSlot, requiresConfirmation = true){
 
 }
 
-function cancelTimeSlot(timeSlot, requiresConfirmation = true){
+async function cancelTimeSlot(timeSlot, requiresConfirmation = true){
     if(requiresConfirmation && !confirm('Are you sure you cancel this registration?\n\nThe student will be removed and they will be able to select a different time.')){
         return false;
     }
-
+    $('#timeslot_' + timeSlot.groupId + ' .timeslot_student').html('&nbsp;-&nbsp;');
+    $('#timeslot_' + timeSlot.groupId).find('.cancel-timeslot').remove();
+    let result = await unenrolFromGroup(timeSlot.groupId, timeSlot.student);
     timeSlot.student = false;
-    $('#timeslot_' + groupId + ' .timeslot_student').html('&nbsp;-&nbsp;');
-    $('#timeslot_' + groupId).find('.cancel-timeslot').remove();
-    return unenrolFromGroup(groupId, student);
+    return result;
 }
 
 
-function unenrolFromGroup(groupId, student){
-    return bs.delete('/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + GROUP_CATEGORY_ID + '/groups/' + groupId + '/enrollments/' + student);
+function unenrolFromGroup(groupId, userId){
+    let url = '/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + GROUP_CATEGORY_ID + '/groups/' + groupId + '/enrollments/' + userId;
+    return bs.delete(url);
 }
 
-function deleteCalendarEvent(eventId){
-    
+function deleteCalendarEvent(eventId){    
     return bs.delete('/d2l/api/le/(version)/(orgUnitId)/calendar/event/' + eventId);
-
 }
 
 function deleteGroup(groupId){
-    
     return bs.delete('/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + GROUP_CATEGORY_ID + '/groups/' + groupId);
-    
 }
 
 async function getClassList(){
