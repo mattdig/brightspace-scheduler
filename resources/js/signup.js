@@ -18,8 +18,8 @@ async function init() {
     availableGroups = await displayGroupsInCategory(groups);
 
     if(MY_TIME !== false){
-        $('#my_selection__content').html('<p>You have selected ' + MY_TIME.Name + '.</p>' + '<p><button class="btn btn-secondary btn-sm cancel-timeslot" id="cancel-selection">Cancel my selection</button></p>');
-        $('#my_selection__content').find('#cancel-selection').on('click', function(){cancelSelection(MY_TIME)});
+        $('#my_selection__content').html('<p>You have selected ' + MY_TIME.name + '.</p>' + '<p><button class="btn btn-secondary btn-sm cancel-timeslot" id="cancel-selection">Cancel my selection</button></p>');
+        $('#cancel-selection').on('click', function(){cancelMySelection()});
         $('#my_selection').show();
     }
 
@@ -45,8 +45,7 @@ async function displayGroupsInCategory(groups){
     }
 
     let availableGroups = 0;
-
-    let html = '<tr><th>Date & Time</th>' + (MY_TIME === false ? '<th class="student_timeslot_actions>&nbsp;</th>' : '') + '</tr>';
+    let html = '<tr><th>Date & Time</th><th class="student_timeslot_actions">&nbsp;</th></tr>';
 
     $('#existing_timeslots__table').html(html);
 
@@ -58,15 +57,13 @@ async function displayGroupsInCategory(groups){
 
             html = '<tr class="timeslot" id="timeslot_' + group.GroupId + '">';
             html += '<td class="timeslot_datetime">' + group.Name + '</td>';
-            if(MY_TIME === false){
-                html += '<td class="timeslot_actions student_timeslot_actions">';
-                html += '<button class="btn btn-secondary btn-sm select-timeslot" data-id="' + group.GroupId + '">Select this time</button> ';
-                html += '</td>';
-            }
+            html += '<td class="timeslot_actions student_timeslot_actions">';
+            html += '<button class="btn btn-secondary btn-sm select-timeslot" data-id="' + group.GroupId + '">Select this time</button> ';
+            html += '</td>';
             html += '</tr>';
 
             $('#existing_timeslots__table').append(html);
-            $('#existing_timeslots__table #timeslot_' + group.GroupId).find('.select-timeslot').on('click', function(){selectTimeSlot(group)});
+            $('#timeslot_' + group.GroupId).find('.select-timeslot').on('click', function(){selectTimeSlot(group)});
         } else if (group.Enrollments[0] == USER.Identifier){
             MY_TIME = {
                 name: group.Name,
@@ -76,21 +73,23 @@ async function displayGroupsInCategory(groups){
         }
     });
     
+    if(MY_TIME === false){
+        $('.student_timeslot_actions').show();
+    }
     $('#existing_timeslots').show();
     
     return availableGroups;
 
 }
 
-function cancelTimeSlot(timeSlot){
+async function cancelMySelection(){
     if(MY_TIME === false || !confirm('Are you sure you cancel this registration?\n\nYou will lose this time slot and you will need to select a new one.')){
         return false;
     }
 
+    $('#cancel-selection').remove();
+    let result = await unenrollFromGroup(MY_TIME.groupId, MY_TIME.student);
     MY_TIME = false;
-    $('#timeslot_' + timeSlot + ' .timeslot_student').html('&nbsp;-&nbsp;');
-    $('#timeslot_' + groupId).find('.cancel-timeslot').remove();
-    unenrolFromGroup(groupId, student);
     window.location.reload();
 }
 
@@ -98,18 +97,41 @@ async function selectTimeSlot(group){
     if(MY_TIME !== false || !confirm('Are you sure you want to select:\n\n' + group.Name)){
         return false;
     }
-    await enrollInGroup(group.GroupId, group.Enrollments[0]);
+
+    let data = {
+        "d2l_rf": "IsGroupFull",
+        "params": "{\"param1\":" + group.GroupId + "}",
+        "d2l_action": "rpc"
+    };
+    let isFull = await bs.submit('/d2l/lms/group/user_available_group_list.d2lfile?ou=7194&d2l_rh=rpc&d2l_rt=call',data);
+    
+    if(isFull.Result == 'true'){
+        alert('This time slot is full. Please select another time slot.');
+        $('#timeslot_' + group.GroupId).find('.select-timeslot').remove();
+        return false;
+    }
+
+    result = await enrollInGroup(group.GroupId, USER.Identifier);
     alert('You have successfully selected ' + group.Name + '.');
     window.location.reload();
 }
 
-async function enrollInGroup(groupId, student){
+function enrollInGroup(groupId){
+    // api doesn't let learners enroll themselves, form must be used instead
     let data = {
-        "UserId": student
+        "d2l_rf": "EnrollUser",
+        "params": "{\"param1\":" + groupId + "}",
+        "d2l_action": "rpc"
     };
-    return bs.post('/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + GROUP_CATEGORY_ID + '/groups/' + groupId + '/enrollments/', data);
+    return bs.submit('/d2l/lms/group/user_available_group_list.d2lfile?ou=7194&d2l_rh=rpc&d2l_rt=call', data);
 }
 
-function unenrolFromGroup(groupId, student){
-    return bs.delete('/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + GROUP_CATEGORY_ID + '/groups/' + groupId + '/enrollments/' + student);
+function unenrollFromGroup(groupId){
+    // api doesn't let learners unenroll themselves, form must be used instead
+    let data = {
+        "d2l_rf": "UnenrollUser",
+        "params": "{\"param1\":" + groupId + "}",
+        "d2l_action": "rpc"
+    };
+    return bs.submit('/d2l/lms/group/user_group_list.d2lfile?ou=(orgUnitId)&d2l_rh=rpc&d2l_rt=call', data);
 }
