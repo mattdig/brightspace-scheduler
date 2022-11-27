@@ -8,9 +8,8 @@ $(document).ready(function() {
 
 async function init() {
     USER = await bs.get('/d2l/api/lp/(version)/users/whoami');
-    console.log(GROUP_CATEGORY_ID);
+
     let groupCategory = await bs.get('/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + GROUP_CATEGORY_ID);
-    console.log(groupCategory);
     $('#description').val(groupCategory.Description.Text);
     
     let groups = await getGroupsInCategory();
@@ -34,7 +33,6 @@ async function init() {
 
 async function getGroupsInCategory(){
     let groups = await bs.get('/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + GROUP_CATEGORY_ID + '/groups/');
-    console.log(groups);
     return groups;
 }
 
