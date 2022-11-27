@@ -10,14 +10,18 @@ async function init() {
     USER = await bs.get('/d2l/api/lp/(version)/users/whoami');
 
     let groupCategory = await bs.get('/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + GROUP_CATEGORY_ID);
-    $('#description').val(groupCategory.Description.Text);
+    console.log(groupCategory);
+    if(groupCategory.Description.Text != ''){
+        $('#schedule_description').html(groupCategory.Description.Text)
+        $('#schedule_description').show();
+    }
     
     let groups = await getGroupsInCategory();
 
     availableGroups = await displayGroupsInCategory(groups);
 
     if(MY_TIME !== false){
-        $('#my_selection__content').html('<p>You have selected ' + MY_TIME.name + '.</p>' + '<p><button class="btn btn-secondary btn-sm cancel-timeslot" id="cancel-selection">Cancel my selection</button></p>');
+        $('#my_selection__content').html('<h3>' + MY_TIME.name + '</h3>' + '<p><button class="btn btn-secondary btn-sm cancel-timeslot" id="cancel-selection">Cancel my selection</button></p>');
         $('#cancel-selection').on('click', function(){cancelMySelection()});
         $('#my_selection').show();
     }

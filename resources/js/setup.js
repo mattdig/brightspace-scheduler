@@ -80,7 +80,10 @@ async function setup(){
         let groupCategory = await bs.get('/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + GROUP_CATEGORY_ID);
         $('#title').val(groupCategory.Name);
 
-        $('#description').val(groupCategory.Description.Text);
+        if(groupCategory.Description.Text != ''){
+            $('#schedule_description').html(groupCategory.Description.Text)
+            $('#schedule_description').show();
+        }
 
         // not supported by api
         // $('#deadline_date').val(moment.utc(groupCategory.SelfEnrollmentExpiryDate, 'YYYY-MM-DDTHH:mm:ss.fffZ').tz(timeZone).format('YYYY-MM-DD'));
@@ -829,7 +832,7 @@ async function updateGroupCategory(){
 function createGroup(timeSlot){
     
     let group = {
-        "Name": timeSlot.start.format('MMM Do YYYY h:mm A') + '-' + timeSlot.end.format('h:mm A'),
+        "Name": timeSlot.start.format('MMM Do YYYY, h:mm A') + '-' + timeSlot.end.format('h:mm A'),
         "Code": "",
         "Description": { "Content": "", "Type": "Text" },
     }
@@ -841,7 +844,7 @@ function createGroup(timeSlot){
 async function updateGroup(timeSlot){
     
     let group = {
-        "Name": timeSlot.start.format('MMM Do YYYY h:mm A') + '-' + timeSlot.end.format('h:mm A'),
+        "Name": timeSlot.start.format('MMM Do YYYY, h:mm A') + '-' + timeSlot.end.format('h:mm A'),
         "Code": convertToUTCDateTimeString(timeSlot.start, true) + '_' + convertToUTCDateTimeString(timeSlot.end, true) + '_' + timeSlot.eventId,
         "Description": { "Content": "", "Type": "Text" }
     };

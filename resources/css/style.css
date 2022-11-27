@@ -1,7 +1,7 @@
 /*import brightspace fonts*/
 @font-face{font-family: 'Lato';src: url('https://s.brightspace.com/lib/fonts/0.5.0/assets/Lato-400.woff2');}
 @font-face {font-family: 'Lato';src: url('https://s.brightspace.com/lib/fonts/0.5.0/assets/Lato-700.woff2');font-weight: bold;}
-*{font-family: Lato, 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;}
+*{font-size:16px; font-family: Lato, 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;}
 /*styles*/
 .container-fluid{padding-bottom:20px;}
 input[type=text],label{width: 100%;}
@@ -47,7 +47,8 @@ tr:last-child td:last-child {
 .nav-tabs{font-weight: bold;}
 .tab-pane{padding: 10px 10px 0px 10px; margin-bottom: 1px solid #ccc;}
 .error{background-color: #ffbbbb;}
-#existing_timeslots,#signup_schedule__form,#edit_timeblocks,#edit_schedule,#add_new_timeblocks{display: none;}
+#existing_timeslots,#signup_schedule__form,#edit_timeblocks,#edit_schedule,#add_new_timeblocks,#schedule_description{display: none;}
+#schedule_description{font-size:20px;}
 #existing_timeslots__table{width: 100%;font-size: 16px;margin-bottom: 20px;}
 .student_timeslot_actions{display:none;}
 tr.timeslot:hover{background-color: #ffd;}
