@@ -118,29 +118,11 @@ let GROUP_CATEGORY_ID = (MODE == 'edit' ? params.gc : null);
                     </div>
                     <div class="row">
                         <div class="col-xs-12 col-sm-offset-2 col-sm-8">
-                            
                             <h2>Set the duration of each time slot</h2>
-                            <!--div id="timeslot_unit_tabs" class="tabs">
-                                <ul class="nav nav-tabs">
-                                    <li class="active" data-unit="duration"><a href="#tab1" data-toggle="tab" onclick="selectTab(this);">Time of each meeting</a></li>
-                                    <li data-unit="total"><a href="#tab2" data-toggle="tab" onclick="selectTab(this);">Number of meetings</a></li>
-                                </ul>
-                                <div class="tab-content">
-                                    <div class="tab-pane active" id="tab1"-->
-                                        <label for="timeslot_duration">
-                                            <p>The length of each time slot in minutes</p>
-                                            <p><input type="text" name="timeslot_duration" id="timeslot_duration" class="col-sm-2timeslot_unit form-control" value="30" /></p>
-                                        </label>
-                                    <!--/div>
-                                    <div class="tab-pane" id="tab2">
-                                        <label for="timeslot_number">
-                                            <p>The number of meetings to divide the total time into.</p>
-                                            <p><input type="text" name="timeslot_number" id="timeslot_number" class="timeslot_unit form-control" value="4" /></p>
-                                        </label>
-                                    </div>
-                                </div>
-                            </div-->
-                            
+                            <label for="timeslot_duration">
+                                <p>The length of each time slot in minutes</p>
+                                <p><input type="text" name="timeslot_duration" id="timeslot_duration" class="col-sm-2timeslot_unit form-control" value="30" /></p>
+                            </label>
                             <h3 id="total_timeslots">This will create 2 time slots of 30 minutes each.</h3>
                         </div>
                     </div>
@@ -157,7 +139,10 @@ let GROUP_CATEGORY_ID = (MODE == 'edit' ? params.gc : null);
                 </div>                
             </form>
             <div class="row" id="edit_schedule">
-                <div class="col-xs-12 col-sm-offset-2 col-sm-8">
+                <div class="col-sm-offset-2 col-sm-4">
+                    <p><br><input type="button" class="btn btn-primary" value="Edit Schedule" onclick="$('#edit_schedule').hide(); $('#signup_schedule__form').show();" /></p>
+                </div>
+                <div class="col-sm-4">
                     <p><br><input type="button" class="btn btn-primary" value="Edit Schedule" onclick="$('#edit_schedule').hide(); $('#signup_schedule__form').show();" /></p>
                 </div>
             </div>
@@ -180,6 +165,7 @@ let GROUP_CATEGORY_ID = (MODE == 'edit' ? params.gc : null);
         </div>
     </div>
     <!-- End Modal -->
+<script type="text/javascript" src="resources/js/main.js"></script>
 <script type="text/javascript" src="resources/js/setup.js"></script>
 </body>
 </html>

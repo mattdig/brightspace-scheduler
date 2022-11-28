@@ -1,24 +1,16 @@
-let bs = new Brightspace(ORG_UNIT_ID);
-let USER;
 let MY_TIME = false;
 
-$(document).ready(function() {
-    init();
-});
+$(function(){init();});
 
 async function init() {
-    USER = await bs.get('/d2l/api/lp/(version)/users/whoami');
-
-    let groupCategory = await bs.get('/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + GROUP_CATEGORY_ID);
-    console.log(groupCategory);
+    let groupCategory = await getGroupCategory(GROUP_CATEGORY_ID);
     if(groupCategory.Description.Text != ''){
         $('#schedule_description').html(groupCategory.Description.Text)
         $('#schedule_description').show();
     }
     
     let groups = await getGroupsInCategory();
-
-    availableGroups = await displayGroupsInCategory(groups);
+    let availableGroups = await displayGroupsInCategory(groups);
 
     if(MY_TIME !== false){
         $('#my_selection__content').html('<h3>' + MY_TIME.name + '</h3>' + '<p><button class="btn btn-secondary btn-sm cancel-timeslot" id="cancel-selection">Cancel my selection</button></p>');
@@ -27,7 +19,7 @@ async function init() {
     }
 
     if(availableGroups == 0){
-        $('#existing_timeslots__heading').html('No are additional time slots are available');
+        $('#existing_timeslots__heading').html('No additional time slots are available');
     } else if(MY_TIME !== false){
         $('#existing_timeslots__heading').html('Other available time slots');
     } else {
@@ -35,16 +27,13 @@ async function init() {
     }
 }
 
-async function getGroupsInCategory(){
-    let groups = await bs.get('/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + GROUP_CATEGORY_ID + '/groups/');
-    return groups;
-}
-
 async function displayGroupsInCategory(groups){
 
     if(groups.length == 0){
         return false;
     }
+
+    let user = await whoAmI();
 
     let availableGroups = 0;
     let html = '<tr><th>Date & Time</th><th class="student_timeslot_actions">&nbsp;</th></tr>';
@@ -66,7 +55,7 @@ async function displayGroupsInCategory(groups){
 
             $('#existing_timeslots__table').append(html);
             $('#timeslot_' + group.GroupId).find('.select-timeslot').on('click', function(){selectTimeSlot(group)});
-        } else if (group.Enrollments[0] == USER.Identifier){
+        } else if (group.Enrollments[0] == user.Identifier){
             MY_TIME = {
                 name: group.Name,
                 groupId: group.GroupId,
@@ -92,7 +81,7 @@ async function cancelMySelection(){
     }
 
     $('#cancel-selection').remove();
-    let result = await unenrollFromGroup(MY_TIME.groupId, MY_TIME.student);
+    await unenrollFromGroup(MY_TIME.groupId);
     MY_TIME = false;
     window.location.reload();
 }
@@ -115,7 +104,7 @@ async function selectTimeSlot(group){
         return false;
     }
 
-    result = await enrollInGroup(group.GroupId, USER.Identifier);
+    result = await enrollInGroup(group.GroupId);
     alert('You have successfully selected ' + group.Name + '.');
     window.location.reload();
 }
