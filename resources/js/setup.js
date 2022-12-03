@@ -12,9 +12,7 @@ $(function(){init();});
 
 async function init(){
 
-    let isInstructor = await isInstructor();
-
-    if(!isInstructor){
+    if(!(await isInstructor())){
         alert("Yer a wizard, Harry! But you're not an instructor, so you can't use this tool.");
         window.location.href = window.location.href.replace('setup', 'signup');
         return false;
