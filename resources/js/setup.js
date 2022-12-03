@@ -561,6 +561,9 @@ function validateTimeFields(withErrors){
     if(!updateTotalTimeSlots() && withErrors){
         modalMessage('Please enter a time slot duration of at least 5.', $('#timeslot_duration'));
         valid = false;
+    } else if(newTimeSlots.length < 1 && $('#edit_timeblocks').is(':visible') && withErrors){
+        modalMessage('No new time slots will be created. Please adjust your time ranges or duration.');
+        valid = false;
     }
     
     //updateGlobalLatestTime(latestTime);
@@ -607,7 +610,7 @@ function validateAllFields(){
 
     let valid = validateTimeFields(true);
 
-    return(valid && newTimeSlots.length > 0);
+    return(valid);
 
 }
 
