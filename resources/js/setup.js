@@ -617,6 +617,8 @@ async function submitForm(){
 
     if(!SUBMITTING){
 
+        let promiseArray = [];
+
         SUBMITTING = true;
 
         if(!validateAllFields(true)){
@@ -648,35 +650,48 @@ async function submitForm(){
 
         if(GROUP_CATEGORY_ID != null){
 
-            let groupsInCategory;
+            let groupsInCategory = null;
 
             if(MODE == 'create'){
                 groupsInCategory = await getGroupsInCategory();
             } else {
+
+                promiseArray = [];
+
                 for (timeSlot of existingTimeSlots){
-                    result = await updateCalendarEvent(timeSlot);
+                    promiseArray.push(updateCalendarEvent(timeSlot));
                 }
+
+                await Promise.all(promiseArray);
             }
+
+            promiseArray = [];
 
             for(const [index,timeSlot] of newTimeSlots.entries()){
 
-                    let group;
+                let group = MODE == 'create' ? groupsInCategory[index] : false;
+                
+                promiseArray.push(createGroupAndEvent(timeSlot, group));
 
-                    if(MODE == 'create'){
-                        group = groupsInCategory[index];
-                    } else {
-                        group = await createGroup(timeSlot);
-                    }
+                // let group;
 
-                    timeSlot.groupId = group.GroupId;
-                    
-                    let newEvent = await createCalendarEvent(timeSlot);
-                    
-                    timeSlot.eventId = newEvent.CalendarEventId;
-                    
-                    await updateGroup(timeSlot);
+                // if(MODE == 'create'){
+                //     group = groupsInCategory[index];
+                // } else {
+                //     group = await createGroup(timeSlot);
+                // }
+
+                // timeSlot.groupId = group.GroupId;
+                
+                // let newEvent = await createCalendarEvent(timeSlot);
+                
+                // timeSlot.eventId = newEvent.CalendarEventId;
+                
+                // await updateGroup(timeSlot);
 
             };
+
+            await Promise.all(promiseArray);
         }
 
         modalMessage('Form submitted successfully.',null,reloadAfterSave);
@@ -684,6 +699,22 @@ async function submitForm(){
 
     }
 
+}
+
+async function createGroupAndEvent(timeSlot, group){
+    
+    if(!group){
+        group = await createGroup(timeSlot);
+    }
+
+    timeSlot.groupId = group.GroupId;
+    
+    let newEvent = await createCalendarEvent(timeSlot);
+    
+    timeSlot.eventId = newEvent.CalendarEventId;
+    
+    return await updateGroup(timeSlot);
+    
 }
 
 function reloadAfterSave(){
