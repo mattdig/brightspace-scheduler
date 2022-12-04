@@ -47,7 +47,7 @@ tr:last-child td:last-child {
 .nav-tabs{font-weight: bold;}
 .tab-pane{padding: 10px 10px 0px 10px; margin-bottom: 1px solid #ccc;}
 .error{background-color: #ffbbbb;}
-#existing_timeslots,#signup_schedule__form,#edit_timeblocks,#edit_schedule,#add_new_timeblocks,#schedule_description{display: none;}
+#existing_timeslots,#signup_schedule__form,#edit_timeblocks,#edit_schedule,#add_new_timeblocks,#schedule_description,#module_selection{display: none;}
 #schedule_description{font-size:20px;}
 #existing_timeslots__table{width: 100%;font-size: 16px;margin-bottom: 20px;}
 .student_timeslot_actions{display:none;}

@@ -65,6 +65,8 @@ async function init(){
 
     } else {
         $('#form_title').html('Create New Signup Schedule');
+        await getModules();
+        $('#modeule_selection').show();
         $('#edit_timeblocks').show();
         $('#signup_schedule__form').show();
     }
@@ -84,6 +86,14 @@ async function init(){
         updateTotalTimeSlots();
     });
 
+}
+
+async function getModules(){
+    let modules = await bs.get("/d2l/api/le/(version)/(orgUnitId)/content/root/");
+    $('#module__select').empty();
+    for(const module of modules){
+        $('#module__select').append($('<option>', {value: module.Id, text: module.Title}));
+    }
 }
 
 async function updateEventTitle(element){
@@ -886,8 +896,7 @@ async function createTopic(){
     let pluginPath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf("/"));
 
     let orgUnitInfo = await bs.get('/d2l/api/lp/(version)/courses/(orgUnitId)');
-    let modules = await bs.get("/d2l/api/le/(version)/(orgUnitId)/content/root/");
-    let targetModuleId = modules[0].Id;
+    let targetModuleId = $('#module__select').val();
     let response = await fetch(pluginPath + '/resources/html/landing.tpl');
     let content = await response.text();
     content = content.replace(/\(pluginPath\)/g, pluginPath);

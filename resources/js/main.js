@@ -23,21 +23,16 @@ function getGroupsInCategory(){
     return groups;
 }
 
-async function getClassList(){
+async function getClassList(product = 'le'){
     let classList = [];
-    for(student of await bs.get('/d2l/api/le/(version)/(orgUnitId)/classlist/')){
+    let url = (product == 'le') ? '/d2l/api/lp/(version)/(orgUnitId)/classlist/' : '/d2l/api/bas/(version)/orgunits/(orgUnitId)/classlist/';
+    for(student of await bs.get(url)){
         classList[student.Identifier] = student;
     }
     return classList;
 }
 
-function sendEmail(address, subject, body){
-
-    let calendarSubscription = bs.get('/d2l/le/calendar/(orgUnitId)/subscribe/subscribeDialogLaunch?subscriptionOptionId=-1');
-    let feedToken = calendarSubscription.match(/feed\.ics\?token\=([a-zA-Z0-9]+)/)[1];
-    let feedUrl = feedToken;
-
-    body = body.replace(/\(feedUrl\)/g, feedUrl);
+async function sendEmail(address, subject, body){
 
     let formData = {
         "ToAddresses$items$Value":address,

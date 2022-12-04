@@ -1,9 +1,14 @@
+let TITLE;
 let MY_TIME = false;
+let USER;
 
 $(function(){init();});
 
 async function init() {
+    USER = bs.whoAmI();
+
     let groupCategory = await getGroupCategory(GROUP_CATEGORY_ID);
+    TITLE = groupCategory.Name;
     if(groupCategory.Description.Text != ''){
         $('#schedule_description').html(groupCategory.Description.Text)
         $('#schedule_description').show();
@@ -104,7 +109,42 @@ async function selectTimeSlot(group){
         return false;
     }
 
-    result = await enrollInGroup(group.GroupId);
+    let classList = getClassList();
+
+    let enroll = enrollInGroup(group.GroupId);
+
+    let host = window.location.host;
+
+    let calendarSubscription = await bs.get('/d2l/le/calendar/(orgUnitId)/subscribe/subscribeDialogLaunch?subscriptionOptionId=-1');
+    let feedToken = calendarSubscription.match(/feed\.ics\?token\=([a-zA-Z0-9]+)/)[1];
+    let feedUrl = 'webcal://' + host + '/d2l/le/calendar/feed/user/feed.ics?token=' + feedToken;
+    let calenderUrl = 'https://' + host + '/d2l/le/calendar/' + ORG_UNIT_ID;
+    let topicUrl = 'https://' + host + '/d2l/le/content/' + ORG_UNIT_ID + '/viewContent/' + TOPIC_ID + '/View';
+
+    subject = 'Brightspace Scheduling: Your time slot is confirmed';
+
+    result = await fetch('resourse/html/emailstudent.tpl');
+    body = await result.text();
+
+    body = body.replace(/\(scheduleTitle\)/g, TITLE);
+    body = body.replace(/\(feedUrl\)/g, feedUrl);
+    body = body.replace(/\(topicUrl\)/g, topicUrl);
+    body = body.replace(/\(calendarUrl\)/g, calendarUrl);
+
+    await classList;
+    let studentEmail;
+
+    for(const student of classList){
+        if(student.Identifier == USER.Identifier){
+            studentEmail = student.Email;
+            break;
+        }
+    };
+
+    let email = sendEmail(studentEmail, subject, body);
+
+    await Promise.all([enroll, email]);
+
     alert('You have successfully selected ' + group.Name + '.');
     window.location.reload();
 }
