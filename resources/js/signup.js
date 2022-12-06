@@ -141,8 +141,6 @@ async function selectTimeSlot(group){
 
     classList = await Promise.all([classList]);
 
-    console.log(classList[0], USER);
-
     let studentEmail = classList[0][USER.Identifier].Email;
 
     let email = sendEmail(studentEmail, subject, body);
