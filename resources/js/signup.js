@@ -134,6 +134,7 @@ async function selectTimeSlot(group){
     body = await result.text();
 
     body = body.replace(/\(scheduleTitle\)/g, TITLE);
+    body = body.replace(/\(timeSlot\)/g, group.Name);
     body = body.replace(/\(feedUrl\)/g, feedUrl);
     body = body.replace(/\(topicUrl\)/g, topicUrl);
     body = body.replace(/\(calendarUrl\)/g, calendarUrl);

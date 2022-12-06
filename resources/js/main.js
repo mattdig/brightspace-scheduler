@@ -42,7 +42,7 @@ async function sendEmail(address, subject, body){
     let url = 'https://brightspacedev.carleton.ca/d2l/le/email/' + ORG_UNIT_ID + '/SendEmail';
 
     // encode text for json
-    body = body.replace(/"/g, '\\"');
+    //body = body.replace(/"/g, '\\"');
 
     let formData = {
         "ToAddresses$items$Value":address,
