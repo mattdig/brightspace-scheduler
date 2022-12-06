@@ -25,14 +25,24 @@ function getGroupsInCategory(){
 
 async function getClassList(product = 'le'){
     let classList = [];
-    let url = (product == 'le') ? '/d2l/api/lp/(version)/(orgUnitId)/classlist/' : '/d2l/api/bas/(version)/orgunits/(orgUnitId)/classlist/';
-    for(student of await bs.get(url)){
+    let url = (product == 'le') ? '/d2l/api/le/(version)/(orgUnitId)/classlist/' : '/d2l/api/bas/(version)/orgunits/(orgUnitId)/classlist/';
+    let response = await bs.get(url);
+    if(response.Objects !== undefined){
+        response = response.Objects;
+    }
+
+    for(student of response){
         classList[student.Identifier] = student;
     }
     return classList;
 }
 
 async function sendEmail(address, subject, body){
+
+    let url = 'https://brightspacedev.carleton.ca/d2l/le/email/' + ORG_UNIT_ID + '/SendEmail';
+
+    // encode text for json
+    body = body.replace(/"/g, '\\"');
 
     let formData = {
         "ToAddresses$items$Value":address,

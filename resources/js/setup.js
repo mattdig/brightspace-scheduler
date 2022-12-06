@@ -13,7 +13,6 @@ $(function(){init();});
 async function init(){
 
     if(!(await isInstructor())){
-        alert("Yer a wizard, Harry! But you're not an instructor, so you can't use this tool.");
         window.location.href = window.location.href.replace('setup', 'signup');
         return false;
     }
@@ -34,7 +33,7 @@ async function init(){
 
     if(MODE == 'edit'){
 
-        let url = window.parent.location.href;
+        let url = window.top.location.href;
         let match = url.match(/\/viewContent\/(\d+)\//);
         TOPIC_ID = match[1];
         $('#form_title').html('Edit Signup Schedule');
@@ -46,6 +45,7 @@ async function init(){
 
         if(groupCategory.Description.Text != ''){
             $('#schedule_description').html(groupCategory.Description.Text)
+            $('#description').val(groupCategory.Description.Text)
             $('#schedule_description').show();
         }
 
@@ -66,7 +66,7 @@ async function init(){
     } else {
         $('#form_title').html('Create New Signup Schedule');
         await getModules();
-        $('#modeule_selection').show();
+        $('#module_selection').show();
         $('#edit_timeblocks').show();
         $('#signup_schedule__form').show();
     }
@@ -353,7 +353,7 @@ function updateTotalTimeSlots(){
         timeSlotDuration = parseInt($('#timeslot_duration').val());
 
         if(timeSlotDuration < 5){
-            $('#total_timeslots').text('Please enter a valid time slot duration of at least 5 mintues.');
+            $('#total_timeslots').text('Please enter a time slot duration of at least 5 minutes.');
             return false;
         }
 
@@ -568,10 +568,7 @@ function validateTimeFields(withErrors){
         }
     });
 
-    if(!updateTotalTimeSlots() && withErrors){
-        modalMessage('Please enter a time slot duration of at least 5.', $('#timeslot_duration'));
-        valid = false;
-    } else if(newTimeSlots.length < 1 && $('#edit_timeblocks').is(':visible') && withErrors){
+    if(!updateTotalTimeSlots() && $('#edit_timeblocks').is(':visible') && withErrors){
         modalMessage('No new time slots will be created. Please adjust your time ranges or duration.');
         valid = false;
     }
@@ -654,8 +651,10 @@ async function submitForm(){
             newTopic = await createTopic();
             TOPIC_ID = newTopic.Id;
         } else {
-            result = await updateGroupCategory();
-            result = await updateTopic();
+            await Promise.all([
+                updateGroupCategory(),
+                updateTopic()
+            ]);
         }
 
 
@@ -730,9 +729,9 @@ async function createGroupAndEvent(timeSlot, group){
 
 function reloadAfterSave(){
     if(MODE == 'create'){
-        window.location.href = '/d2l/le/content/' + ORG_UNIT_ID + '/viewContent/' + TOPIC_ID + '/View'; 
+        window.top.location.href = '/d2l/le/content/' + ORG_UNIT_ID + '/viewContent/' + TOPIC_ID + '/View'; 
     } else {
-        window.location.reload();
+        window.top.location.reload();
     }
 }
 
@@ -1001,14 +1000,21 @@ async function deleteSchedule(){
         return false;
     }
 
-    for(let i = 0; i < existingTimeSlots.length; i++){
-        await deleteTimeSlot(existingTimeSlots[i], false);
+    if(!confirm('Are you really sure?\n\nThis will remove all time slots and registrations.')){
+        return false;
     }
 
+    let deleteArray = [];
+
+    for(let i = 0; i < existingTimeSlots.length; i++){
+        deleteArray.push(deleteTimeSlot(existingTimeSlots[i], false));
+    }
+
+    await Promise.all(deleteArray);
     await deleteTopic();
     await deleteGroupCategory();
 
-    window.location.href = '/d2l/home';
+    window.top.location.href = '/d2l/home';
 }
 
 function momentFromTime(time){

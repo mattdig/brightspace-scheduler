@@ -16,6 +16,11 @@ class Brightspace{
     }
 
     get(url){
+        //keep requests local to the Brightspace domain
+        let d2lPos = url.indexOf('/d2l/');
+        if(d2lPos > -1){
+            url = url.substring(d2lPos);
+        }
         let response = this.send('get', url);
         return response;
     }
@@ -121,7 +126,24 @@ class Brightspace{
                     }
 
                     if(response.substring(0, 1) == '{' || response.substring(0, 1) == '['){
-                        resolve(JSON.parse(response));
+                        response = JSON.parse(response);
+                        
+                        let nextData = true;
+
+                        if(response.Next !== undefined && response.Next !== null){
+                            nextData = this.get(response.Next).then(function(next){
+                                if(response.Items !== undefined){
+                                    response.Items = response.Items.concat(next.Items);
+                                } else if(response.Objects !== undefined){
+                                    response.Objects = response.Objects.concat(next.Objects);
+                                }
+                            });
+                        }
+                        
+                        Promise.all([response, nextData]).then(function(values){
+                            resolve(values[0]);
+                        });
+                        
                     } else {
                         resolve(response);
                     }

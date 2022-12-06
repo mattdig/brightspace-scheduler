@@ -58,3 +58,4 @@ tr.timeslot:hover{background-color: #ffd;}
 #my_selection{display:none;}
 .modal-header{border:none;}
 .modal p{color:#000; font-size: 1.2em;}
+#delete_schedule{text-align: right;}

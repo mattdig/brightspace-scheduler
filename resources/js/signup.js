@@ -2,10 +2,15 @@ let TITLE;
 let MY_TIME = false;
 let USER;
 
+
 $(function(){init();});
 
 async function init() {
-    USER = bs.whoAmI();
+
+    let url = window.top.location.href;
+    let match = url.match(/\/viewContent\/(\d+)\//);
+
+    USER = await whoAmI();
 
     let groupCategory = await getGroupCategory(GROUP_CATEGORY_ID);
     TITLE = groupCategory.Name;
@@ -41,7 +46,7 @@ async function displayGroupsInCategory(groups){
     let user = await whoAmI();
 
     let availableGroups = 0;
-    let html = '<tr><th>Date & Time</th><th class="student_timeslot_actions">&nbsp;</th></tr>';
+    let html = '<tr><th>Date & Time</th><th class="student_timeslot_actions">Actions</th></tr>';
 
     $('#existing_timeslots__table').html(html);
 
@@ -103,9 +108,9 @@ async function selectTimeSlot(group){
     };
     let isFull = await bs.submit('/d2l/lms/group/user_available_group_list.d2lfile?ou=7194&d2l_rh=rpc&d2l_rt=call',data);
     
-    if(isFull.Result == 'true'){
-        alert('This time slot is full. Please select another time slot.');
-        $('#timeslot_' + group.GroupId).find('.select-timeslot').remove();
+    if(isFull.Result === true){
+        alert('This time slot is full. Please select another time slot.\n\nReload the page to see the updated list of available time slots.');
+        $('#timeslot_' + group.GroupId).remove();
         return false;
     }
 
@@ -118,12 +123,14 @@ async function selectTimeSlot(group){
     let calendarSubscription = await bs.get('/d2l/le/calendar/(orgUnitId)/subscribe/subscribeDialogLaunch?subscriptionOptionId=-1');
     let feedToken = calendarSubscription.match(/feed\.ics\?token\=([a-zA-Z0-9]+)/)[1];
     let feedUrl = 'webcal://' + host + '/d2l/le/calendar/feed/user/feed.ics?token=' + feedToken;
-    let calenderUrl = 'https://' + host + '/d2l/le/calendar/' + ORG_UNIT_ID;
-    let topicUrl = 'https://' + host + '/d2l/le/content/' + ORG_UNIT_ID + '/viewContent/' + TOPIC_ID + '/View';
+    let calendarUrl = 'https://' + host + '/d2l/le/calendar/' + ORG_UNIT_ID;
+    let topicUrl = window.top.location.href.split('?')[0];
+
+    let pluginPath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf("/"));
 
     subject = 'Brightspace Scheduling: Your time slot is confirmed';
 
-    result = await fetch('resourse/html/emailstudent.tpl');
+    result = await fetch(pluginPath + '/resources/html/emailstudent.tpl');
     body = await result.text();
 
     body = body.replace(/\(scheduleTitle\)/g, TITLE);
@@ -131,15 +138,11 @@ async function selectTimeSlot(group){
     body = body.replace(/\(topicUrl\)/g, topicUrl);
     body = body.replace(/\(calendarUrl\)/g, calendarUrl);
 
-    await classList;
-    let studentEmail;
+    classList = await Promise.all([classList]);
 
-    for(const student of classList){
-        if(student.Identifier == USER.Identifier){
-            studentEmail = student.Email;
-            break;
-        }
-    };
+    console.log(classList[0], USER);
+
+    let studentEmail = classList[0][USER.Identifier].Email;
 
     let email = sendEmail(studentEmail, subject, body);
 

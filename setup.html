@@ -146,11 +146,11 @@ let GROUP_CATEGORY_ID = (MODE == 'edit' ? params.gc : null);
                 </div>                
             </form>
             <div class="row" id="edit_schedule">
-                <div class="col-sm-offset-2 col-sm-4">
+                <div class="col-sm-offset-2 col-sm-2">
                     <p><br><input type="button" class="btn btn-primary" value="Edit Schedule" onclick="$('#edit_schedule').hide(); $('#signup_schedule__form').show();" /></p>
                 </div>
-                <div class="col-sm-4">
-                    <p><br><input type="button" class="btn btn-primary" value="Edit Schedule" onclick="$('#edit_schedule').hide(); $('#signup_schedule__form').show();" /></p>
+                <div id="delete_schedule" class="col-sm-offset-2 col-sm-4">
+                    <p><br><input type="button" class="btn btn-red" value="DELETE SCHEDULE" onclick="deleteSchedule()" />&nbsp;</p>
                 </div>
             </div>
 		</main>
