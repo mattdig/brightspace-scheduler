@@ -181,6 +181,11 @@ function addDatetime(){
     if($('#edit_timeblocks').is(':visible')){
         let lastDatetime = $('.datetime__div').last();
         let newDateTime = orderDatetimeElems(lastDatetime.clone(), $('.datetime__div').length + 1);
+        
+        // set select values from last datetime (clone doesn't work?)
+        newDateTime.find('.starttime_input').val(lastDatetime.find('.starttime_input').val());
+        newDateTime.find('.endtime_input').val(lastDatetime.find('.endtime_input').val());
+        
         newDateTime.find('.btn-remove').on('click', removeDatetime);
         newDateTime.insertAfter(lastDatetime);
         initializeDatetime($('.datetime__div').last());   // initialize the new datetime
