@@ -633,16 +633,18 @@ async function submitForm(){
         let promiseArray = [];
 
         SUBMITTING = true;
+        $('#save').val('Saving...');
+        $('#signup_schedule__form').find(':input').prop('disabled', true);
 
         if(!validateAllFields(true)){
-            SUBMITTING = false;
+            cancelSubmit();
             return false;
         }
 
         if(ORG_UNIT_ID == null){
             console.log(newTimeSlots);
             modalMessage('All fields are valid, but Org Unit Id is not defined');
-            SUBMITTING = false;
+            cancelSubmit();
             return false;
         }
 
@@ -714,6 +716,12 @@ async function submitForm(){
 
     }
 
+}
+
+function cancelSubmit(){
+    SUBMITTING = false;
+    $('#save').val('Save');
+    $('#signup_schedule__form').find(':input').prop('disabled', false);
 }
 
 async function createGroupAndEvent(timeSlot, group){
