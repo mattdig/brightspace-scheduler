@@ -6,6 +6,6 @@
 <p>You can add your Brightspace calendar to your favourite calendar app with this URL:</p>
 <pre>(feedUrl)</pre>
 <p>If you have any questions or concerns please contact your course instructor.<p>
-<p>&nbsp</p>
-<p>This is an automated message from Brightspace.</p>
-<p>&nbsp</p>
+<p>&nbsp;</p>
+<p>This is an automated message from Brightspace. Do not reply to it.</p>
+<p>&nbsp;</p>
