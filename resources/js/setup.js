@@ -1027,7 +1027,7 @@ async function deleteSchedule(){
     await deleteTopic();
     await deleteGroupCategory();
 
-    window.top.location.href = '/d2l/home';
+    window.top.location.href = '/d2l/le/content/' + ORG_UNIT_ID + '/Home';
 }
 
 function momentFromTime(time){
