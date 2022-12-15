@@ -106,7 +106,7 @@ async function selectTimeSlot(group){
         "params": "{\"param1\":" + group.GroupId + "}",
         "d2l_action": "rpc"
     };
-    let isFull = await bs.submit('/d2l/lms/group/user_available_group_list.d2lfile?ou=7194&d2l_rh=rpc&d2l_rt=call',data);
+    let isFull = await bs.submit('/d2l/lms/group/user_available_group_list.d2lfile?ou=(orgUnitId)&d2l_rh=rpc&d2l_rt=call',data);
     
     if(isFull.Result === true){
         alert('This time slot is full. Please select another time slot.\n\nReload the page to see the updated list of available time slots.');
@@ -158,7 +158,7 @@ function enrollInGroup(groupId){
         "params": "{\"param1\":" + groupId + "}",
         "d2l_action": "rpc"
     };
-    return bs.submit('/d2l/lms/group/user_available_group_list.d2lfile?ou=7194&d2l_rh=rpc&d2l_rt=call', data);
+    return bs.submit('/d2l/lms/group/user_available_group_list.d2lfile?ou=(orgUnitId)&d2l_rh=rpc&d2l_rt=call', data);
 }
 
 function unenrollFromGroup(groupId){
