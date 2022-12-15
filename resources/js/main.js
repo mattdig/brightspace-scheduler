@@ -39,10 +39,7 @@ async function getClassList(product = 'le'){
 
 async function sendEmail(address, subject, body){
 
-    let url = 'https://brightspacedev.carleton.ca/d2l/le/email/' + ORG_UNIT_ID + '/SendEmail';
-
-    // encode text for json
-    //body = body.replace(/"/g, '\\"');
+    let url = '/d2l/le/email/' + ORG_UNIT_ID + '/SendEmail';
 
     let formData = {
         "ToAddresses$items$Value":address,
