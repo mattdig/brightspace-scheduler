@@ -121,7 +121,7 @@ async function getExistingTimeSlots(){
             name: localDateTimeFormat,
             groupId: group.GroupId,
             eventId: data[2],
-            student: (group.Enrollments.length > 0 ? group.Enrollments[0] : false)
+            students: group.Enrollments
         };
 
         existingTimeSlots.push(timeslot);
@@ -144,10 +144,15 @@ async function displayExistingTimeSlots(){
 
     existingTimeSlots.forEach(timeSlot => {
         
-        let student = '&nbsp;-&nbsp;';
+        let students = [];
         
-        if(timeSlot.student !== false){
-            student = classList[timeSlot.student].FirstName + ' ' + classList[timeSlot.student].LastName + ' (' + classList[timeSlot.student].OrgDefinedId + ')';
+        if(timeSlot.students.length > 0){
+            for(studentId in timeSlot.students){
+                students.push(classList[studentId].FirstName + ' ' + classList[studentId].LastName + ' (' + classList[studentId].OrgDefinedId + ')');
+            }
+            students = students.join('<br>');
+        } else {
+            students = '&nbsp;-&nbsp;';
         }
 
         if(duration == 0){
@@ -155,11 +160,11 @@ async function displayExistingTimeSlots(){
         }
 
         html = '<tr class="timeslot" id="timeslot_' + timeSlot.groupId + '">';
-        html += '<td class="timeslot_student">' + student + '</td>';
+        html += '<td class="timeslot_student">' + students + '</td>';
         html += '<td class="timeslot_datetime">' + timeSlot.name + '</td>';
         html += '<td class="timeslot_actions">';
-        if(timeSlot.student !== false){
-            html += '<button class="btn btn-secondary btn-sm cancel-timeslot" data-id="' + timeSlot.groupId + '">Cancel Registration</button> ';
+        if(timeSlot.students.length > 0){
+            html += '<button class="btn btn-secondary btn-sm cancel-timeslot" data-id="' + timeSlot.groupId + '">Cancel Registrations...</button> ';
         }
         html += '<button class="btn btn-red btn-sm delete-timeslot" data-id="' + timeSlot.groupId + '">Delete Time Slot</button></td>';
         html += '</td>';
@@ -622,6 +627,13 @@ function validateAllFields(){
 
     let valid = validateTimeFields(true);
 
+    if(valid){
+        valid = parseInt($('#max_uesrs').val()) > 0 && parseInt($('#max_uesrs').val()) <= 1000;
+        if(!valid){
+            modalMessage('Max users per timeslot must be between 1 and 1000.', $('#max_uesrs'));
+        }
+    }
+
     return(valid);
 
 }
@@ -637,15 +649,13 @@ async function submitForm(){
         $('#signup_schedule__form').find(':input').prop('disabled', true);
 
         if(!validateAllFields(true)){
-            cancelSubmit();
-            return false;
+            return cancelSubmit();
         }
 
         if(ORG_UNIT_ID == null){
             console.log(newTimeSlots);
             modalMessage('All fields are valid, but Org Unit Id is not defined');
-            cancelSubmit();
-            return false;
+            return cancelSubmit();
         }
 
         let groupCategory;
@@ -722,6 +732,7 @@ function cancelSubmit(){
     SUBMITTING = false;
     $('#save').val('Save');
     $('#signup_schedule__form').find(':input').prop('disabled', false);
+    return false;
 }
 
 async function createGroupAndEvent(timeSlot, group){
@@ -752,6 +763,7 @@ function createGroupCategory(){
     
     let title = $('#title').val().trim();
     let description = $('#description').val().trim();
+    let maxUsers = pareInt($('#max_users').val().trim());
 
     // DEADLINE NOT SUPPORTED BY API
     // TODO: SWITCH TO SUBMITTING FORM DATA
@@ -769,7 +781,7 @@ function createGroupCategory(){
         "AutoEnroll": false,
         "RandomizeEnrollments": false,
         "NumberOfGroups": newTimeSlots.length,
-        "MaxUsersPerGroup": 1,
+        "MaxUsersPerGroup": maxUsers,
         "AllocateAfterExpiry": false,
         "SelfEnrollmentExpiryDate": null, //deadlineUTCDateTime, //<string:UTCDateTime>( yyyy-MM-ddTHH:mm:ss.fffZ )|null,
         "GroupPrefix": null,
@@ -785,6 +797,7 @@ async function updateGroupCategory(){
 
     let title = $('#title').val().trim();
     let description = $('#description').val().trim();
+    let maxUsers = pareInt($('#max_users').val().trim());
 
     // DEADLINE NOT SUPPORTED BY API
     // TODO: SWITCH TO SUBMITTING FORM DATA
@@ -802,7 +815,7 @@ async function updateGroupCategory(){
         "AutoEnroll": false,
         "RandomizeEnrollments": false,
         "NumberOfGroups": null,
-        "MaxUsersPerGroup": 1,
+        "MaxUsersPerGroup": maxUsers,
         "AllocateAfterExpiry": false,
         "SelfEnrollmentExpiryDate": null, //deadlineUTCDateTime, //<string:UTCDateTime>( yyyy-MM-ddTHH:mm:ss.fffZ )|null,
         "GroupPrefix": null,

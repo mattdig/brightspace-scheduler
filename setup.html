@@ -128,12 +128,22 @@ let GROUP_CATEGORY_ID = (MODE == 'edit' ? params.gc : null);
                             <h2>Set the duration of each time slot</h2>
                             <label for="timeslot_duration">
                                 <p>The length of each time slot in minutes</p>
-                                <p><input type="text" name="timeslot_duration" id="timeslot_duration" class="col-sm-2timeslot_unit form-control" value="30" /></p>
+                                <p><input type="text" name="timeslot_duration" id="timeslot_duration" class="form-control" value="30" /></p>
                             </label>
                             <h3 id="total_timeslots">This will create 2 time slots of 30 minutes each.</h3>
                         </div>
                     </div>
                 </div>
+                <div class="row">
+                    <div class="col-xs-12 col-sm-offset-2 col-sm-8">
+                        <h2>Set the number of students per time slot (group size)</h2>
+                        <label for="groupzie">
+                            <p>Maximum number of students per time slot</p>
+                            <p><input type="number" name="max_users" id="max_users" class="form-control" value="1" /></p>
+                        </label>
+                    </div>
+                </div>
+
                 <div class="row" id="add_new_timeblocks">
                     <div class="col-xs-12 col-sm-offset-2 col-sm-8">
                         <p><input type="button" class="btn btn-secondary" value="Add another date &amp; time range" onclick="$('#add_new_timeblocks').hide(); addDatetime()"/></p>
