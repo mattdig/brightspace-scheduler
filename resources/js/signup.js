@@ -1,7 +1,8 @@
 let TITLE;
 let MY_TIME = false;
 let USER;
-
+let MAX_STUDENTS = 1;
+//let CLASSLIST = getClassList('bas');
 
 $(function(){init();});
 
@@ -18,6 +19,7 @@ async function init() {
         $('#schedule_description').html(groupCategory.Description.Text)
         $('#schedule_description').show();
     }
+    MAX_STUDENTS = groupCategory.MaxUsersPerGroup;
     
     let groups = await getGroupsInCategory();
     let availableGroups = await displayGroupsInCategory(groups);
@@ -50,29 +52,42 @@ async function displayGroupsInCategory(groups){
 
     $('#existing_timeslots__table').html(html);
 
-    groups.forEach(group => {
+    CLASSLIST = await Promise.all(CLASSLIST)[0];
+
+    for(let group of groups){
         
-        if(group.Enrollments.length === 0){
+        if(group.Enrollments.length < MAX_STUDENTS && !group.Enrollments.includes(user.Identifier)){
 
             availableGroups++;
 
             html = '<tr class="timeslot" id="timeslot_' + group.GroupId + '">';
+            if(MAX_STUDENTS > 1){
+                html += '<td class="timeslot_datetime">' + group.Enrollments.length + '/' + MAX_STUDENTS + ' students';
+                if(group.Enrollments.length > 0){
+                    html += '<br><small>';
+                    for(let student of group.Enrollments){
+                        html += CLASSLIST[student] + '<br>';
+                    }
+                    html += '</small>';
+                }
+                html += '</td>';
+            }
             html += '<td class="timeslot_datetime">' + group.Name + '</td>';
             html += '<td class="timeslot_actions student_timeslot_actions">';
-            html += '<button class="btn btn-secondary btn-sm select-timeslot" data-id="' + group.GroupId + '">Select this time</button> ';
+            html += '<button class="btn btn-secondary btn-sm select-timeslot" data-id="' + group.GroupId + '">Select this time</button>';
             html += '</td>';
             html += '</tr>';
 
             $('#existing_timeslots__table').append(html);
             $('#timeslot_' + group.GroupId).find('.select-timeslot').on('click', function(){selectTimeSlot(group)});
-        } else if (group.Enrollments[0] == user.Identifier){
+        } else if (group.Enrollments.includes(user.Identifier)){
             MY_TIME = {
                 name: group.Name,
                 groupId: group.GroupId,
-                student: group.Enrollments[0]
+                student: user.Identifier
             }
         }
-    });
+    }
     
     if(MY_TIME === false){
         $('.student_timeslot_actions').show();

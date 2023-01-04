@@ -147,7 +147,7 @@ async function displayExistingTimeSlots(){
         let students = [];
         
         if(timeSlot.students.length > 0){
-            for(studentId in timeSlot.students){
+            for(let studentId in timeSlot.students){
                 students.push(classList[studentId].FirstName + ' ' + classList[studentId].LastName + ' (' + classList[studentId].OrgDefinedId + ')');
             }
             students = students.join('<br>');
@@ -372,7 +372,7 @@ function updateTotalTimeSlots(){
 
             let timeSlotsInBlock = parseInt(Math.floor(block.end.diff(block.start, 'minutes') / timeSlotDuration));
 
-            for(i = 0; i < timeSlotsInBlock; i++){
+            for(let i = 0; i < timeSlotsInBlock; i++){
                 let newTimeSlot = {
                     groupId: null,
                     eventId: null,
