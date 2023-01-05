@@ -59,3 +59,5 @@ tr.timeslot:hover{background-color: #ffd;}
 .modal-header{border:none;}
 .modal p{color:#000; font-size: 1.2em;}
 #delete_schedule{text-align: right;}
+.scrolling{overflow-y: scroll;}
+.max-height-500{max-height: 600px;}

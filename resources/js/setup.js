@@ -4,6 +4,8 @@ let SUBMITTING = false;
 
 let TIMEZONE;
 
+let CLASS_LIST = [];
+
 let timeBlocks = [];
 let existingTimeSlots = [];
 let newTimeSlots = [];
@@ -21,7 +23,7 @@ async function init(){
         let orgInfo = await bs.get('/d2l/api/lp/(version)/organization/info');
         TIMEZONE = orgInfo.TimeZone;
     }
-    
+
     moment.tz.setDefault(TIMEZONE);
 
     // $('#timeslot_number').on('change', function(){
@@ -32,6 +34,8 @@ async function init(){
     //generateTimeOptions($('#deadline_time'));
 
     if(MODE == 'edit'){
+
+        CLASS_LIST = getClassList();
 
         let url = window.top.location.href;
         let match = url.match(/\/viewContent\/(\d+)\//);
@@ -136,7 +140,7 @@ async function displayExistingTimeSlots(){
 
     let duration = 0;
 
-    let classList = await getClassList();
+    await Promise.all([CLASS_LIST]);
 
     let html = '<tr><th>Registration</th><th>Date & Time</th><th>Actions</th></tr>';
 
@@ -986,6 +990,37 @@ async function deleteTimeSlot(timeSlot, requiresConfirmation = true){
         return ets.groupId !== timeSlot.groupId;
     });
 
+}
+
+async function manageEnrollment(groupId){
+    let group = await getGroup(groupId);
+    
+    let message = '<h3>Manage Enrollment</h3>';
+
+    let studentTable = '<div class="scrolling max-height-600"><table><thead><tr><th><input type="checkbox" class="select_all" onclick="selectAll(this)"></th><th>Student</th></tr></thead><tbody>';
+    for(student of group.Enrollment){
+        studentTable += '<tr><td><input type="checkbox" class="select_row" value="' + student + '"></td><td>' + CLASS_LIST[student].DisplayName + '</td></tr>';
+    }
+    studentTable += '</tbody></table></div>';
+
+    message += studentTable;
+
+    message += '<p><input type="button" value="Remove Selected" onclick="removeStudentsFromGroup(' + groupId + ')"></p>';
+
+    modalMessage(message);
+}
+
+function removeStudentsFromGroup(){
+    if(!confirm('Are you sure you cancel these registrations?\n\nThe selected students will be removed and they will be able to select a different time.')){
+        return false;
+    }
+
+    $('#student_table').find('.select_row').each(function(){
+        if($(this).is(':checked')){
+            unenrolFromGroup(groupId, $(this).val());
+            $(this).closest('tr').remove();
+        }
+    });
 }
 
 async function cancelTimeSlot(timeSlot, requiresConfirmation = true){

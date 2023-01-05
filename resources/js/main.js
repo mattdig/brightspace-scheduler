@@ -23,6 +23,11 @@ function getGroupsInCategory(){
     return groups;
 }
 
+function getGroup(groupId){
+    let group = bs.get('/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + GROUP_CATEGORY_ID + '/groups/' + groupId);
+    return group;
+}
+
 async function getClassList(product = 'le'){
     let classList = [];
     let url = (product == 'le') ? '/d2l/api/le/(version)/(orgUnitId)/classlist/' : '/d2l/api/bas/(version)/orgunits/(orgUnitId)/classlist/';
@@ -80,6 +85,11 @@ async function sendEmail(address, subject, body){
     };
 
     return bs.submit(url, formData);
+}
+
+function selectAll(obj){
+    let checked = $(obj).prop('checked');
+    $(obj).closest('table').find('.select_row').prop('checked', checked);
 }
 
 function modalMessage(message, id = null, callback = null){
