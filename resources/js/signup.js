@@ -8,11 +8,8 @@ $(function(){init();});
 
 async function init() {
 
-    let url = window.top.location.href;
-    let match = url.match(/\/viewContent\/(\d+)\//);
-
-    CLASSLIST = await getClassList('bas');
-    USER = await whoAmI();
+    CLASSLIST = getClassList('bas');
+    USER = whoAmI();
 
     let groupCategory = await getGroupCategory(GROUP_CATEGORY_ID);
     TITLE = groupCategory.Name;
@@ -30,24 +27,12 @@ async function init() {
         $('#cancel-selection').on('click', function(){cancelMySelection()});
         $('#my_selection').show();
     }
-
-    if(availableGroups == 0){
-        $('#existing_timeslots__heading').html('No additional time slots are available');
-    } else if(MY_TIME !== false){
-        $('#existing_timeslots__heading').html('Other available time slots');
-    } else {
-        $('#existing_timeslots__heading').html('Available time slots');
-    }
 }
 
 async function displayGroupsInCategory(groups){
-
-    if(groups.length == 0){
-        return false;
-    }
-
+    
     let availableGroups = 0;
-    let html = '<tr><th>Date & Time</th><th class="student_timeslot_actions">Actions</th></tr>';
+    let html = '<tr>' + (MAX_STUDENTS > 1 ? '<th>Enrollment</th>' : '') + '<th>Date & Time</th><th class="student_timeslot_actions">Actions</th></tr>';
 
     $('#existing_timeslots__table').html(html);
 
@@ -57,7 +42,7 @@ async function displayGroupsInCategory(groups){
 
     for(let group of groups){
         
-        if(group.Enrollments.length < MAX_STUDENTS && !group.Enrollments.includes(parseInt(USER.Identifier))){
+        if(group.Enrollments.length < MAX_STUDENTS && !group.Enrollments.includes(USER.Identifier)){
 
             availableGroups++;
 
@@ -81,7 +66,7 @@ async function displayGroupsInCategory(groups){
 
             $('#existing_timeslots__table').append(html);
             $('#timeslot_' + group.GroupId).find('.select-timeslot').on('click', function(){selectTimeSlot(group)});
-        } else if (group.Enrollments.includes(parseInt(USER.Identifier))){
+        } else if (group.Enrollments.includes(USER.Identifier)){
             MY_TIME = {
                 name: group.Name,
                 groupId: group.GroupId,
@@ -95,8 +80,18 @@ async function displayGroupsInCategory(groups){
     } else {
         $('.student_timeslot_actions').remove();
     }
-    $('#existing_timeslots').show();
     
+    if(availableGroups == 0){
+        $('#existing_timeslots__heading').html('No additional time slots are available');
+        $('#existing_timeslots__table').remove();
+    } else if(MY_TIME !== false){
+        $('#existing_timeslots__heading').html('Other available time slots');
+    } else {
+        $('#existing_timeslots__heading').html('Available time slots');
+    }
+
+    $('#existing_timeslots').show();
+
     return availableGroups;
 
 }
@@ -114,7 +109,7 @@ async function cancelMySelection(){
 
 async function selectTimeSlot(group){
 
-    classList = getClassList();
+    let classList = getClassList();
 
     if(MY_TIME !== false || !confirm('Are you sure you want to select:\n\n' + group.Name)){
         return false;
@@ -156,8 +151,8 @@ async function selectTimeSlot(group){
     body = body.replace(/\(topicUrl\)/g, topicUrl);
     body = body.replace(/\(calendarUrl\)/g, calendarUrl);
 
-    classList = await Promise.all([classList])[0];
-    let studentEmail = classList[parseInt(USER.Identifier)].Email;
+    classList = await classList;
+    let studentEmail = classList[USER.Identifier].Email;
 
     let email = sendEmail(studentEmail, subject, body);
 

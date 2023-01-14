@@ -1,10 +1,7 @@
 let TOPIC_ID;
-
 let SUBMITTING = false;
-
 let TIMEZONE;
-
-let CLASSLIST = [];
+let CLASSLIST = getClassList();
 
 let timeBlocks = [];
 let existingTimeSlots = [];
@@ -34,8 +31,6 @@ async function init(){
     //generateTimeOptions($('#deadline_time'));
 
     if(MODE == 'edit'){
-
-        CLASSLIST = await getClassList();
 
         let url = window.top.location.href;
         let match = url.match(/\/viewContent\/(\d+)\//);
@@ -144,13 +139,18 @@ async function displayExistingTimeSlots(){
 
     $('#existing_timeslots__table').html(html);
 
+    CLASSLIST = await CLASSLIST;
+
+    console.log(CLASSLIST);
+
     existingTimeSlots.forEach(timeSlot => {
         
         let students = [];
+        console.log(timeSlot);
         
         if(timeSlot.students.length > 0){
-            for(let studentId in timeSlot.students){
-                students.push(classList[studentId].FirstName + ' ' + classList[studentId].LastName + ' (' + classList[studentId].OrgDefinedId + ')');
+            for(let studentId of timeSlot.students){
+                students.push(CLASSLIST[studentId].DisplayName + ' (' + CLASSLIST[studentId].OrgDefinedId + ')');
             }
             students = students.join('<br>');
         } else {
