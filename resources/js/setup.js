@@ -4,7 +4,7 @@ let SUBMITTING = false;
 
 let TIMEZONE;
 
-let CLASS_LIST = [];
+let CLASSLIST = [];
 
 let timeBlocks = [];
 let existingTimeSlots = [];
@@ -35,7 +35,7 @@ async function init(){
 
     if(MODE == 'edit'){
 
-        CLASS_LIST = getClassList();
+        CLASSLIST = await getClassList();
 
         let url = window.top.location.href;
         let match = url.match(/\/viewContent\/(\d+)\//);
@@ -139,8 +139,6 @@ async function displayExistingTimeSlots(){
     }
 
     let duration = 0;
-
-    await Promise.all([CLASS_LIST]);
 
     let html = '<tr><th>Registration</th><th>Date & Time</th><th>Actions</th></tr>';
 
@@ -632,9 +630,9 @@ function validateAllFields(){
     let valid = validateTimeFields(true);
 
     if(valid){
-        valid = parseInt($('#max_uesrs').val()) > 0 && parseInt($('#max_uesrs').val()) <= 1000;
+        valid = parseInt($('#max_users').val()) > 0 && parseInt($('#max_users').val()) <= 1000;
         if(!valid){
-            modalMessage('Max users per timeslot must be between 1 and 1000.', $('#max_uesrs'));
+            modalMessage('Max users per timeslot must be between 1 and 1000.', $('#max_users'));
         }
     }
 
@@ -767,7 +765,7 @@ function createGroupCategory(){
     
     let title = $('#title').val().trim();
     let description = $('#description').val().trim();
-    let maxUsers = pareInt($('#max_users').val().trim());
+    let maxUsers = parseInt($('#max_users').val().trim());
 
     // DEADLINE NOT SUPPORTED BY API
     // TODO: SWITCH TO SUBMITTING FORM DATA
@@ -999,7 +997,7 @@ async function manageEnrollment(groupId){
 
     let studentTable = '<div class="scrolling max-height-600"><table><thead><tr><th><input type="checkbox" class="select_all" onclick="selectAll(this)"></th><th>Student</th></tr></thead><tbody>';
     for(student of group.Enrollment){
-        studentTable += '<tr><td><input type="checkbox" class="select_row" value="' + student + '"></td><td>' + CLASS_LIST[student].DisplayName + '</td></tr>';
+        studentTable += '<tr><td><input type="checkbox" class="select_row" value="' + student + '"></td><td>' + CLASSLIST[student].DisplayName + '</td></tr>';
     }
     studentTable += '</tbody></table></div>';
 

@@ -1,7 +1,9 @@
 const bs = new Brightspace(ORG_UNIT_ID); 
 
-function whoAmI(){
-    return bs.get('/d2l/api/lp/(version)/users/whoami');
+async function whoAmI(){
+    let user = await bs.get('/d2l/api/lp/(version)/users/whoami');
+    user.Identifier = parseInt(user.Identifier);
+    return user;
 }
 
 async function isInstructor(){
@@ -37,7 +39,10 @@ async function getClassList(product = 'le'){
     }
 
     for(student of response){
-        classList[student.Identifier] = student;
+        if(student.Identifier !== undefined)
+            classList[student.Identifier] = student;
+        else
+            classList[student.UserId] = student;
     }
     return classList;
 }

@@ -2,7 +2,7 @@ let TITLE;
 let MY_TIME = false;
 let USER;
 let MAX_STUDENTS = 1;
-//let CLASSLIST = getClassList('bas');
+let CLASSLIST;
 
 $(function(){init();});
 
@@ -11,6 +11,7 @@ async function init() {
     let url = window.top.location.href;
     let match = url.match(/\/viewContent\/(\d+)\//);
 
+    CLASSLIST = await getClassList('bas');
     USER = await whoAmI();
 
     let groupCategory = await getGroupCategory(GROUP_CATEGORY_ID);
@@ -45,18 +46,18 @@ async function displayGroupsInCategory(groups){
         return false;
     }
 
-    let user = await whoAmI();
-
     let availableGroups = 0;
     let html = '<tr><th>Date & Time</th><th class="student_timeslot_actions">Actions</th></tr>';
 
     $('#existing_timeslots__table').html(html);
 
-    CLASSLIST = await Promise.all(CLASSLIST)[0];
+    const results = await Promise.all([CLASSLIST, USER]);
+    CLASSLIST = results[0];
+    USER = results[1];
 
     for(let group of groups){
         
-        if(group.Enrollments.length < MAX_STUDENTS && !group.Enrollments.includes(user.Identifier)){
+        if(group.Enrollments.length < MAX_STUDENTS && !group.Enrollments.includes(parseInt(USER.Identifier))){
 
             availableGroups++;
 
@@ -66,7 +67,7 @@ async function displayGroupsInCategory(groups){
                 if(group.Enrollments.length > 0){
                     html += '<br><small>';
                     for(let student of group.Enrollments){
-                        html += CLASSLIST[student] + '<br>';
+                        html += CLASSLIST[student].DisplayName + '<br>';
                     }
                     html += '</small>';
                 }
@@ -80,11 +81,11 @@ async function displayGroupsInCategory(groups){
 
             $('#existing_timeslots__table').append(html);
             $('#timeslot_' + group.GroupId).find('.select-timeslot').on('click', function(){selectTimeSlot(group)});
-        } else if (group.Enrollments.includes(user.Identifier)){
+        } else if (group.Enrollments.includes(parseInt(USER.Identifier))){
             MY_TIME = {
                 name: group.Name,
                 groupId: group.GroupId,
-                student: user.Identifier
+                student: USER.Identifier
             }
         }
     }
@@ -112,6 +113,9 @@ async function cancelMySelection(){
 }
 
 async function selectTimeSlot(group){
+
+    classList = getClassList();
+
     if(MY_TIME !== false || !confirm('Are you sure you want to select:\n\n' + group.Name)){
         return false;
     }
@@ -128,8 +132,6 @@ async function selectTimeSlot(group){
         $('#timeslot_' + group.GroupId).remove();
         return false;
     }
-
-    let classList = getClassList();
 
     let enroll = enrollInGroup(group.GroupId);
 
@@ -154,9 +156,8 @@ async function selectTimeSlot(group){
     body = body.replace(/\(topicUrl\)/g, topicUrl);
     body = body.replace(/\(calendarUrl\)/g, calendarUrl);
 
-    classList = await Promise.all([classList]);
-
-    let studentEmail = classList[0][USER.Identifier].Email;
+    classList = await Promise.all([classList])[0];
+    let studentEmail = classList[parseInt(USER.Identifier)].Email;
 
     let email = sendEmail(studentEmail, subject, body);
 
