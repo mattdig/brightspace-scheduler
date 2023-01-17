@@ -3,9 +3,6 @@ let match = url.match(/\/content\/(\d+)\/viewContent\/(\d+)\//);
 let ORG_UNIT_ID = match[1];
 let TOPIC_ID = match[2];
 
-const adminLinkId = 5492;
-const signupLinkId = 5493;
-
 const bs = new Brightspace(ORG_UNIT_ID);
 
 async function isInstructor(){
