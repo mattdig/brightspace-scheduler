@@ -19,11 +19,11 @@ let MODE = (window.location.search.indexOf('gc=') != -1 ? 'edit' : 'create');
 let GROUP_CATEGORY_ID = (MODE == 'edit' ? params.gc : null);
 </script>
 </head>
-<body class="content layout-2" role="document">
+<body class="content" role="document">
 	<div class="container-fluid">
 		<main>
             <div class="row" id="existing_timeslots">
-                <div class="col-xs-12 col-sm-offset-2 col-sm-8">
+                <div class="col-xs-12">
                     <p id="schedule_description"></p>
                     <h2 id="existing_timeslots__heading">Available Time Slots</h2>
                     <table class="d2l-table" id="existing_timeslots__table">
@@ -32,7 +32,7 @@ let GROUP_CATEGORY_ID = (MODE == 'edit' ? params.gc : null);
             </div>
             <form id="signup_schedule__form" method="post" onsubmit="event.preventDefault(); return submitForm();" action="./">
                 <div class="row">
-                    <div class="col-xs-12 col-sm-offset-2 col-sm-8 create_title__div">
+                    <div class="col-xs-12 create_title__div">
                         <h1 id="form_title">Signup Schedule</h1>
                         <div>
                             <label id="edit_title" for="title">
@@ -85,31 +85,31 @@ let GROUP_CATEGORY_ID = (MODE == 'edit' ? params.gc : null);
                 </div-->
                 <div id="edit_timeblocks">
                     <div class="row">
-                        <div class="col-xs-12 col-sm-offset-2 col-sm-8">
+                        <div class="col-xs-12">
                             <h2>Range of dates and times</h2>
                         </div>
                     </div>
 
                     <div class="datetime__div" id="datetime_1">
                         <div class="row">
-                            <div class="col-xs-12 col-sm-offset-2 col-sm-8">
+                            <div class="col-xs-12">
                                 <h3 class="datetime_title"><span>Date & Time 1</span> <button type="button" class="btn btn-remove btn-red btn-sm" data-counter="1">Remove</button></h3>
                             </div>
                         </div>
                         <div class="row">
-                            <div class="col col-sm-offset-2 col-sm-4">
+                            <div class="col col-sm-6 col-xs-12">
                                 <label for="date_1" class="date_label">
                                     <p>Date</p>
                                     <p><input type="text" name="date_1" id="date_1" class="form-control date_input timeblock_datetime_input" required /></p>
                                 </label>
                             </div>
-                            <div class="col col-sm-2 col-xs-6">
+                            <div class="col col-sm-3 col-xs-6">
                                 <label for="starttime_1" class="starttime_label">
                                     <p>Start&nbsp;Time</p>
                                     <p><select name="starttime_1" id="starttime_1" class="form-control starttime_input timeblock_datetime_input" required></select></p>
                                 </label>
                             </div>
-                            <div class="col col-sm-2 col-xs-6">
+                            <div class="col col-sm-3 col-xs-6">
                                 <label for="endtime_1" class="endtime_label">
                                     <p>End&nbsp;Time</p>
                                     <p><select name="endtime_1" id="endtime_1" class="form-control endtime_input timeblock_datetime_input" required></select></p>
@@ -118,13 +118,13 @@ let GROUP_CATEGORY_ID = (MODE == 'edit' ? params.gc : null);
                         </div>
                     </div>
                     <div class="row">
-                        <div class="col-xs-12 col-sm-offset-2 col-sm-8">
+                        <div class="col-xs-12">
                             <p><input type="button" class="btn btn-secondary" value="Add another date &amp; time range" onclick="addDatetime()"/></p>
                             <h3 id="total_time">Total time: 3 hours</h3>                        
                         </div>
                     </div>
                     <div class="row">
-                        <div class="col-xs-12 col-sm-offset-2 col-sm-8">
+                        <div class="col-xs-12">
                             <h2>Set the duration of each time slot</h2>
                             <label for="timeslot_duration">
                                 <p>The length of each time slot in minutes</p>
@@ -135,7 +135,7 @@ let GROUP_CATEGORY_ID = (MODE == 'edit' ? params.gc : null);
                     </div>
                 </div>
                 <div class="row">
-                    <div class="col-xs-12 col-sm-offset-2 col-sm-8">
+                    <div class="col-xs-12">
                         <h2>Set the number of students per time slot (group size)</h2>
                         <label for="groupzie">
                             <p>Maximum number of students per time slot</p>
@@ -145,21 +145,21 @@ let GROUP_CATEGORY_ID = (MODE == 'edit' ? params.gc : null);
                 </div>
 
                 <div class="row" id="add_new_timeblocks">
-                    <div class="col-xs-12 col-sm-offset-2 col-sm-8">
+                    <div class="col-xs-12">
                         <p><input type="button" class="btn btn-secondary" value="Add another date &amp; time range" onclick="$('#add_new_timeblocks').hide(); addDatetime()"/></p>
                     </div>
                 </div>
                 <div class="row">
-                    <div class="col-xs-12 col-sm-offset-2 col-sm-8">
+                    <div class="col-xs-12">
                         <p><br><input id="save" type="submit" class="btn btn-primary" value="Save" /></p>
                     </div>
                 </div>                
             </form>
             <div class="row" id="edit_schedule">
-                <div class="col-sm-offset-2 col-sm-2">
+                <div class="col-sm-2 col-xs-6">
                     <p><br><input type="button" class="btn btn-primary" value="Edit Schedule" onclick="$('#edit_schedule').hide(); $('#signup_schedule__form').show();" /></p>
                 </div>
-                <div id="delete_schedule" class="col-sm-offset-2 col-sm-4">
+                <div id="delete_schedule" class="col-sm-offset-6 col-sm-4 col-xs-6">
                     <p><br><input type="button" class="btn btn-red" value="DELETE SCHEDULE" onclick="deleteSchedule()" />&nbsp;</p>
                 </div>
             </div>

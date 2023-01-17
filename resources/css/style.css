@@ -3,7 +3,7 @@
 @font-face {font-family: 'Lato';src: url('https://s.brightspace.com/lib/fonts/0.5.0/assets/Lato-700.woff2');font-weight: bold;}
 *{font-size:16px; font-family: Lato, 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;}
 /*styles*/
-.container-fluid{padding-bottom:20px;}
+.container-fluid{padding:0px 30px 20px 30px; max-width: 1230px;}
 input[type=text],label{width: 100%;}
 input[type=checkbox], input[type=radio]{width: 25px; height: 25px;}
 h3,h4{font-weight: bold;}

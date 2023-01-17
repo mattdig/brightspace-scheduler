@@ -41,6 +41,7 @@ async function init(){
         // TODO: switch to fetching the HTML page for the form and parsing it
         let groupCategory = await getGroupCategory(GROUP_CATEGORY_ID);
         $('#title').val(groupCategory.Name);
+        $('#max_users').val(groupCategory.MaxUsersPerGroup);
 
         if(groupCategory.Description.Text != ''){
             $('#schedule_description').html(groupCategory.Description.Text)
