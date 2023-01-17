@@ -1,4 +1,7 @@
-let TOPIC_ID;
+const params = new Proxy(new URLSearchParams(window.top.location.search), {get: (searchParams, prop) => searchParams.get(prop)});
+let MODE = (window.location.search.indexOf('mode=edit') != -1 ? 'edit' : 'create');
+let GROUP_CATEGORY_ID = (MODE == 'edit' ? params.gc : null);
+let TOPIC_ID = 0;
 let SUBMITTING = false;
 let TIMEZONE;
 let CLASSLIST = getClassList();
@@ -11,15 +14,10 @@ $(function(){init();});
 
 async function init(){
 
-    if(!(await isInstructor())){
-        window.location.href = window.location.href.replace('setup', 'signup');
-        return false;
-    }
+    console.log(ORG_UNIT_ID, MODE, GROUP_CATEGORY_ID, TOPIC_ID);
 
-    if(ORG_UNIT_ID !== null){
-        let orgInfo = await bs.get('/d2l/api/lp/(version)/organization/info');
-        TIMEZONE = orgInfo.TimeZone;
-    }
+    let orgInfo = await bs.get('/d2l/api/lp/(version)/organization/info');
+    TIMEZONE = orgInfo.TimeZone;
 
     moment.tz.setDefault(TIMEZONE);
 
@@ -32,20 +30,20 @@ async function init(){
 
     if(MODE == 'edit'){
 
-        let url = window.top.location.href;
-        let match = url.match(/\/viewContent\/(\d+)\//);
-        TOPIC_ID = match[1];
+        TOPIC_ID = params.t;
+
         $('#form_title').html('Edit Signup Schedule');
 
         // deadline not supported by api
         // TODO: switch to fetching the HTML page for the form and parsing it
         let groupCategory = await getGroupCategory(GROUP_CATEGORY_ID);
         $('#title').val(groupCategory.Name);
+        $('#schedule_title').html(groupCategory.Name);
         $('#max_users').val(groupCategory.MaxUsersPerGroup);
 
         if(groupCategory.Description.Text != ''){
-            $('#schedule_description').html(groupCategory.Description.Text)
-            $('#description').val(groupCategory.Description.Text)
+            $('#schedule_description').html(groupCategory.Description.Text.replace('\n','<br />'));
+            $('#description').val(groupCategory.Description.Text);
             $('#schedule_description').show();
         }
 
@@ -923,7 +921,6 @@ async function createTopic(){
     let response = await fetch(pluginPath + '/resources/html/landing.tpl');
     let content = await response.text();
     content = content.replace(/\(pluginPath\)/g, pluginPath);
-    content = content.replace(/\(orgUnitId\)/g, ORG_UNIT_ID);
     content = content.replace(/\(groupCategoryId\)/g, GROUP_CATEGORY_ID);
     
     let topic = [

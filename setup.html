@@ -13,10 +13,8 @@
 <script type="text/javascript" src="resources/js/bootstrap-datetimepicker.min.js"></script>
 <script type="text/javascript" src="resources/js/brightspace.js"></script>    
 <script type="text/javascript">
-const params = new Proxy(new URLSearchParams(window.location.search), {get: (searchParams, prop) => searchParams.get(prop)});
-let ORG_UNIT_ID = params.ou;
-let MODE = (window.location.search.indexOf('gc=') != -1 ? 'edit' : 'create');
-let GROUP_CATEGORY_ID = (MODE == 'edit' ? params.gc : null);
+let match = window.top.location.href.match(/\/navbars\/(\d+)\//);
+let ORG_UNIT_ID = match[1];
 </script>
 </head>
 <body class="content" role="document">
@@ -24,6 +22,7 @@ let GROUP_CATEGORY_ID = (MODE == 'edit' ? params.gc : null);
 		<main>
             <div class="row" id="existing_timeslots">
                 <div class="col-xs-12">
+                    <h1 id="schedule_title"></h1>
                     <p id="schedule_description"></p>
                     <h2 id="existing_timeslots__heading">Available Time Slots</h2>
                     <table class="d2l-table" id="existing_timeslots__table">

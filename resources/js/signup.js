@@ -1,3 +1,5 @@
+const params = new Proxy(new URLSearchParams(window.top.location.search), {get: (searchParams, prop) => searchParams.get(prop)});
+let GROUP_CATEGORY_ID = params.gc;
 let TITLE;
 let MY_TIME = false;
 let USER;
@@ -13,8 +15,10 @@ async function init() {
 
     let groupCategory = await getGroupCategory(GROUP_CATEGORY_ID);
     TITLE = groupCategory.Name;
+    $('#schedule_title').html(TITLE);
+
     if(groupCategory.Description.Text != ''){
-        $('#schedule_description').html(groupCategory.Description.Text)
+        $('#schedule_description').html(groupCategory.Description.Text.replace('\n', '<br />'));
         $('#schedule_description').show();
     }
     MAX_STUDENTS = groupCategory.MaxUsersPerGroup;
@@ -136,7 +140,7 @@ async function selectTimeSlot(group){
     let feedToken = calendarSubscription.match(/feed\.ics\?token\=([a-zA-Z0-9]+)/)[1];
     let feedUrl = 'webcal://' + host + '/d2l/le/calendar/feed/user/feed.ics?token=' + feedToken;
     let calendarUrl = 'https://' + host + '/d2l/le/calendar/' + ORG_UNIT_ID;
-    let topicUrl = window.top.location.href.split('?')[0];
+    let topicUrl = window.top.location.href;
 
     let pluginPath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf("/"));
 

@@ -8,9 +8,8 @@
 <script type="text/javascript" src="resources/js/bootstrap.3.3.6.min.js"></script>
 <script type="text/javascript" src="resources/js/brightspace.js"></script>    
 <script type="text/javascript">
-const params = new Proxy(new URLSearchParams(window.location.search), {get: (searchParams, prop) => searchParams.get(prop)});
-let ORG_UNIT_ID = params.ou;
-let GROUP_CATEGORY_ID = params.gc;
+let match = window.top.location.href.match(/\/navbars\/(\d+)\//);
+let ORG_UNIT_ID = match[1];
 </script>
 </head>
 <body class="content layout-2" role="document">
@@ -18,6 +17,7 @@ let GROUP_CATEGORY_ID = params.gc;
 		<main>
             <div class="row" id="existing_timeslots">
                 <div class="col-xs-12 col-sm-offset-2 col-sm-8">
+                    <h1 id="schedule_title"></h1>
                     <p id="schedule_description"></p>
                     <div id="my_selection">
                         <h2 id="my_selection__heading">My Selected Time Slot</h2>

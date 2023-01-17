@@ -1,4 +1,4 @@
-const bs = new Brightspace(ORG_UNIT_ID); 
+const bs = new Brightspace(ORG_UNIT_ID);
 
 async function whoAmI(){
     let user = await bs.get('/d2l/api/lp/(version)/users/whoami');
