@@ -5,19 +5,21 @@
 /*styles*/
 .container-fluid{padding-bottom:20px;}
 input[type=text],label{width: 100%;}
+input[type=checkbox], input[type=radio]{width: 25px; height: 25px;}
 h3,h4{font-weight: bold;}
-table {
+.d2l-table {
     border-collapse:separate;
     border:1px solid #bbb;
     border-radius:6px;
+    width: 100%;
 }
-tr:first-child th:first-child{
+.d2l-table tr:first-child th:first-child{
     border-top-left-radius:6px;
 }
 tr:first-child th:last-child{
     border-top-right-radius:6px;
 }
-td, th {
+.d2l-table td, .d2l-table th {
     border-left:1px solid #bbb;
     border-top:1px solid #bbb;
     padding:10px 20px;
@@ -25,20 +27,21 @@ td, th {
     text-align: center;
     height:3.5em;
 }
-th {
+.d2l-table th {
     border-top: none;
     font-weight: bold;
     background-color: #f9fbff;
 }
-td:first-child, th:first-child {
+.d2l-table td:first-child, .d2l-table th:first-child {
     border-left: none;
 }
-tr:last-child td:first-child {
+.d2l-table tr:last-child td:first-child {
     border-bottom-left-radius:6px;
 }
-tr:last-child td:last-child {
+.d2l-table tr:last-child td:last-child {
     border-bottom-right-radius:6px;
 }
+.d2l-table tbody tr:hover{background-color: #ffd;}
 .btn{padding:0.8em 2em; font-weight: bold; border-radius: 0.5em;}
 .btn-red{background-color: #d0021b; color: #fff;}
 .btn-red:hover,.btn-red:focus{background-color: #b4001a; color: #fff;}
@@ -51,7 +54,6 @@ tr:last-child td:last-child {
 #schedule_description{font-size:20px;}
 #existing_timeslots__table{width: 100%;font-size: 16px;margin-bottom: 20px;}
 .student_timeslot_actions{display:none;}
-tr.timeslot:hover{background-color: #ffd;}
 .datetime_title{margin-bottom: 5px;}
 .timeslot_unit{width:100%; max-width: 363px;}
 #add_new_timeblocks{margin-top:20px;}
