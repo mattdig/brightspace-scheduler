@@ -172,6 +172,8 @@ async function displayExistingTimeSlots(groupCategory){
                 html += '<button class="btn btn-secondary btn-sm manage-timeslot" data-id="' + timeSlot.groupId + '">Cancel Registrations...</button> ';
             else
                 html += '<button class="btn btn-secondary btn-sm manage-timeslot" data-id="' + timeSlot.groupId + '">Cancel Registration</button> ';
+            
+            html += '<br />'
         }
         html += '<button class="btn btn-red btn-sm delete-timeslot" data-id="' + timeSlot.groupId + '">Delete Time Slot</button></td>';
         html += '</td>';
@@ -989,7 +991,7 @@ async function manageEnrollment(groupId){
     
     let message = '<h3>Manage Registrations</h3>';
 
-    let studentTable = '<div class="scrolling max-height-600" ><table class="d2l-table" id="student_table"><thead><tr><th onclick="clickSubInput(event)"><input type="checkbox" class="select_all" onclick="selectAll(this)"></th><th>Student</th></tr></thead><tbody>';
+    let studentTable = '<div class="scrolling max-height-600"><table class="d2l-table" id="student_table"><thead><tr><th onclick="clickSubInput(event)"><input type="checkbox" class="select_all" onclick="selectAll(this)"></th><th>Student</th></tr></thead><tbody>';
     for(student of group.Enrollments){
         studentTable += '<tr><td onclick="clickSubInput(event)"><input type="checkbox" class="select_row" id="select_student_'+student+'" value="' + student + '"></td><td><label for="select_student_'+student+'">' + CLASSLIST[student].DisplayName + '</label></td></tr>';
     }
