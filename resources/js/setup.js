@@ -1,5 +1,5 @@
 const params = new Proxy(new URLSearchParams(window.top.location.search), {get: (searchParams, prop) => searchParams.get(prop)});
-let MODE = (window.location.search.indexOf('mode=edit') != -1 ? 'edit' : 'create');
+let MODE = (window.top.location.search.indexOf('gc=') != -1 ? 'edit' : 'create');
 let GROUP_CATEGORY_ID = (MODE == 'edit' ? params.gc : null);
 let TOPIC_ID = 0;
 let SUBMITTING = false;
@@ -39,7 +39,8 @@ async function init(){
         let groupCategory = await getGroupCategory(GROUP_CATEGORY_ID);
         $('#title').val(groupCategory.Name);
         $('#schedule_title').html(groupCategory.Name);
-        $('#max_users').val(groupCategory.MaxUsersPerGroup);
+        $('#max_users__row').remove();
+        //$('#max_users').val(groupCategory.MaxUsersPerGroup);
 
         if(groupCategory.Description.Text != ''){
             $('#schedule_description').html(groupCategory.Description.Text.replace('\n','<br />'));
@@ -640,7 +641,7 @@ function validateAllFields(){
 
     let valid = validateTimeFields(true);
 
-    if(valid){
+    if(valid && MODE == 'create'){
         valid = parseInt($('#max_users').val()) > 0 && parseInt($('#max_users').val()) <= 1000;
         if(!valid){
             modalMessage('Max users per timeslot must be between 1 and 1000.', $('#max_users'));
@@ -680,10 +681,12 @@ async function submitForm(){
             newTopic = await createTopic();
             TOPIC_ID = newTopic.Id;
         } else {
-            await Promise.all([
+            const result = await Promise.all([
                 updateGroupCategory(),
                 updateTopic()
             ]);
+
+            console.log(result);
         }
 
 
@@ -793,9 +796,10 @@ async function updateGroupCategory(){
 
     let title = $('#title').val().trim();
     let description = $('#description').val().trim();
-    let maxUsers = pareInt($('#max_users').val().trim());
+    //let maxUsers = parseInt($('#max_users').val());
 
     // DEADLINE NOT SUPPORTED BY API
+    // MaxUsersPerGroup not supported by API
     // TODO: SWITCH TO SUBMITTING FORM DATA
     // let format = "YYYY-MM-DD HH:mm";
     // let deadlineDate = $('#deadline_date').val();
@@ -806,16 +810,16 @@ async function updateGroupCategory(){
     let category = {
         "Name": title,
         "Description": {"Content": description, "Type":"Text"},
-        "EnrollmentStyle": "PeoplePerNumberOfGroupsSelfEnrollment",
-        "EnrollmentQuantity": null,
+        // "EnrollmentStyle": "PeoplePerNumberOfGroupsSelfEnrollment",
+        // "EnrollmentQuantity": null,
         "AutoEnroll": false,
         "RandomizeEnrollments": false,
-        "NumberOfGroups": null,
-        "MaxUsersPerGroup": maxUsers,
-        "AllocateAfterExpiry": false,
-        "SelfEnrollmentExpiryDate": null, //deadlineUTCDateTime, //<string:UTCDateTime>( yyyy-MM-ddTHH:mm:ss.fffZ )|null,
-        "GroupPrefix": null,
-        "RestrictedByOrgUnitId": null,
+        // "NumberOfGroups": null,
+        // "MaxUsersPerGroup": maxUsers,
+        // "AllocateAfterExpiry": false,
+        // "SelfEnrollmentExpiryDate": null, //deadlineUTCDateTime, //<string:UTCDateTime>( yyyy-MM-ddTHH:mm:ss.fffZ )|null,
+        // "GroupPrefix": null,
+        // "RestrictedByOrgUnitId": null,
         "DescriptionsVisibleToEnrolees": true
     };
     
