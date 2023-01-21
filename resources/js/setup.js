@@ -720,8 +720,7 @@ async function submitForm(){
             await Promise.all(promiseArray);
         }
 
-        modalMessage('Form submitted successfully.',null,reloadAfterSave);
-        setTimeout(reloadAfterSave, 5000);
+        reloadAfterSave();
 
     }
 

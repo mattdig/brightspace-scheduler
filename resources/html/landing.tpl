@@ -7,7 +7,7 @@ let GROUP_CATEGORY_ID = "(groupCategoryId)";
 </script>
 </head>
 <body>
-<p>...loading...</p>
+<p>Loading...</p>
 <script type="text/javascript" src="(pluginPath)/resources/js/landing.js"></script>
 </body>
 </html>

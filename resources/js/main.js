@@ -98,26 +98,29 @@ function selectAll(obj){
 }
 
 function modalMessage(message, id = null, callback = null){
-    
     if(id !== null){
         if(typeof(id) == 'string')
             $('#' + id).addClass('error');
         else
             $(id).addClass('error');
     }
-    
-    $('#messageModel').find('.modal-title').html('Error');
     $('#messageModal').find('.modal-body').html('<p>' + message + '</p>');
-
+    let primary = $('#messageModal').find('.modal-footer').find('.btn-primary');
+    primary.off('click');
     if(callback !== null){
-        $('#messageModal').find('.modal-footer').find('.btn-primary').on('click', callback);
+        primary.on('click', callback);
     }
-
-    // is it in an iframe?
-    let theWindow = window.self === window.top ? window : window.parent;
-
-    $('#messageModal').css('top', $(theWindow).scrollTop() + 'px');
-
     $('#messageModal').modal('show');
+}
 
+function modalConfirm(message, callback = null){
+    $('#messageModal').find('.modal-body').html('<p>' + message + '</p>');
+    let primary = $('#messageModal').find('.modal-footer').find('.btn-primary');
+    primary.off('click');
+    if(callback !== null){
+        primary.on('click', callback);
+    }
+    primary.on('click', function(){$('#messageModal').find('.btn-cancel').hide();});
+    $('#messageModal').find('.btn-cancel').show();
+    $('#messageModal').modal('show');
 }
