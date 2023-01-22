@@ -1073,15 +1073,17 @@ function deleteTopic(){
     return bs.delete('/d2l/api/le/(version)/(orgUnitId)/content/topics/' + TOPIC_ID);
 }
 
+function confirmDeleteSchedule(){
+    modalConfirm('Are you sure you want to delete this schedule?\n\nThis will remove all time slots and registrations.',
+        function(){
+            modalConfirm('Are you really sure?\n\nThis will remove all time slots and registrations.',
+                deleteSchedule
+            );
+        }
+    );
+}
+
 async function deleteSchedule(){
-    if(!confirm('Are you sure you want to delete this schedule?\n\nThis will remove all time slots and registrations.')){
-        return false;
-    }
-
-    if(!confirm('Are you really sure?\n\nThis will remove all time slots and registrations.')){
-        return false;
-    }
-
     let deleteArray = [];
 
     for(let i = 0; i < existingTimeSlots.length; i++){
