@@ -97,7 +97,26 @@ function selectAll(obj){
     $(obj).closest('table').find('.select_row').prop('checked', checked);
 }
 
-function modalMessage(message, id = null, callback = null){
+function modalInit(){
+    $('body').append('<div class="modal modal-dialog-scrollable fade" id="messageModal" tabindex="-1" role="dialog" aria-labelledby="messageModalCenterTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered" role="document"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button></div><div class="modal-body"></div><div class="modal-footer"><button type="button" class="btn btn-close" data-dismiss="modal">Cancel</button><button type="button" id="modalOk" class="btn btn-primary" data-dismiss="modal">Okay</button></div></div></div></div>');
+    var myModal = document.getElementById('messageModal');
+    var myInput = document.getElementById('modalOk');
+    myModal.addEventListener('shown.bs.modal', function () {
+        myInput.focus();
+    });
+    myModal.addEventListener('hide.bs.modal', function () {
+        $('#modalOk').off('click');
+        $('#modalCancel').hide();
+    });
+}
+
+function modalMessage(message, id = null, callback = null, title = null, okText = 'Okay', cancelText = null){
+    if($('#messageModal').length == 0){
+        modalInit();
+    }
+    if(cancelText !== null){
+        $('#modalCancel').html(cancelText).show();
+    }
     if(id !== null){
         if(typeof(id) == 'string')
             $('#' + id).addClass('error');
@@ -105,22 +124,13 @@ function modalMessage(message, id = null, callback = null){
             $(id).addClass('error');
     }
     $('#messageModal').find('.modal-body').html('<p>' + message + '</p>');
-    let primary = $('#messageModal').find('.modal-footer').find('.btn-primary');
-    primary.off('click');
+    let primary = $('#modalOk');
     if(callback !== null){
         primary.on('click', callback);
     }
     $('#messageModal').modal('show');
 }
 
-function modalConfirm(message, callback = null){
-    $('#messageModal').find('.modal-body').html('<p>' + message + '</p>');
-    let primary = $('#messageModal').find('.modal-footer').find('.btn-primary');
-    primary.off('click');
-    if(callback !== null){
-        primary.on('click', callback);
-    }
-    primary.on('click', function(){$('#messageModal').find('.btn-cancel').hide();});
-    $('#messageModal').find('.btn-cancel').show();
-    $('#messageModal').modal('show');
+function modalConfirm(message, callback = null, title = null, okText = 'Okay', cancelText = 'Cancel'){
+    modalMessage(message, null, callback, title, okText, cancelText);
 }
