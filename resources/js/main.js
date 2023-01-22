@@ -111,6 +111,18 @@ function modalInit(){
 }
 
 function modalMessage(message, id = null, callback = null, title = null, okText = 'Okay', cancelText = null){
+    if(typeof(message) == 'object'){
+        id = message.id;
+        callback = message.callback;
+        title = message.title;
+        if(typeof(message.okText) == 'string'){
+            okText = message.okText;
+        }
+        if(typeof(message.cancelText) == 'string'){
+            cancelText = message.cancelText;
+        }
+        message = message.message;
+    }
     if($('#messageModal').length == 0){
         modalInit();
     }
