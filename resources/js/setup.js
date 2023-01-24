@@ -1077,7 +1077,9 @@ function confirmDeleteSchedule(){
     modalConfirm('Are you sure you want to delete this schedule?\n\nThis will remove all time slots and registrations.',
         function(){
             modalConfirm('Are you really sure?\n\nThis will remove all time slots and registrations.',
-                deleteSchedule
+                function(){
+                    alert('baleted');
+                }
             );
         }
     );
