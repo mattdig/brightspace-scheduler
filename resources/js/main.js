@@ -98,7 +98,7 @@ function selectAll(obj){
 }
 
 function modalInit(){
-    let newModal = '<div class="modal modal-dialog-scrollable fade" id="messageModal" tabindex="-1" role="dialog" aria-labelledby="messageModalCenterTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered" role="document"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button></div><div class="modal-body"></div><div class="modal-footer"><button id="modalCancel" type="button" class="btn btn-close" data-dismiss="modal">Cancel</button><button type="button" id="modalOk" class="btn btn-primary" data-dismiss="modal">Okay</button></div></div></div></div>';
+    let newModal = '<div class="modal modal-dialog-scrollable fade" id="messageModal" tabindex="-1" role="dialog" aria-labelledby="messageModalCenterTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered" role="document"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button></div><div class="modal-body"></div><div class="modal-footer"><button id="modalCancel" type="button" class="btn btn-secondary btn-close" data-dismiss="modal">Cancel</button><button type="button" id="modalOk" class="btn btn-primary" data-dismiss="modal">Okay</button></div></div></div></div>';
     $('body').append(newModal);
     let myModal = $('#messageModal');
     myModal.on('hide.bs.modal', function () {

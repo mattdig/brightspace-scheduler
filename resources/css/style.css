@@ -42,10 +42,14 @@ tr:first-child th:last-child{
     border-bottom-right-radius:6px;
 }
 .d2l-table tbody tr:hover{background-color: #ffd;}
-.btn{padding:0.8em 2em; font-weight: bold; border-radius: 0.5em;}
+.btn{padding:0.8em 2em; font-weight: bold; border-radius: 0.5em; background-color: #e3e9f1; color: #202122}
+.btn:hover{background-color: #cdd5dc;}
+.btn-primary{background-color: #006fbf; color: #fff;}
+.btn-primary:hover{background-color: #004489;}
 .btn-red{background-color: #d0021b; color: #fff;}
-.btn-red:hover,.btn-red:focus{background-color: #b4001a; color: #fff;}
-.btn-secondary:hover{background-color: #ddd; color: #000;}
+.btn-red:hover{background-color: #b4001a; color: #fff;}
+.btn-secondary{background-color: #e3e9f1;}
+.btn-secondary:hover{background-color: #cdd5dc;}
 .btn-sm{font-size:16px; display:inline-block; padding:0.1em 0.4em; margin-bottom:6px; border-radius: 0.25em;}
 .nav-tabs{font-weight: bold;}
 .tab-pane{padding: 10px 10px 0px 10px; margin-bottom: 1px solid #ccc;}
