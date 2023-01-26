@@ -133,7 +133,6 @@ function modalMessage(message, id = null, callback = null, title = null, okText 
         focusButton = focusButton.next();
     }
     myModal.on('shown.bs.modal', function () {
-        console.log('shown');
         focusButton.focus();
     });
     if(id !== null){

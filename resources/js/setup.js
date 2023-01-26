@@ -4,7 +4,7 @@ let GROUP_CATEGORY_ID = (MODE == 'edit' ? params.gc : null);
 let TOPIC_ID = 0;
 let SUBMITTING = false;
 let TIMEZONE;
-let CLASSLIST = getClassList();
+let CLASSLIST;
 
 let timeBlocks = [];
 let existingTimeSlots = [];
@@ -13,8 +13,6 @@ let newTimeSlots = [];
 $(function(){init();});
 
 async function init(){
-
-    console.log(ORG_UNIT_ID, MODE, GROUP_CATEGORY_ID, TOPIC_ID);
 
     let orgInfo = await bs.get('/d2l/api/lp/(version)/organization/info');
     TIMEZONE = orgInfo.TimeZone;
@@ -29,6 +27,8 @@ async function init(){
     //generateTimeOptions($('#deadline_time'));
 
     if(MODE == 'edit'){
+
+        CLASSLIST = getClassList();
 
         TOPIC_ID = params.t;
 
@@ -977,10 +977,14 @@ async function updateTopic(){
 
 }
 
-async function deleteTimeSlot(timeSlot, requiresConfirmation = true){
+async function deleteTimeSlot(timeSlot){
     $('#timeslot_' + timeSlot.groupId).remove();
 
-    await cancelTimeSlot(timeSlot, false);
+    let unenrollments = [];
+    for(stduent of timeSlot.students){
+        unenrollments = unenrollFromGroup(timeSlot, stduent);
+    }
+    await Promise.all(unenrollments);
     await deleteCalendarEvent(timeSlot.eventId);
     await deleteGroup(timeSlot.groupId);
 
@@ -1031,7 +1035,7 @@ function removeStudentsFromGroup(groupId){
     $('#student_table').find('.select_row').each(function(){
         if($(this).is(':checked')){
             let studentId = $(this).val();
-            unenrolFromGroup(groupId, studentId);
+            unenrollFromGroup(timeSlot, studentId);
             $(this).closest('tr').remove();
             $('#student_' + studentId).remove();
             timeSlot.students = timeSlot.students.filter(function( es ) {
@@ -1047,18 +1051,32 @@ function removeStudentsFromGroup(groupId){
     $('#timeslot_' + groupId).find('.timeslot-student-count').html(timeSlot.students.length);
 }
 
-async function cancelTimeSlot(timeSlot, requiresConfirmation = true){
+async function cancelTimeSlot(timeSlot){
     $('#timeslot_' + timeSlot.groupId + ' .timeslot-registration').html('&nbsp;-&nbsp;');
     $('#timeslot_' + timeSlot.groupId).find('.manage-timeslot').remove();
-    let result = await unenrolFromGroup(timeSlot.groupId, timeSlot.student);
-    timeSlot.student = false;
+    let result = await unenrollFromGroup(timeSlot, timeSlot.students[0]);
+    timeSlot.students = [];
     return result;
 }
 
+async function notifyOfCancellation(timeSlot, userId){
+    let result = await fetch(pluginPath + '/resources/html/emailstudentcancellation.tpl');
+    let body = await result.text();
+    
+    let studentEmail = CLASSLIST[userId].Email;
+    let subject = 'Time Slot Cancellation - ' + timeSlot.name.replace('&nbsp;',' ');
+    
+    body = body.replace(/\(courseTitle\)/g, course);
+    body = body.replace(/\(scheduleTitle\)/g, TITLE);
+    body = body.replace(/\(timeSlot\)/g, group.Name);
+    body = body.replace(/\(topicUrl\)/g, topicUrl);
+    
+    let email = sendEmail(studentEmail, subject, body);
+}
 
-function unenrolFromGroup(groupId, userId){
-    let url = '/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + GROUP_CATEGORY_ID + '/groups/' + groupId + '/enrollments/' + userId;
-    return bs.delete(url);
+async function unenrollFromGroup(timeSlot, userId){
+    let url = '/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + GROUP_CATEGORY_ID + '/groups/' + timeSlot.groupId + '/enrollments/' + userId;
+   return bs.delete(url);
 }
 
 function deleteCalendarEvent(eventId){    
@@ -1080,13 +1098,10 @@ function deleteTopic(){
 function confirmDeleteSchedule(){
     modalConfirm('Are you sure you want to delete this schedule?\n\nThis will remove all time slots and registrations.',
         function(){
-            setTimeout(function(){
-                modalConfirm('Are you really sure?\n\nThis will remove all time slots and registrations.',
-                    function(){
-                        deleteSchedule();
-                    }
-                );
-            }, 555);
+            while($('#messageModal').is(':visble')){}
+            modalConfirm('Are you really sure?\n\nThis will remove all time slots and registrations.',
+                deleteSchedule
+            );
         }
     );
 }
@@ -1095,7 +1110,7 @@ async function deleteSchedule(){
     let deleteArray = [];
 
     for(let i = 0; i < existingTimeSlots.length; i++){
-        deleteArray.push(deleteTimeSlot(existingTimeSlots[i], false));
+        deleteArray.push(deleteTimeSlot(existingTimeSlots[i]));
     }
 
     await Promise.all(deleteArray);
