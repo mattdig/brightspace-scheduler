@@ -146,10 +146,7 @@ function modalMessage(message, id = null, callback = null, title = null, okText 
     let primary = $('#modalOk');
     if(callback !== null){
         primary.on('click', function(){
-            myModal.on('hidden.bs.modal', function(){
-                $(this).off('hidden.bs.modal');
-                callback();
-            });
+            callback();
         });
     }
     myModal.modal('show');

@@ -183,10 +183,20 @@ async function displayExistingTimeSlots(groupCategory){
         if(groupCategory.MaxUsersPerGroup > 1)
             $('#existing_timeslots__table #timeslot_' + timeSlot.groupId).find('.manage-timeslot').on('click', function(){manageEnrollment(timeSlot.groupId)});
         else
-            $('#existing_timeslots__table #timeslot_' + timeSlot.groupId).find('.manage-timeslot').on('click', function(){cancelTimeSlot(timeSlot)});
+            $('#existing_timeslots__table #timeslot_' + timeSlot.groupId).find('.manage-timeslot').on('click', function(){
+                modalConfirm(
+                    'Are you sure you cancel this registration?\n\nThe student will be removed and they will be able to select a different time.',
+                    function(){cancelTimeSlot(timeSlot);}
+                );
+            });
         
         
-        $('#existing_timeslots__table #timeslot_' + timeSlot.groupId).find('.delete-timeslot').on('click', function(){deleteTimeSlot(timeSlot)});
+        $('#existing_timeslots__table #timeslot_' + timeSlot.groupId).find('.delete-timeslot').on('click', function(){
+            modalConfirm(
+                'Are you sure you want to delete this time slot?\n\nIt will remove all registrations and associated events for this time.',
+                function(){deleteTimeSlot(timeSlot)}
+            );
+        });
     });
     
     $('#existing_timeslots').show();
@@ -968,11 +978,6 @@ async function updateTopic(){
 }
 
 async function deleteTimeSlot(timeSlot, requiresConfirmation = true){
-
-    if(requiresConfirmation && !confirm('Are you sure you want to delete this time slot?\n\nIt will remove all registrations and associated events for this time.')){
-        return false;
-    }
-
     $('#timeslot_' + timeSlot.groupId).remove();
 
     await cancelTimeSlot(timeSlot, false);
@@ -983,7 +988,6 @@ async function deleteTimeSlot(timeSlot, requiresConfirmation = true){
     existingTimeSlots = existingTimeSlots.filter(function( ets ) {
         return ets.groupId !== timeSlot.groupId;
     });
-
 }
 
 async function manageEnrollment(groupId){
@@ -999,7 +1003,7 @@ async function manageEnrollment(groupId){
 
     message += studentTable;
 
-    message += '<p style="margin-top:20px;"><input type="button" class="btn btn-red" value="Remove Selected" onclick="removeStudentsFromGroup(' + groupId + ')"></p>';
+    message += '<p style="margin-top:20px;"><input type="button" class="btn btn-red" value="Remove Selected" onclick="confirmRemoveStudentsFromGroup(' + groupId + ')"></p>';
 
     modalMessage(message);
 }
@@ -1010,11 +1014,14 @@ function clickSubInput(e){
     }
 }
 
-function removeStudentsFromGroup(groupId){
-    if(!confirm('Are you sure you cancel these registrations?\n\nThe selected students will be removed and they will be able to select a different time.')){
-        return false;
-    }
+function confirmRemoveStudentsFromGroup(groupId){
+    modalConfirm(
+        'Are you sure you cancel these registrations?\n\nThe selected students will be removed and they will be able to select a different time.',
+        function(){removeStudentsFromGroup(groupId);}
+    );
+}
 
+function removeStudentsFromGroup(groupId){
     //find the timeslot
     let timeSlot = existingTimeSlots.find(function( ets ) {
         return ets.groupId == groupId;
@@ -1041,9 +1048,6 @@ function removeStudentsFromGroup(groupId){
 }
 
 async function cancelTimeSlot(timeSlot, requiresConfirmation = true){
-    if(requiresConfirmation && !confirm('Are you sure you cancel this registration?\n\nThe student will be removed and they will be able to select a different time.')){
-        return false;
-    }
     $('#timeslot_' + timeSlot.groupId + ' .timeslot-registration').html('&nbsp;-&nbsp;');
     $('#timeslot_' + timeSlot.groupId).find('.manage-timeslot').remove();
     let result = await unenrolFromGroup(timeSlot.groupId, timeSlot.student);
@@ -1076,11 +1080,13 @@ function deleteTopic(){
 function confirmDeleteSchedule(){
     modalConfirm('Are you sure you want to delete this schedule?\n\nThis will remove all time slots and registrations.',
         function(){
-            modalConfirm('Are you really sure?\n\nThis will remove all time slots and registrations.',
-                function(){
-                    alert('baleted');
-                }
-            );
+            setTimeout(function(){
+                modalConfirm('Are you really sure?\n\nThis will remove all time slots and registrations.',
+                    function(){
+                        deleteSchedule();
+                    }
+                );
+            }, 555);
         }
     );
 }
