@@ -29,8 +29,8 @@ async function init() {
     if(MY_TIME !== false){
         $('#my_selection__content').html('<h3>' + MY_TIME.name + '</h3>' + '<p><button class="btn btn-secondary btn-sm cancel-timeslot" id="cancel-selection">Cancel my selection</button></p>');
         $('#cancel-selection').on('click', function(){
-            modalConfirm('Are you sure you cancel this registration?\n\nYou will lose this time slot and you will need to select a new one.'),
-            cancelMySelection
+            modalConfirm('Are you sure you cancel this registration?\n\nYou will lose this time slot and you will need to select a new one.',
+                cancelMySelection);
         });
         $('#my_selection').show();
     }
@@ -74,7 +74,10 @@ async function displayGroupsInCategory(groups){
             $('#existing_timeslots__table').append(html);
             $('#timeslot_' + group.GroupId).find('.select-timeslot').on('click', function(){
                 modalConfirm('Are you sure you want to select:\n\n' + group.Name, 
-                    function(){selectTimeSlot(group)}
+                    function(){
+                        $('.select-timeslot').prop('disabled', true);
+                        selectTimeSlot(group);
+                    }
                 );
             });
         } else if (group.Enrollments.includes(USER.Identifier)){
@@ -162,13 +165,10 @@ async function selectTimeSlot(group){
     body = body.replace(/\(calendarUrl\)/g, calendarUrl);
 
     classList = await classList;
+    
     let studentEmail = classList[USER.Identifier].Email;
-
     let email = sendEmail(studentEmail, subject, body);
-
     await Promise.all([enroll, email]);
-
-    modalMessage('You have successfully selected ' + group.Name + '.');
     window.location.reload();
 }
 

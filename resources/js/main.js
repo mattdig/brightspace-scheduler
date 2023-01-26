@@ -100,19 +100,13 @@ function selectAll(obj){
 function modalInit(){
     let newModal = '<div class="modal modal-dialog-scrollable fade" id="messageModal" tabindex="-1" role="dialog" aria-labelledby="messageModalCenterTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered" role="document"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button></div><div class="modal-body"></div><div class="modal-footer"><button id="modalCancel" type="button" class="btn btn-close" data-dismiss="modal">Cancel</button><button type="button" id="modalOk" class="btn btn-primary" data-dismiss="modal">Okay</button></div></div></div></div>';
     $('body').append(newModal);
-    $(document).ready(function(){
-        var myModal = document.getElementById('messageModal');
-        var myInput = document.getElementById('modalOk');
-        myModal.addEventListener('shown.bs.modal', function () {
-            console.log('modal shown');
-            myInput.focus();
-        });
-        myModal.addEventListener('hide.bs.modal', function () {
-            console.log('modal hide');
-            $('#modalOk').off('click');
-            $('#modalCancel').hide();
-        });
-    }, 20);
+    let myModal = $('#messageModal');
+    myModal.on('hide.bs.modal', function () {
+        $(this).off('shown.bs.modal');
+        $('#modalOk').off('click');
+        $('#modalCancel').hide();
+    });    
+    return myModal;
 }
 
 function modalMessage(message, id = null, callback = null, title = null, okText = 'Okay', cancelText = null){
@@ -128,24 +122,37 @@ function modalMessage(message, id = null, callback = null, title = null, okText 
         }
         message = message.message;
     }
-    if($('#messageModal').length == 0){
-        modalInit();
+    var myModal = $('#messageModal');
+    if(myModal.length == 0){
+        myModal = modalInit();
     }
+    var focusButton = myModal.find('.modal-footer button:first');
     if(cancelText !== null){
         $('#modalCancel').html(cancelText).show();
+    } else {
+        focusButton = focusButton.next();
     }
+    myModal.on('shown.bs.modal', function () {
+        console.log('shown');
+        focusButton.focus();
+    });
     if(id !== null){
         if(typeof(id) == 'string')
             $('#' + id).addClass('error');
         else
             $(id).addClass('error');
     }
-    $('#messageModal').find('.modal-body').html('<p>' + message + '</p>');
+    myModal.find('.modal-body').html('<p>' + message + '</p>');
     let primary = $('#modalOk');
     if(callback !== null){
-        primary.on('click', callback);
+        primary.on('click', function(){
+            myModal.on('hidden.bs.modal', function(){
+                $(this).off('hidden.bs.modal');
+                callback();
+            });
+        });
     }
-    $('#messageModal').modal('show');
+    myModal.modal('show');
 }
 
 function modalConfirm(message, callback = null, title = null, okText = 'Okay', cancelText = 'Cancel'){
