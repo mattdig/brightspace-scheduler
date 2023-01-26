@@ -145,7 +145,7 @@ function modalMessage(message, id = null, callback = null, title = null, okText 
     let primary = $('#modalOk');
     if(callback !== null){
         primary.on('click', function(){
-            callback();
+            setTimeout(callback,0);
         });
     }
     myModal.modal('show');

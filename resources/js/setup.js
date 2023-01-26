@@ -979,13 +979,12 @@ async function updateTopic(){
 
 async function deleteTimeSlot(timeSlot){
     $('#timeslot_' + timeSlot.groupId).remove();
-
-    let unenrollments = [];
-    for(stduent of timeSlot.students){
-        unenrollments = unenrollFromGroup(timeSlot, stduent);
+    let promises = [];
+    promises.push(deleteCalendarEvent(timeSlot.eventId));
+    for(student of timeSlot.students){
+        promises.push(unenrollFromGroup(timeSlot, student));
     }
-    await Promise.all(unenrollments);
-    await deleteCalendarEvent(timeSlot.eventId);
+    await Promise.all(promises);
     await deleteGroup(timeSlot.groupId);
 
     // remove timeSlot from existingTimeSlots
@@ -1098,10 +1097,14 @@ function deleteTopic(){
 function confirmDeleteSchedule(){
     modalConfirm('Are you sure you want to delete this schedule?\n\nThis will remove all time slots and registrations.',
         function(){
-            while($('#messageModal').is(':visble')){}
-            modalConfirm('Are you really sure?\n\nThis will remove all time slots and registrations.',
-                deleteSchedule
-            );
+            function doubleConfirmDeleteSchedule(){
+                $('#messageModal').off('hidden.bs.modal', doubleConfirmDeleteSchedule);
+                modalConfirm(
+                    'Are you really sure?\n\nThis will remove all time slots and registrations.',
+                    deleteSchedule
+                );
+            }
+            $('#messageModal').on('hidden.bs.modal', doubleConfirmDeleteSchedule);
         }
     );
 }
