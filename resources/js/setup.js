@@ -5,6 +5,7 @@ let TOPIC_ID = 0;
 let SUBMITTING = false;
 let TIMEZONE;
 let CLASSLIST;
+let COURSE = getCourse(ORG_UNIT_ID);
 
 let timeBlocks = [];
 let existingTimeSlots = [];

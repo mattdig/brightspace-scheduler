@@ -6,6 +6,11 @@ async function whoAmI(){
     return user;
 }
 
+function getCourse(orgUnitId){
+    let course = bs.get('/d2l/api/lp/(version)/courses/' + orgUnitId);
+    return course;
+}
+
 async function isInstructor(){
     let myEnrollment = await bs.get('/d2l/api/lp/(version)/enrollments/myenrollments/(orgUnitId)/access');
     let isInstructor = myEnrollment.Access.LISRoles.some(element => {
