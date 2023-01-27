@@ -48,6 +48,7 @@ tr:first-child th:last-child{
 .btn-primary:hover{background-color: #004489;}
 .btn-red{background-color: #d0021b; color: #fff;}
 .btn-red:hover{background-color: #b4001a; color: #fff;}
+.btn-red:active, .btn-red:focus{color: #fff;}
 .btn-secondary{background-color: #e3e9f1;}
 .btn-secondary:hover{background-color: #cdd5dc;}
 .btn-sm{font-size:16px; display:inline-block; padding:0.1em 0.4em; margin-bottom:6px; border-radius: 0.25em;}
