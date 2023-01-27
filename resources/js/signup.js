@@ -6,6 +6,7 @@ let USER;
 let MAX_STUDENTS = 1;
 let CLASSLIST;
 
+
 $(function(){init();});
 
 async function init() {
@@ -29,7 +30,7 @@ async function init() {
     if(MY_TIME !== false){
         $('#my_selection__content').html('<h3>' + MY_TIME.name + '</h3>' + '<p><button class="btn btn-secondary btn-sm cancel-timeslot" id="cancel-selection">Cancel my selection</button></p>');
         $('#cancel-selection').on('click', function(){
-            modalConfirm('Are you sure you cancel this registration?\n\nYou will lose this time slot and you will need to select a new one.',
+            modalConfirm('Are you sure you cancel this registration?<br />You will lose this time slot and you will need to select a new one.',
                 cancelMySelection);
         });
         $('#my_selection').show();
@@ -73,7 +74,7 @@ async function displayGroupsInCategory(groups){
 
             $('#existing_timeslots__table').append(html);
             $('#timeslot_' + group.GroupId).find('.select-timeslot').on('click', function(){
-                modalConfirm('Are you sure you want to select:\n\n' + group.Name, 
+                modalConfirm('Are you sure you want to select:<br />' + group.Name, 
                     function(){
                         $('.select-timeslot').prop('disabled', true);
                         selectTimeSlot(group);
@@ -136,7 +137,7 @@ async function selectTimeSlot(group){
     let isFull = await bs.submit('/d2l/lms/group/user_available_group_list.d2lfile?ou=(orgUnitId)&d2l_rh=rpc&d2l_rt=call',data);
     
     if(isFull.Result === true){
-        modalMessage('This time slot is full. Please select another time slot.\n\nReload the page to see the updated list of available time slots.');
+        modalMessage('This time slot is full. Please select another time slot.<br />Reload the page to see the updated list of available time slots.');
         $('#timeslot_' + group.GroupId).remove();
         return false;
     }
