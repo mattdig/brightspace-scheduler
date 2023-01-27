@@ -5,7 +5,9 @@ let TOPIC_ID = 0;
 let SUBMITTING = false;
 let TIMEZONE;
 let CLASSLIST;
-let COURSE = getCourse(ORG_UNIT_ID);
+let TITLE;
+let ORG_INFO = bs.get('/d2l/api/lp/(version)/organization/info');
+let COURSE = bs.get('/d2l/api/lp/(version)/courses/' + ORG_UNIT_ID);
 
 let timeBlocks = [];
 let existingTimeSlots = [];
@@ -15,8 +17,11 @@ $(function(){init();});
 
 async function init(){
 
-    let orgInfo = await bs.get('/d2l/api/lp/(version)/organization/info');
-    TIMEZONE = orgInfo.TimeZone;
+    const promises = await Promise.all([ORG_INFO, COURSE]);
+    ORG_INFO = promises[0];
+    COURSE = promises[1];
+    
+    TIMEZONE = ORG_INFO.TimeZone;
 
     moment.tz.setDefault(TIMEZONE);
 
@@ -38,7 +43,8 @@ async function init(){
         // deadline not supported by api
         // TODO: switch to fetching the HTML page for the form and parsing it
         let groupCategory = await getGroupCategory(GROUP_CATEGORY_ID);
-        $('#title').val(groupCategory.Name);
+        TITLE = groupCategory.Name;
+        $('#title').val(TITLE);
         $('#schedule_title').html(groupCategory.Name);
         $('#max_users__row').remove();
         //$('#max_users').val(groupCategory.MaxUsersPerGroup);
@@ -976,12 +982,12 @@ async function updateTopic(){
 
 }
 
-async function deleteTimeSlot(timeSlot){
+async function deleteTimeSlot(timeSlot, sendNotifications = true){
     $('#timeslot_' + timeSlot.groupId).remove();
     let promises = [];
     promises.push(deleteCalendarEvent(timeSlot.eventId));
     for(student of timeSlot.students){
-        promises.push(unenrollFromGroup(timeSlot, student));
+        promises.push(unenrollFromGroup(timeSlot, student, sendNotifications));
     }
     await Promise.all(promises);
     await deleteGroup(timeSlot.groupId);
@@ -1066,24 +1072,29 @@ async function cancelTimeSlot(timeSlot){
     return result;
 }
 
-async function notifyOfCancellation(timeSlot, userId){
-    let result = await fetch(pluginPath + '/resources/html/emailstudentcancellation.tpl');
+async function notifyOfCancellation(userId){
+
+    let pluginPath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf("/"));
+    let result = await fetch(pluginPath + '/resources/html/emailstudentcancelled.tpl');
     let body = await result.text();
     
     let studentEmail = CLASSLIST[userId].Email;
-    let subject = 'Time Slot Cancellation - ' + timeSlot.name.replace('&nbsp;',' ');
+    let subject = 'Brightspace Scheduling: Your time slot was cancelled';
+    let topicUrl = 'https://' + window.top.location.host + '/d2l/le/content/' + ORG_UNIT_ID + '/viewContent/' + TOPIC_ID + '/View';
     
-    body = body.replace(/\(courseTitle\)/g, course);
+    body = body.replace(/\(courseName\)/g, COURSE.Name);
     body = body.replace(/\(scheduleTitle\)/g, TITLE);
-    body = body.replace(/\(timeSlot\)/g, group.Name);
     body = body.replace(/\(topicUrl\)/g, topicUrl);
     
     let email = sendEmail(studentEmail, subject, body);
 }
 
-async function unenrollFromGroup(timeSlot, userId){
+async function unenrollFromGroup(timeSlot, userId, sendNotifications = true){
     let url = '/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + GROUP_CATEGORY_ID + '/groups/' + timeSlot.groupId + '/enrollments/' + userId;
-   return bs.delete(url);
+    if(sendNotifications){
+        notifyOfCancellation(userId);
+    }
+    return bs.delete(url);
 }
 
 function deleteCalendarEvent(eventId){    
@@ -1121,7 +1132,7 @@ async function deleteSchedule(){
     let deleteArray = [];
 
     for(let i = 0; i < existingTimeSlots.length; i++){
-        deleteArray.push(deleteTimeSlot(existingTimeSlots[i]));
+        deleteArray.push(deleteTimeSlot(existingTimeSlots[i], false));
     }
 
     await Promise.all(deleteArray);

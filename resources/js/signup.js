@@ -1,20 +1,32 @@
 const params = new Proxy(new URLSearchParams(window.top.location.search), {get: (searchParams, prop) => searchParams.get(prop)});
 let GROUP_CATEGORY_ID = params.gc;
+let TOPIC_ID = params.t;
 let TITLE;
 let MY_TIME = false;
-let USER;
+let USER = whoAmI();
 let MAX_STUDENTS = 1;
-let CLASSLIST;
+let CLASSLIST = getClassList('bas');
+let COURSE;
 
 
 $(function(){init();});
 
 async function init() {
 
-    CLASSLIST = getClassList('bas');
-    USER = whoAmI();
+    let myEnrollments = bs.get('/d2l/api/lp/(version)/enrollments/myenrollments/');
+    const promises = await Promise.all([USER, CLASSLIST, myEnrollments, getGroupCategory(GROUP_CATEGORY_ID)]);
+    USER = promises[0];
+    CLASSLIST = promises[1];
+    myEnrollments = promises[2];
+    let groupCategory = promises[3];
 
-    let groupCategory = await getGroupCategory(GROUP_CATEGORY_ID);
+    for(item of myEnrollments.Items){
+        if(item.OrgUnit.Type.Id == 3 && item.OrgUnit.Id == ORG_UNIT_ID){
+            COURSE = item.OrgUnit;
+            break;
+        }
+    }
+
     TITLE = groupCategory.Name;
     $('#schedule_title').html(TITLE);
 
@@ -117,8 +129,11 @@ async function cancelMySelection(){
     }
 
     $('#cancel-selection').remove();
-    await unenrollFromGroup(MY_TIME.groupId);
+    let unenroll = unenrollFromGroup(MY_TIME.groupId);
+    let sendEmail = notifyOfCancellation();
+    await Promise.all([unenroll, sendEmail]);
     MY_TIME = false;
+
     window.location.reload();
 }
 
@@ -144,21 +159,22 @@ async function selectTimeSlot(group){
 
     let enroll = enrollInGroup(group.GroupId);
 
-    let host = window.location.host;
+    let host = window.top.location.host;
 
     let calendarSubscription = await bs.get('/d2l/le/calendar/(orgUnitId)/subscribe/subscribeDialogLaunch?subscriptionOptionId=-1');
     let feedToken = calendarSubscription.match(/feed\.ics\?token\=([a-zA-Z0-9]+)/)[1];
     let feedUrl = 'webcal://' + host + '/d2l/le/calendar/feed/user/feed.ics?token=' + feedToken;
     let calendarUrl = 'https://' + host + '/d2l/le/calendar/' + ORG_UNIT_ID;
-    let topicUrl = window.top.location.href;
+    let topicUrl = 'https://' + host + '/d2l/le/content/' + ORG_UNIT_ID + '/viewContent/' + TOPIC_ID + '/View';
 
     let pluginPath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf("/"));
 
-    subject = 'Brightspace Scheduling: Your time slot is confirmed';
+    let subject = 'Brightspace Scheduling: Your time slot is confirmed';
 
-    result = await fetch(pluginPath + '/resources/html/emailstudent.tpl');
+    result = await fetch(pluginPath + '/resources/html/emailstudentenrolled.tpl');
     body = await result.text();
 
+    body = body.replace(/\(courseName\)/g, COURSE.Name);
     body = body.replace(/\(scheduleTitle\)/g, TITLE);
     body = body.replace(/\(timeSlot\)/g, group.Name);
     body = body.replace(/\(feedUrl\)/g, feedUrl);
@@ -182,6 +198,27 @@ function enrollInGroup(groupId){
     };
     return bs.submit('/d2l/lms/group/user_available_group_list.d2lfile?ou=(orgUnitId)&d2l_rh=rpc&d2l_rt=call', data);
 }
+
+async function notifyOfCancellation(){
+    let classList = getClassList();
+    
+    let pluginPath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf("/"));
+    let result = await fetch(pluginPath + '/resources/html/emailstudentcancelled.tpl');
+    let body = await result.text();
+
+    classList = await classList;
+    
+    let studentEmail = classList[USER.Identifier].Email;
+    let subject = 'Brightspace Scheduling: Your time slot was cancelled';
+    let topicUrl = 'https://' + window.top.location.host + '/d2l/le/content/' + ORG_UNIT_ID + '/viewContent/' + TOPIC_ID + '/View';
+    
+    body = body.replace(/\(courseName\)/g, COURSE.Name);
+    body = body.replace(/\(scheduleTitle\)/g, TITLE);
+    body = body.replace(/\(topicUrl\)/g, topicUrl);
+    
+    return sendEmail(studentEmail, subject, body);
+}
+
 
 function unenrollFromGroup(groupId){
     // api doesn't let learners unenroll themselves, form must be used instead
