@@ -103,11 +103,13 @@ function selectAll(obj){
 }
 
 function modalInit(){
-    let newModal = '<div class="modal modal-dialog-scrollable fade" id="messageModal" tabindex="-1" role="dialog" aria-labelledby="messageModalCenterTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered" role="document"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button></div><div class="modal-body"></div><div class="modal-footer"><button id="modalCancel" type="button" class="btn btn-close" data-dismiss="modal">Cancel</button><button type="button" id="modalOk" class="btn btn-primary" data-dismiss="modal">Okay</button></div></div></div></div>';
+    let newModal = '<div class="modal modal-dialog-scrollable fade" id="messageModal" tabindex="-1" role="dialog" aria-labelledby="messageModalCenterTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered" role="document"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button></div><div class="modal-body"></div><div class="modal-footer"><button type="button" id="modalOk" class="btn btn-primary" data-dismiss="modal">Okay</button> <button id="modalCancel" type="button" class="btn btn-secondary btn-close" data-dismiss="modal">Cancel</button></div></div></div></div>';
     $('body').append(newModal);
     let myModal = $('#messageModal');
+    myModal.on('shown.bs.modal', function () {
+        $('#modalOk').focus();
+    });
     myModal.on('hide.bs.modal', function () {
-        $(this).off('shown.bs.modal');
         $('#modalOk').off('click');
         $('#modalCancel').hide();
     });    
@@ -131,15 +133,10 @@ function modalMessage(message, id = null, callback = null, title = null, okText 
     if(myModal.length == 0){
         myModal = modalInit();
     }
-    var focusButton = myModal.find('.modal-footer button:first');
+    
     if(cancelText !== null){
         $('#modalCancel').html(cancelText).show();
-    } else {
-        focusButton = focusButton.next();
     }
-    myModal.on('shown.bs.modal', function () {
-        focusButton.focus();
-    });
     if(id !== null){
         if(typeof(id) == 'string')
             $('#' + id).addClass('error');
@@ -150,7 +147,7 @@ function modalMessage(message, id = null, callback = null, title = null, okText 
     let primary = $('#modalOk');
     if(callback !== null){
         primary.on('click', function(){
-            callback();
+            setTimeout(callback,0);
         });
     }
     myModal.modal('show');

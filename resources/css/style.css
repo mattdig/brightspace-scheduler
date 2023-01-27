@@ -42,10 +42,15 @@ tr:first-child th:last-child{
     border-bottom-right-radius:6px;
 }
 .d2l-table tbody tr:hover{background-color: #ffd;}
-.btn{padding:0.8em 2em; font-weight: bold; border-radius: 0.5em;}
+.btn{padding:0.8em 2em; font-weight: bold; border-radius: 0.5em; background-color: #e3e9f1; color: #202122}
+.btn:hover{background-color: #cdd5dc;}
+.btn-primary{background-color: #006fbf; color: #fff;}
+.btn-primary:hover{background-color: #004489;}
 .btn-red{background-color: #d0021b; color: #fff;}
-.btn-red:hover,.btn-red:focus{background-color: #b4001a; color: #fff;}
-.btn-secondary:hover{background-color: #ddd; color: #000;}
+.btn-red:hover{background-color: #b4001a; color: #fff;}
+.btn-red:active, .btn-red:focus{color: #fff;}
+.btn-secondary{background-color: #e3e9f1;}
+.btn-secondary:hover{background-color: #cdd5dc;}
 .btn-sm{font-size:16px; display:inline-block; padding:0.1em 0.4em; margin-bottom:6px; border-radius: 0.25em;}
 .nav-tabs{font-weight: bold;}
 .tab-pane{padding: 10px 10px 0px 10px; margin-bottom: 1px solid #ccc;}
@@ -53,6 +58,7 @@ tr:first-child th:last-child{
 #existing_timeslots,#signup_schedule__form,#edit_timeblocks,#edit_schedule,#add_new_timeblocks,#schedule_description,#module_selection{display: none;}
 #schedule_description{font-size:20px;}
 #existing_timeslots__table{width: 100%;font-size: 16px;margin-bottom: 20px;}
+.manage-timeslot{display:block; margin: 0px auto 6px auto;}
 .student_timeslot_actions{display:none;}
 .datetime_title{margin-bottom: 5px;}
 .timeslot_unit{width:100%; max-width: 363px;}
@@ -60,7 +66,9 @@ tr:first-child th:last-child{
 #my_selection{display:none;}
 .modal-header{border:none;}
 .modal p{color:#000; font-size: 1.2em;}
+.modal .modal-footer{text-align: left;}
 .modal .modal-footer .btn-close{display:none;}
+#modalCancel{display:inline-block; margin-right: 10px;}
 #delete_schedule{text-align: right;}
 .scrolling{overflow-y: scroll;}
 .max-height-500{max-height: 600px;}
