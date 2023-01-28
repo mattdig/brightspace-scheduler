@@ -132,6 +132,8 @@ async function getExistingTimeSlots(){
 
         existingTimeSlots.push(timeslot);
     };
+
+    existingTimeSlots.sort(compareStarttime);
 }
 
 async function displayExistingTimeSlots(groupCategory){
@@ -386,70 +388,31 @@ function updateTotalTimeSlots(){
     let timeSlotDuration = 0;
     let totalTime = 0;
 
-    // gave up total number of timeslots, kept the code just in case
-    if(true){//($('#timeslot_unit_tabs').find('li.active').data('unit') == 'duration'){
+    timeSlotDuration = parseInt($('#timeslot_duration').val());
 
-        timeSlotDuration = parseInt($('#timeslot_duration').val());
-
-        if(timeSlotDuration < 5){
-            $('#total_timeslots').text('Please enter a time slot duration of at least 5 minutes.');
-            return false;
-        }
-
-        timeBlocks.forEach(block => {
-            totalTime += block.end.diff(block.start, 'minutes');
-
-            let timeSlotsInBlock = parseInt(Math.floor(block.end.diff(block.start, 'minutes') / timeSlotDuration));
-
-            for(let i = 0; i < timeSlotsInBlock; i++){
-                let newTimeSlot = {
-                    groupId: null,
-                    eventId: null,
-                    start: block.start.clone().add(i * timeSlotDuration, 'minutes'),
-                    end: block.start.clone().add((i + 1) * timeSlotDuration, 'minutes'),
-                };
-                newTimeSlots.push(newTimeSlot);
-            }
-
-            totalTimeSlots += timeSlotsInBlock;
-            
-        });
-
-    // total number was too hard to calculate, so just use the number of time slots in the first block
-    } else {
-        
-        totalTimeSlots = parseInt($('#timeslot_number').val());
-
-        let smallestTimeBlock = 0;
-        let totalSmallestUnits = 0;
-
-        timeBlocks.forEach(block => {
-            let blockTime = block.end.diff(block.start, 'minutes');
-            console.log(blockTime);
-            if(smallestTimeBlock == 0 || blockTime < smallestTimeBlock){
-                smallestTimeBlock = blockTime;
-            }
-        });
-
-        console.log(smallestTimeBlock);
-
-        timeBlocks.forEach(block => {
-            let unitsInBlock = block.end.diff(block.start, 'minutes') / smallestTimeBlock;
-            block.blockUnits = unitsInBlock;
-            totalSmallestUnits += unitsInBlock;
-        });
-
-        console.log(totalSmallestUnits);
-
-        let smallestBlockToTotal = totalSmallestUnits / totalTimeSlots;
-        timeSlotDuration = smallestTimeBlock * smallestBlockToTotal;
-        if(timeSlotDuration > smallestTimeBlock){
-            timeSlotDuration = smallestTimeBlock;
-        }
-
-        totalTime = timeSlotDuration * totalTimeSlots;
-
+    if(timeSlotDuration < 5){
+        $('#total_timeslots').text('Please enter a time slot duration of at least 5 minutes.');
+        return false;
     }
+
+    timeBlocks.forEach(block => {
+        totalTime += block.end.diff(block.start, 'minutes');
+
+        let timeSlotsInBlock = parseInt(Math.floor(block.end.diff(block.start, 'minutes') / timeSlotDuration));
+
+        for(let i = 0; i < timeSlotsInBlock; i++){
+            let newTimeSlot = {
+                groupId: null,
+                eventId: null,
+                start: block.start.clone().add(i * timeSlotDuration, 'minutes'),
+                end: block.start.clone().add((i + 1) * timeSlotDuration, 'minutes'),
+            };
+            newTimeSlots.push(newTimeSlot);
+        }
+
+        totalTimeSlots += timeSlotsInBlock;
+        
+    });
 
     if(totalTime > 90){
         //convert to hours with 2 decimal places
@@ -522,21 +485,20 @@ function validateTimeFields(withErrors){
     }
 
     datetimes.sort(compareStarttime);
-
-    datetimes.every(function(datetime1, i){
+    
+    for(const [i, datetime1] of datetimes.entries()){
         if(datetime1.start.isAfter(datetime1.end) || datetime1.start.isSame(datetime1.end)){
 
             if(withErrors){
                 modalMessage('Start time must be before end time.', $('#' + datetime1.id).find('select'));
             }
-            valid = false;
             return false;
         
         } else {
 
             let spliceIndexes = [];
 
-            let noOverlapWithBlocks = datetimes.slice(i + 1).every(function(datetime2, j){
+            for(const [j, datetime2] of datetimes.slice(i + 1).entries()){
                 if(datetime1.id != datetime2.id && (
                     datetime1.start.isAfter(datetime2.start) && datetime1.start.isBefore(datetime2.end) || 
                     datetime1.end.isAfter(datetime2.start) && datetime1.end.isBefore(datetime2.end) ||
@@ -545,26 +507,19 @@ function validateTimeFields(withErrors){
                     datetime1.start.isSame(datetime2.start) || datetime1.end.isSame(datetime2.end))){
                     
                     if(withErrors){
-                        modalMessage('Datetimes must not overlap.', $('#' + datetime2.id).find(':input'));
+                        modalMessage('Time ranges must not overlap.', $('#' + datetime2.id).find('.timeblock_datetime_input'));
+                        return false;
                     }
                     valid = false;
-                    return false;
                 } else {
-
                     if(datetime1.end.isSame(datetime2.start)){
                         datetime1.end = datetime2.end.clone();
                         spliceIndexes.push(i + j + 1);
                     }
-
-                    return true;
                 }
-            });
-
-            if(noOverlapWithBlocks == false){
-                return false;
             }
 
-            let noOverlapWithSlots = existingTimeSlots.every(function(datetime2, j){
+            for(const [j, datetime2] of existingTimeSlots.entries()){
                 
                 if( datetime1.start.isAfter(datetime2.start) && datetime1.start.isBefore(datetime2.end) || 
                     datetime1.end.isAfter(datetime2.start) && datetime1.end.isBefore(datetime2.end) ||
@@ -574,24 +529,11 @@ function validateTimeFields(withErrors){
                     
                     if(withErrors){
                         modalMessage('New time ranges must not overlap with existing time slots.', $('#' + datetime1.id).find('.timeblock_datetime_input'));
+                        return false;
                     }
                     valid = false;
-                    return false;
-                } else {
-
-                    if(datetime1.end.isSame(datetime2.start)){
-                        datetime1.end = datetime2.end.clone();
-                        spliceIndexes.push(i + j + 1);
-                    }
-
-                    return true;
                 }
-            });
-
-            if(noOverlapWithSlots == false){
-                return false;
             }
-            
 
             timeBlocks.push(datetime1);
 
@@ -602,10 +544,8 @@ function validateTimeFields(withErrors){
             if(datetime1.end.isAfter(latestTime)){
                 latestTime = datetime1.end.clone();
             }
-            return true;
-            
         }
-    });
+    }
 
     if(!updateTotalTimeSlots() && $('#edit_timeblocks').is(':visible') && withErrors){
         modalMessage('No new time slots will be created. Please adjust your time ranges or duration.');
@@ -700,8 +640,6 @@ async function submitForm(){
                 updateGroupCategory(),
                 updateTopic()
             ]);
-
-            console.log(result);
         }
 
 
