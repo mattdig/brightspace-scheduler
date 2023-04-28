@@ -1,4 +1,5 @@
 const params = new Proxy(new URLSearchParams(window.top.location.search), {get: (searchParams, prop) => searchParams.get(prop)});
+const CONFIG = params.config;
 let MODE = (window.top.location.search.indexOf('gc=') != -1 ? 'edit' : 'create');
 let GROUP_CATEGORY_ID = (MODE == 'edit' ? params.gc : null);
 let TOPIC_ID = 0;

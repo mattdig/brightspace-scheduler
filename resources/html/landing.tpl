@@ -3,7 +3,7 @@
 <script type="text/javascript" src="(pluginPath)/resources/js/brightspace.js"></script>
 <script type="text/javascript" src="(pluginPath)/resources/js/config.js"></script>
 <script type="text/javascript">
-let GROUP_CATEGORY_ID = "(groupCategoryId)";
+let CONFIG = "(configOptionsJSON)";
 </script>
 </head>
 <body>
