@@ -7,6 +7,7 @@ let USER = whoAmI();
 let MAX_STUDENTS = 1;
 let CLASSLIST = getClassList('bas');
 let COURSE;
+let MAPPED_GROUP_CATEGORY_ID = 0;
 
 
 $(function(){init();});
@@ -228,4 +229,12 @@ function unenrollFromGroup(groupId){
         "d2l_action": "rpc"
     };
     return bs.submit('/d2l/lms/group/user_group_list.d2lfile?ou=(orgUnitId)&d2l_rh=rpc&d2l_rt=call', data);
+}
+
+function verifyMappedGroupEnrollment(group){
+    getGroup(group.GroupId).then(function(group){
+        if(group.Enrollments.lenght > 0){
+            
+        }
+    });
 }
