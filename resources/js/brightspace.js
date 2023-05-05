@@ -9,7 +9,7 @@ class Brightspace{
         }
 
         this.versions = {
-            le : '1.66',
+            le : '1.70',
             lp : '1.42'
         };
     }
