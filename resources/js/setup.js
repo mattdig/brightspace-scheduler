@@ -47,6 +47,7 @@ async function init(){
         $('#title').val(TITLE);
         $('#schedule_title').html(groupCategory.Name);
         $('#max_users__row').remove();
+        $('#enddate__row').remove();
         //$('#max_users').val(groupCategory.MaxUsersPerGroup);
 
         if(groupCategory.Description.Text != ''){
@@ -74,6 +75,13 @@ async function init(){
         await getModules();
         $('#module_selection').show();
         $('#edit_timeblocks').show();
+        
+        $('#schedule_enddate').val('').datetimepicker({
+            format: 'YYYY-MM-DD',
+            minDate: moment().subtract(1, 'days'),
+            maxDate: moment().add(1, 'years')
+        });
+    
         $('#signup_schedule__form').show();
     }
 
@@ -715,14 +723,14 @@ function createGroupCategory(){
     let title = $('#title').val().trim();
     let description = $('#description').val().trim();
     let maxUsers = parseInt($('#max_users').val().trim());
-
-    // DEADLINE NOT SUPPORTED BY API
-    // TODO: SWITCH TO SUBMITTING FORM DATA
-    // let format = "YYYY-MM-DD HH:mm";
-    // let deadlineDate = $('#deadline_date').val();
-    // let deadlineTime = $('#deadline_time').val();
     
-    // let deadlineUTCDateTime = convertToUTCDateTimeString(moment(deadlineDate + " " + deadlineTime, format));
+    let endDateString = $('#schedule_enddate').val().trim();
+    let endDateUTC = null;
+    // if string matches date format
+    if(endDateString.match(/^\d{4}-\d{2}-\d{2}$/)){
+        let endDateMoment = moment(endDateString + ' 00:00', 'YYYY-MM-DD HH:mm').add(1, 'days');
+        endDateUTC = convertToUTCDateTimeString(endDateMoment);
+    }
 
     let category = {
         "Name": title,
@@ -734,7 +742,7 @@ function createGroupCategory(){
         "NumberOfGroups": newTimeSlots.length,
         "MaxUsersPerGroup": maxUsers,
         "AllocateAfterExpiry": false,
-        "SelfEnrollmentExpiryDate": null, //deadlineUTCDateTime, //<string:UTCDateTime>( yyyy-MM-ddTHH:mm:ss.fffZ )|null,
+        "SelfEnrollmentExpiryDate": endDateUTC, // || null
         "GroupPrefix": null,
         "RestrictedByOrgUnitId": null,
         "DescriptionsVisibleToEnrolees": true

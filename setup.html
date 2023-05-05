@@ -141,6 +141,16 @@ let ORG_UNIT_ID = match[1];
                     </div>
                 </div>
 
+                <div class="row" id="enddate__row">
+                    <div class="col-xs-12">
+                        <h2>Set signup end-date</h2>
+                        <label for="schedule_enddate">
+                            <p>Last day for signup: (optional) </p>
+                            <p><input type="text" name="schedule_enddate" id="schedule_enddate" class="form-control date_input" /></p>
+                        </label>
+                    </div>
+                </div>
+
                 <div class="row" id="add_new_timeblocks">
                     <div class="col-xs-12">
                         <p><input type="button" class="btn btn-secondary" value="Add another date &amp; time range" onclick="$('#add_new_timeblocks').hide(); addDatetime()"/></p>
