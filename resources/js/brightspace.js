@@ -10,11 +10,17 @@ class Brightspace{
 
         this.versions = {
             le : '1.70',
-            lp : '1.42'
+            lp : '1.42',
+            bas : '1.1'
         };
     }
 
     get(url){
+        //keep requests local to the Brightspace domain
+        let d2lPos = url.indexOf('/d2l/');
+        if(d2lPos > -1){
+            url = url.substring(d2lPos);
+        }
         let response = this.send('get', url);
         return response;
     }
@@ -110,7 +116,9 @@ class Brightspace{
                         let first = response.indexOf('{');
                         let second = response.indexOf('{', first + 1);
 
-                        if(second > -1){
+                        if(response.indexOf('while(1);') === 0){
+                            response = response.substring(first);
+                        } else if(second > -1){
                             response = response.substring(second); 
                         } else {
                             response = response.substring(first + 2);
@@ -118,7 +126,24 @@ class Brightspace{
                     }
 
                     if(response.substring(0, 1) == '{' || response.substring(0, 1) == '['){
-                        resolve(JSON.parse(response));
+                        response = JSON.parse(response);
+                        
+                        let nextData = true;
+
+                        if(response.Next !== undefined && response.Next !== null){
+                            nextData = this.get(response.Next).then(function(next){
+                                if(response.Items !== undefined){
+                                    response.Items = response.Items.concat(next.Items);
+                                } else if(response.Objects !== undefined){
+                                    response.Objects = response.Objects.concat(next.Objects);
+                                }
+                            });
+                        }
+                        
+                        Promise.all([response, nextData]).then(function(values){
+                            resolve(values[0]);
+                        });
+                        
                     } else {
                         resolve(response);
                     }
@@ -154,10 +179,12 @@ class Brightspace{
 
     process(url){
             
-        let version = this.versions.le;
+        let version;
 
-        if(url.indexOf('/lp/') > -1){
-            version = this.versions.lp;
+        for (const [key, value] of Object.entries(this.versions)) {
+            if(url.indexOf('/' + key + '/') > -1){
+                version = value;
+            }
         }
 
         url = url.replace('(version)', version);

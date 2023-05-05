@@ -1,65 +1,29 @@
-let bs = new Brightspace(ORG_UNIT_ID);
-
-let PLUGIN_PATH;
-
-let TOPIC_ID;
-
-let HOST_NAME;
-
+const params = new Proxy(new URLSearchParams(window.top.location.search), {get: (searchParams, prop) => searchParams.get(prop)});
+let MODE = (window.top.location.search.indexOf('gc=') != -1 ? 'edit' : 'create');
+let GROUP_CATEGORY_ID = (MODE == 'edit' ? params.gc : null);
+let TOPIC_ID = 0;
 let SUBMITTING = false;
-
-let orgUnitInfo;
-
-let targetModuleId;
-
-let timeZone;
-
-let globalLatestTime;
+let TIMEZONE;
+let CLASSLIST;
+let TITLE;
+let ORG_INFO = bs.get('/d2l/api/lp/(version)/organization/info');
+let COURSE = bs.get('/d2l/api/lp/(version)/courses/' + ORG_UNIT_ID);
 
 let timeBlocks = [];
-
 let existingTimeSlots = [];
 let newTimeSlots = [];
 
-let totalTimeSlots = 0;
+$(function(){init();});
 
-$(function() {
-    setup();
-});
+async function init(){
 
-async function setup(){
-
-    HOST_NAME = window.location.hostname;
-
-    PLUGIN_PATH = window.location.pathname.substring(0, window.location.pathname.lastIndexOf("/"));
-
-    let myEnrollment = await bs.get('/d2l/api/lp/(version)/enrollments/myenrollments/(orgUnitId)/access');
-    let isInstructor = myEnrollment.Access.LISRoles.some(element => {
-        let isLeanrer = (element.indexOf('Learner') > -1 || element.indexOf('Student') > -1);
-        return !isLeanrer;
-    });
-
-    if(!isInstructor){
-        alert("Yer a wizard, Harry! But you're not an instructor, so you can't use this tool.");
-        window.location.href = PLUGIN_PATH + '/signup.html?ou=' + ORG_UNIT_ID + '&gc=' + GROUP_CATEGORY_ID;
-        return false;
-    }
-
-    if(ORG_UNIT_ID !== null){
-        let orgInfo = await bs.get('/d2l/api/lp/(version)/organization/info');
-
-        timeZone = orgInfo.TimeZone;
-        
-        orgUnitInfo = await bs.get('/d2l/api/lp/(version)/courses/(orgUnitId)');
-        
-        let modules = await bs.get("/d2l/api/le/(version)/(orgUnitId)/content/root/");
-
-        targetModuleId = modules[0].Id;
-    }
+    const promises = await Promise.all([ORG_INFO, COURSE]);
+    ORG_INFO = promises[0];
+    COURSE = promises[1];
     
-    moment.tz.setDefault(timeZone);
+    TIMEZONE = ORG_INFO.TimeZone;
 
-    //updateGlobalLatestTime(moment());
+    moment.tz.setDefault(TIMEZONE);
 
     // $('#timeslot_number').on('change', function(){
     //     updateTotalTimeSlots();
@@ -70,27 +34,36 @@ async function setup(){
 
     if(MODE == 'edit'){
 
-        let url = window.parent.location.href;
-        let match = url.match(/\/viewContent\/(\d+)\//);
-        TOPIC_ID = match[1];
+        CLASSLIST = getClassList();
+
+        TOPIC_ID = params.t;
+
         $('#form_title').html('Edit Signup Schedule');
 
         // deadline not supported by api
         // TODO: switch to fetching the HTML page for the form and parsing it
-        let groupCategory = await bs.get('/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + GROUP_CATEGORY_ID);
-        $('#title').val(groupCategory.Name);
+        let groupCategory = await getGroupCategory(GROUP_CATEGORY_ID);
+        TITLE = groupCategory.Name;
+        $('#title').val(TITLE);
+        $('#schedule_title').html(groupCategory.Name);
+        $('#max_users__row').remove();
+        //$('#max_users').val(groupCategory.MaxUsersPerGroup);
 
-        $('#description').val(groupCategory.Description.Text);
+        if(groupCategory.Description.Text != ''){
+            $('#schedule_description').html(groupCategory.Description.Text.replace('\n','<br />'));
+            $('#description').val(groupCategory.Description.Text);
+            $('#schedule_description').show();
+        }
 
         // not supported by api
-        // $('#deadline_date').val(moment.utc(groupCategory.SelfEnrollmentExpiryDate, 'YYYY-MM-DDTHH:mm:ss.fffZ').tz(timeZone).format('YYYY-MM-DD'));
-        // $('#deadline_time').val(moment.utc(groupCategory.SelfEnrollmentExpiryDate, 'YYYY-MM-DDTHH:mm:ss.fffZ').tz(timeZone).format('HH:mm'));
+        // $('#deadline_date').val(moment.utc(groupCategory.SelfEnrollmentExpiryDate, 'YYYY-MM-DDTHH:mm:ss.fffZ').tz(TIMEZONE).format('YYYY-MM-DD'));
+        // $('#deadline_time').val(moment.utc(groupCategory.SelfEnrollmentExpiryDate, 'YYYY-MM-DDTHH:mm:ss.fffZ').tz(TIMEZONE).format('HH:mm'));
         
         await getExistingTimeSlots();
         let calendarEvent = await bs.get('/d2l/api/le/(version)/(orgUnitId)/calendar/event/' + existingTimeSlots[0].eventId);
         $('#event_title').val(calendarEvent.Title);
         
-        await displayExistingTimeSlots();
+        await displayExistingTimeSlots(groupCategory);
 
         $('#add_new_timeblocks').show();
 
@@ -98,6 +71,8 @@ async function setup(){
 
     } else {
         $('#form_title').html('Create New Signup Schedule');
+        await getModules();
+        $('#module_selection').show();
         $('#edit_timeblocks').show();
         $('#signup_schedule__form').show();
     }
@@ -119,15 +94,18 @@ async function setup(){
 
 }
 
+async function getModules(){
+    let modules = await bs.get("/d2l/api/le/(version)/(orgUnitId)/content/root/");
+    $('#module__select').empty();
+    for(const module of modules){
+        $('#module__select').append($('<option>', {value: module.Id, text: module.Title}));
+    }
+}
+
 async function updateEventTitle(element){
     if($('#event_title').val() == ''){
         $('#event_title').val(element.value);
     }
-}
-
-async function getGroupsInCategory(){
-    let groups = await bs.get('/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + GROUP_CATEGORY_ID + '/groups/');
-    return groups;
 }
 
 async function getExistingTimeSlots(){
@@ -138,8 +116,8 @@ async function getExistingTimeSlots(){
         
         let data = group.Code.split('_');
 
-        let startTime = moment.utc(data[0], 'YYYYMMDDHHmm').tz(timeZone);
-        let endTime = moment.utc(data[1], 'YYYYMMDDHHmm').tz(timeZone);
+        let startTime = moment.utc(data[0], 'YYYYMMDDHHmm').tz(TIMEZONE);
+        let endTime = moment.utc(data[1], 'YYYYMMDDHHmm').tz(TIMEZONE);
 
         let localDateTimeFormat = startTime.format('MMM[&nbsp;]Do[&nbsp;]YYYY, h:mm[&nbsp;]A') + '&nbsp;-&nbsp;' + endTime.format('h:mm[&nbsp;]A');
         
@@ -149,14 +127,16 @@ async function getExistingTimeSlots(){
             name: localDateTimeFormat,
             groupId: group.GroupId,
             eventId: data[2],
-            student: (group.Enrollments.length > 0 ? group.Enrollments[0] : false)
+            students: group.Enrollments
         };
 
         existingTimeSlots.push(timeslot);
     };
+
+    existingTimeSlots.sort(compareStarttime);
 }
 
-async function displayExistingTimeSlots(){
+async function displayExistingTimeSlots(groupCategory){
 
     if(existingTimeSlots.length == 0){
         return false;
@@ -164,18 +144,27 @@ async function displayExistingTimeSlots(){
 
     let duration = 0;
 
-    let classList = await getClassList();
-
     let html = '<tr><th>Registration</th><th>Date & Time</th><th>Actions</th></tr>';
 
     $('#existing_timeslots__table').html(html);
 
+    CLASSLIST = await CLASSLIST;
+
     existingTimeSlots.forEach(timeSlot => {
         
-        let student = '&nbsp;-&nbsp;';
-        
-        if(timeSlot.student !== false){
-            student = classList[timeSlot.student].FirstName + ' ' + classList[timeSlot.student].LastName + ' (' + classList[timeSlot.student].OrgDefinedId + ')';
+        let students = '';
+
+        if(groupCategory.MaxUsersPerGroup > 0){
+            students = '<span class="timeslot-student-count">' + timeSlot.students.length + '</span>/' + groupCategory.MaxUsersPerGroup + '<br />';
+        }
+            
+        if(timeSlot.students.length > 0){
+            for(let studentId of timeSlot.students){
+                students += '<span id="student_' + studentId + '">' + CLASSLIST[studentId].DisplayName + ' (' + CLASSLIST[studentId].OrgDefinedId + ')<br /></span>';
+            }
+
+        } else if(groupCategory.MaxUsersPerGroup == 1) {
+            students = '&nbsp;-&nbsp;';
         }
 
         if(duration == 0){
@@ -183,19 +172,38 @@ async function displayExistingTimeSlots(){
         }
 
         html = '<tr class="timeslot" id="timeslot_' + timeSlot.groupId + '">';
-        html += '<td class="timeslot_student">' + student + '</td>';
+        html += '<td class="timeslot-registration">' + students + '</td>';
         html += '<td class="timeslot_datetime">' + timeSlot.name + '</td>';
         html += '<td class="timeslot_actions">';
-        if(timeSlot.student !== false){
-            html += '<button class="btn btn-secondary btn-sm cancel-timeslot" data-id="' + timeSlot.groupId + '">Cancel Registration</button> ';
+        if(timeSlot.students.length > 0){
+            if(groupCategory.MaxUsersPerGroup > 1)
+                html += '<button class="btn btn-secondary btn-sm manage-timeslot" data-id="' + timeSlot.groupId + '">Cancel Registrations...</button>';
+            else
+                html += '<button class="btn btn-secondary btn-sm manage-timeslot" data-id="' + timeSlot.groupId + '">Cancel Registration</button>';
         }
         html += '<button class="btn btn-red btn-sm delete-timeslot" data-id="' + timeSlot.groupId + '">Delete Time Slot</button></td>';
         html += '</td>';
         html += '</tr>';
 
         $('#existing_timeslots__table').append(html);
-        $('#existing_timeslots__table #timeslot_' + timeSlot.groupId).find('.cancel-timeslot').on('click', function(){cancelTimeSlot(timeSlot)});
-        $('#existing_timeslots__table #timeslot_' + timeSlot.groupId).find('.delete-timeslot').on('click', function(){deleteTimeSlot(timeSlot)});
+        
+        if(groupCategory.MaxUsersPerGroup > 1)
+            $('#existing_timeslots__table #timeslot_' + timeSlot.groupId).find('.manage-timeslot').on('click', function(){manageEnrollment(timeSlot.groupId)});
+        else
+            $('#existing_timeslots__table #timeslot_' + timeSlot.groupId).find('.manage-timeslot').on('click', function(){
+                modalConfirm(
+                    'Are you sure you cancel this registration?<br />The student will be removed and they will be able to select a different time.',
+                    function(){cancelTimeSlot(timeSlot);}
+                );
+            });
+        
+        
+        $('#existing_timeslots__table #timeslot_' + timeSlot.groupId).find('.delete-timeslot').on('click', function(){
+            modalConfirm(
+                'Are you sure you want to delete this time slot?<br />It will remove all registrations and associated events for this time.',
+                function(){deleteTimeSlot(timeSlot)}
+            );
+        });
     });
     
     $('#existing_timeslots').show();
@@ -209,6 +217,11 @@ function addDatetime(){
     if($('#edit_timeblocks').is(':visible')){
         let lastDatetime = $('.datetime__div').last();
         let newDateTime = orderDatetimeElems(lastDatetime.clone(), $('.datetime__div').length + 1);
+        
+        // set select values from last datetime (clone doesn't work?)
+        newDateTime.find('.starttime_input').val(lastDatetime.find('.starttime_input').val());
+        newDateTime.find('.endtime_input').val(lastDatetime.find('.endtime_input').val());
+        
         newDateTime.find('.btn-remove').on('click', removeDatetime);
         newDateTime.insertAfter(lastDatetime);
         initializeDatetime($('.datetime__div').last());   // initialize the new datetime
@@ -368,85 +381,38 @@ function generateTimeOptions(object, defaultTime = false, startTime = 0, endTime
     
 }
 
-function selectTab(obj){
-    $('.tabs').find('li').removeClass('active');
-    $(obj).parent().addClass('active');
-    $('.tabs').find('div').removeClass('active');
-    $('.tabs').find($(obj).attr('href')).addClass('active');
-
-    updateTotalTimeSlots();
-}
-
 function updateTotalTimeSlots(){
-    totalTimeSlots = 0;
+    
     newTimeSlots = [];
+    let totalTimeSlots = 0;
     let timeSlotDuration = 0;
     let totalTime = 0;
 
-    // gave up total number of timeslots, kept the code just in case
-    if(true){//($('#timeslot_unit_tabs').find('li.active').data('unit') == 'duration'){
+    timeSlotDuration = parseInt($('#timeslot_duration').val());
 
-        timeSlotDuration = parseInt($('#timeslot_duration').val());
-
-        if(timeSlotDuration < 5){
-            $('#total_timeslots').text('Please enter a valid time slot duration of at least 5 mintues.');
-            return false;
-        }
-
-        timeBlocks.forEach(block => {
-            totalTime += block.end.diff(block.start, 'minutes');
-
-            let timeSlotsInBlock = parseInt(Math.floor(block.end.diff(block.start, 'minutes') / timeSlotDuration));
-
-            for(i = 0; i < timeSlotsInBlock; i++){
-                let newTimeSlot = {
-                    groupId: null,
-                    eventId: null,
-                    start: block.start.clone().add(i * timeSlotDuration, 'minutes'),
-                    end: block.start.clone().add((i + 1) * timeSlotDuration, 'minutes'),
-                };
-                newTimeSlots.push(newTimeSlot);
-            }
-
-            totalTimeSlots += timeSlotsInBlock;
-            
-        });
-
-    // total number was too hard to calculate, so just use the number of time slots in the first block
-    } else {
-        
-        totalTimeSlots = parseInt($('#timeslot_number').val());
-
-        let smallestTimeBlock = 0;
-        let totalSmallestUnits = 0;
-
-        timeBlocks.forEach(block => {
-            let blockTime = block.end.diff(block.start, 'minutes');
-            console.log(blockTime);
-            if(smallestTimeBlock == 0 || blockTime < smallestTimeBlock){
-                smallestTimeBlock = blockTime;
-            }
-        });
-
-        console.log(smallestTimeBlock);
-
-        timeBlocks.forEach(block => {
-            let unitsInBlock = block.end.diff(block.start, 'minutes') / smallestTimeBlock;
-            block.blockUnits = unitsInBlock;
-            totalSmallestUnits += unitsInBlock;
-        });
-
-        console.log(totalSmallestUnits);
-
-        let smallestBlockToTotal = totalSmallestUnits / totalTimeSlots;
-        timeSlotDuration = smallestTimeBlock * smallestBlockToTotal;
-        if(timeSlotDuration > smallestTimeBlock){
-            timeSlotDuration = smallestTimeBlock;
-        }
-
-        totalTime = timeSlotDuration * totalTimeSlots;
-
+    if(timeSlotDuration < 5){
+        $('#total_timeslots').text('Please enter a time slot duration of at least 5 minutes.');
+        return false;
     }
+
+    timeBlocks.forEach(block => {
+        totalTime += block.end.diff(block.start, 'minutes');
+
+        let timeSlotsInBlock = parseInt(Math.floor(block.end.diff(block.start, 'minutes') / timeSlotDuration));
+
+        for(let i = 0; i < timeSlotsInBlock; i++){
+            let newTimeSlot = {
+                groupId: null,
+                eventId: null,
+                start: block.start.clone().add(i * timeSlotDuration, 'minutes'),
+                end: block.start.clone().add((i + 1) * timeSlotDuration, 'minutes'),
+            };
+            newTimeSlots.push(newTimeSlot);
+        }
+
+        totalTimeSlots += timeSlotsInBlock;
+        
+    });
 
     if(totalTime > 90){
         //convert to hours with 2 decimal places
@@ -519,21 +485,20 @@ function validateTimeFields(withErrors){
     }
 
     datetimes.sort(compareStarttime);
-
-    datetimes.every(function(datetime1, i){
+    
+    for(const [i, datetime1] of datetimes.entries()){
         if(datetime1.start.isAfter(datetime1.end) || datetime1.start.isSame(datetime1.end)){
 
             if(withErrors){
-                errorMessage('Start time must be before end time.', $('#' + datetime1.id).find('select'));
+                modalMessage('Start time must be before end time.', $('#' + datetime1.id).find('select'));
             }
-            valid = false;
             return false;
         
         } else {
 
             let spliceIndexes = [];
 
-            let noOverlapWithBlocks = datetimes.slice(i + 1).every(function(datetime2, j){
+            for(const [j, datetime2] of datetimes.slice(i + 1).entries()){
                 if(datetime1.id != datetime2.id && (
                     datetime1.start.isAfter(datetime2.start) && datetime1.start.isBefore(datetime2.end) || 
                     datetime1.end.isAfter(datetime2.start) && datetime1.end.isBefore(datetime2.end) ||
@@ -542,26 +507,19 @@ function validateTimeFields(withErrors){
                     datetime1.start.isSame(datetime2.start) || datetime1.end.isSame(datetime2.end))){
                     
                     if(withErrors){
-                        errorMessage('Datetimes must not overlap.', $('#' + datetime2.id).find(':input'));
+                        modalMessage('Time ranges must not overlap.', $('#' + datetime2.id).find('.timeblock_datetime_input'));
+                        return false;
                     }
                     valid = false;
-                    return false;
                 } else {
-
                     if(datetime1.end.isSame(datetime2.start)){
                         datetime1.end = datetime2.end.clone();
                         spliceIndexes.push(i + j + 1);
                     }
-
-                    return true;
                 }
-            });
-
-            if(noOverlapWithBlocks == false){
-                return false;
             }
 
-            let noOverlapWithSlots = existingTimeSlots.every(function(datetime2, j){
+            for(const [j, datetime2] of existingTimeSlots.entries()){
                 
                 if( datetime1.start.isAfter(datetime2.start) && datetime1.start.isBefore(datetime2.end) || 
                     datetime1.end.isAfter(datetime2.start) && datetime1.end.isBefore(datetime2.end) ||
@@ -570,25 +528,12 @@ function validateTimeFields(withErrors){
                     datetime1.start.isSame(datetime2.start) || datetime1.end.isSame(datetime2.end)){
                     
                     if(withErrors){
-                        errorMessage('New time ranges must not overlap with existing time slots.', $('#' + datetime1.id).find('.timeblock_datetime_input'));
+                        modalMessage('New time ranges must not overlap with existing time slots.', $('#' + datetime1.id).find('.timeblock_datetime_input'));
+                        return false;
                     }
                     valid = false;
-                    return false;
-                } else {
-
-                    if(datetime1.end.isSame(datetime2.start)){
-                        datetime1.end = datetime2.end.clone();
-                        spliceIndexes.push(i + j + 1);
-                    }
-
-                    return true;
                 }
-            });
-
-            if(noOverlapWithSlots == false){
-                return false;
             }
-            
 
             timeBlocks.push(datetime1);
 
@@ -599,19 +544,11 @@ function validateTimeFields(withErrors){
             if(datetime1.end.isAfter(latestTime)){
                 latestTime = datetime1.end.clone();
             }
-            return true;
-            
         }
-    });
+    }
 
-    // if(blockValue == ''){
-    //     $('#' + selectedTab).addClass('error');
-    //     valid = false;
-    //     return false;
-    // }
-
-    if(!updateTotalTimeSlots() && withErrors){
-        errorMessage('Please enter a time slot duration of at least 5.', $('#timeslot_duration'));
+    if(!updateTotalTimeSlots() && $('#edit_timeblocks').is(':visible') && withErrors){
+        modalMessage('No new time slots will be created. Please adjust your time ranges or duration.');
         valid = false;
     }
     
@@ -653,48 +590,40 @@ function validateAllFields(){
     // not supported by api
     // let deadlineDate = moment($('#deadline_date').val() + ' ' + $('#deadline_time').val(), 'YYYY-MM-DD HH:mm');
     // if(deadlineDate.isBefore(moment())){
-    //     errorMessage('Deadline must be after today.', [$('#deadline_date') , $('#deadline_time')]);
+    //     modalMessage('Deadline must be after today.', [$('#deadline_date') , $('#deadline_time')]);
     //     return false;
     // }
 
     let valid = validateTimeFields(true);
 
-    return(valid && newTimeSlots.length > 0);
-
-}
-
-function updateTimeSlots(timeBlock){
-    let duration = timeBlock.end - timeBlock.start;
-    let slotsPerBlock = Math.floor(duration.asMinutes() / timeBlockSize);
-    totalTimeSlots += slotsPerBlock;
-    for(i = 0; i < slotsPerBlock; i++){
-        let time ={
-            'start' : timeBlock.start.add(i * timeBlockSize, 'minutes'),
-            'end' : timeBlock.start.add((i + 1) * timeBlockSize, 'minutes')
+    if(valid && MODE == 'create'){
+        valid = parseInt($('#max_users').val()) > 0 && parseInt($('#max_users').val()) <= 1000;
+        if(!valid){
+            modalMessage('Max users per timeslot must be between 1 and 1000.', $('#max_users'));
         }
-        timeSlots.push(time);
     }
 
-//     $('#' + timeBlock.id).find('.totalTime').html(totalTime.format('HH:mm'));
-//     $('#' + timeBlock.id).find('.totalBlocks').html();
+    return(valid);
+
 }
 
 async function submitForm(){
 
     if(!SUBMITTING){
 
+        let promiseArray = [];
+
         SUBMITTING = true;
+        $('#save').val('Saving...');
+        $('#signup_schedule__form').find(':input').prop('disabled', true);
 
         if(!validateAllFields(true)){
-            SUBMITTING = false;
-            return false;
+            return cancelSubmit();
         }
 
         if(ORG_UNIT_ID == null){
-            console.log(newTimeSlots);
-            errorMessage('All fields are valid, but Org Unit Id is not defined');
-            SUBMITTING = false;
-            return false;
+            modalMessage('All fields are valid, but Org Unit Id is not defined');
+            return cancelSubmit();
         }
 
         let groupCategory;
@@ -707,56 +636,77 @@ async function submitForm(){
             newTopic = await createTopic();
             TOPIC_ID = newTopic.Id;
         } else {
-            result = await updateGroupCategory();
-            result = await updateTopic();
+            const result = await Promise.all([
+                updateGroupCategory(),
+                updateTopic()
+            ]);
         }
 
 
         if(GROUP_CATEGORY_ID != null){
 
-            let groupsInCategory;
+            let groupsInCategory = null;
 
             if(MODE == 'create'){
                 groupsInCategory = await getGroupsInCategory();
             } else {
+
+                promiseArray = [];
+
                 for (timeSlot of existingTimeSlots){
-                    result = await updateCalendarEvent(timeSlot);
+                    promiseArray.push(updateCalendarEvent(timeSlot));
                 }
+
+                await Promise.all(promiseArray);
             }
+
+            promiseArray = [];
 
             for(const [index,timeSlot] of newTimeSlots.entries()){
 
-                    let group;
-
-                    if(MODE == 'create'){
-                        group = groupsInCategory[index];
-                    } else {
-                        group = await createGroup(timeSlot);
-                    }
-
-                    timeSlot.groupId = group.GroupId;
-                    
-                    let newEvent = await createCalendarEvent(timeSlot);
-                    
-                    timeSlot.eventId = newEvent.CalendarEventId;
-                    
-                    await updateGroup(timeSlot);
+                let group = MODE == 'create' ? groupsInCategory[index] : false;
+                
+                promiseArray.push(createGroupAndEvent(timeSlot, group));
 
             };
+
+            await Promise.all(promiseArray);
         }
 
-        errorMessage('Form submitted successfully.',null,reloadAfterSave);
-        setTimeout(reloadAfterSave, 5000);
+        reloadAfterSave();
 
     }
 
 }
 
+function cancelSubmit(){
+    SUBMITTING = false;
+    $('#save').val('Save');
+    $('#signup_schedule__form').find(':input').prop('disabled', false);
+    return false;
+}
+
+async function createGroupAndEvent(timeSlot, group){
+    
+    if(!group){
+        group = await createGroup(timeSlot);
+    }
+
+    timeSlot.groupId = group.GroupId;
+    
+    let newEvent = await createCalendarEvent(timeSlot);
+    
+    timeSlot.eventId = newEvent.CalendarEventId;
+    
+    return await updateGroup(timeSlot);
+    
+}
+
 function reloadAfterSave(){
     if(MODE == 'create'){
-        window.location.href = '/d2l/le/content/' + ORG_UNIT_ID + '/viewContent/' + TOPIC_ID + '/View'; 
+        window.top.location.href = '/d2l/le/content/' + ORG_UNIT_ID + '/viewContent/' + TOPIC_ID + '/View'; 
     } else {
-        window.location.reload();
+        window.top.location.reload();
     }
 }
 
@@ -764,6 +714,7 @@ function createGroupCategory(){
     
     let title = $('#title').val().trim();
     let description = $('#description').val().trim();
+    let maxUsers = parseInt($('#max_users').val().trim());
 
     // DEADLINE NOT SUPPORTED BY API
     // TODO: SWITCH TO SUBMITTING FORM DATA
@@ -781,7 +732,7 @@ function createGroupCategory(){
         "AutoEnroll": false,
         "RandomizeEnrollments": false,
         "NumberOfGroups": newTimeSlots.length,
-        "MaxUsersPerGroup": 1,
+        "MaxUsersPerGroup": maxUsers,
         "AllocateAfterExpiry": false,
         "SelfEnrollmentExpiryDate": null, //deadlineUTCDateTime, //<string:UTCDateTime>( yyyy-MM-ddTHH:mm:ss.fffZ )|null,
         "GroupPrefix": null,
@@ -797,8 +748,10 @@ async function updateGroupCategory(){
 
     let title = $('#title').val().trim();
     let description = $('#description').val().trim();
+    //let maxUsers = parseInt($('#max_users').val());
 
     // DEADLINE NOT SUPPORTED BY API
+    // MaxUsersPerGroup not supported by API
     // TODO: SWITCH TO SUBMITTING FORM DATA
     // let format = "YYYY-MM-DD HH:mm";
     // let deadlineDate = $('#deadline_date').val();
@@ -809,16 +762,16 @@ async function updateGroupCategory(){
     let category = {
         "Name": title,
         "Description": {"Content": description, "Type":"Text"},
-        "EnrollmentStyle": "PeoplePerNumberOfGroupsSelfEnrollment",
-        "EnrollmentQuantity": null,
+        // "EnrollmentStyle": "PeoplePerNumberOfGroupsSelfEnrollment",
+        // "EnrollmentQuantity": null,
         "AutoEnroll": false,
         "RandomizeEnrollments": false,
-        "NumberOfGroups": null,
-        "MaxUsersPerGroup": 1,
-        "AllocateAfterExpiry": false,
-        "SelfEnrollmentExpiryDate": null, //deadlineUTCDateTime, //<string:UTCDateTime>( yyyy-MM-ddTHH:mm:ss.fffZ )|null,
-        "GroupPrefix": null,
-        "RestrictedByOrgUnitId": null,
+        // "NumberOfGroups": null,
+        // "MaxUsersPerGroup": maxUsers,
+        // "AllocateAfterExpiry": false,
+        // "SelfEnrollmentExpiryDate": null, //deadlineUTCDateTime, //<string:UTCDateTime>( yyyy-MM-ddTHH:mm:ss.fffZ )|null,
+        // "GroupPrefix": null,
+        // "RestrictedByOrgUnitId": null,
         "DescriptionsVisibleToEnrolees": true
     };
     
@@ -829,7 +782,7 @@ async function updateGroupCategory(){
 function createGroup(timeSlot){
     
     let group = {
-        "Name": timeSlot.start.format('MMM Do YYYY h:mm A') + '-' + timeSlot.end.format('h:mm A'),
+        "Name": timeSlot.start.format('MMM Do YYYY, h:mm A') + '-' + timeSlot.end.format('h:mm A'),
         "Code": "",
         "Description": { "Content": "", "Type": "Text" },
     }
@@ -841,7 +794,7 @@ function createGroup(timeSlot){
 async function updateGroup(timeSlot){
     
     let group = {
-        "Name": timeSlot.start.format('MMM Do YYYY h:mm A') + '-' + timeSlot.end.format('h:mm A'),
+        "Name": timeSlot.start.format('MMM Do YYYY, h:mm A') + '-' + timeSlot.end.format('h:mm A'),
         "Code": convertToUTCDateTimeString(timeSlot.start, true) + '_' + convertToUTCDateTimeString(timeSlot.end, true) + '_' + timeSlot.eventId,
         "Description": { "Content": "", "Type": "Text" }
     };
@@ -917,10 +870,13 @@ async function createTopic(){
 
     let title = $('#title').val().trim();
 
-    let response = await fetch(PLUGIN_PATH + '/resources/html/landing.tpl');
+    let pluginPath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf("/"));
+
+    let orgUnitInfo = await bs.get('/d2l/api/lp/(version)/courses/(orgUnitId)');
+    let targetModuleId = $('#module__select').val();
+    let response = await fetch(pluginPath + '/resources/html/landing.tpl');
     let content = await response.text();
-    content = content.replace(/\(pluginPath\)/g, PLUGIN_PATH);
-    content = content.replace(/\(orgUnitId\)/g, ORG_UNIT_ID);
+    content = content.replace(/\(pluginPath\)/g, pluginPath);
     content = content.replace(/\(groupCategoryId\)/g, GROUP_CATEGORY_ID);
     
     let topic = [
@@ -964,88 +920,118 @@ async function updateTopic(){
 
 }
 
-function sendEmail(address, subject, body){
-
-    let calendarSubscription = bs.get('/d2l/le/calendar/(orgUnitId)/subscribe/subscribeDialogLaunch?subscriptionOptionId=-1');
-    let feedToken = calendarSubscription.match(/feed\.ics\?token\=([a-zA-Z0-9]+)/)[1];
-    let feedUrl = feedToken;
-
-    body = body.replace(/\(feedUrl\)/g, feedUrl);
-
-    let formData = {
-        "ToAddresses$items$Value":address,
-        "ToAddresses$items$Key": "",
-        "ToAddresses$items$ActionType": "Add",
-        "ToAddresses$items`1$Value": "",
-        "ToAddresses$items`1$Key": "",
-        "ToAddresses$items`1$ActionType": "",
-        "AutoCompleteTo$SelectionInfo$value": address,
-        "AutoCompleteTo$SelectionInfo$key": "",
-        "CcAddresses$items$Value": "",
-        "CcAddresses$items$Key": "",
-        "CcAddresses$items$ActionType": "None",
-        "AutoCompleteCc$SelectionInfo$value": "",
-        "AutoCompleteCc$SelectionInfo$key": -1,
-        "BccAddresses$items$Value": "",
-        "BccAddresses$items$Key": "",
-        "BccAddresses$items$ActionType": "None",
-        "AutoCompleteBcc$SelectionInfo$value": "",
-        "AutoCompleteBcc$SelectionInfo$key": -1,
-        "AddedToAddresses": "",
-        "AddedCcAddresses": "",
-        "AddedBccAddresses": "",
-        "DraftMessageId": 0,
-        "ParentMessageId": 0,
-        "ParentMessageStatus": 0,
-        "Subject": subject,
-        "BodyHtml$id": "BodyHtml",
-        "BodyHtml$htmlOrgUnitId": ORG_UNIT_ID,
-        "BodyHtml$html":body,
-        "Priority": 3,
-        "Attachments$files$ActionType": "None",
-        "Attachments$files$PluginKey": "",
-        "Attachments$files$Id": "",
-        "Attachments$files$FileSize": "",
-        "isXhr": true,
-        "requestId": 18
-    };
-
-    return bs.submit(url, formData);
-}
-
-async function deleteTimeSlot(timeSlot, requiresConfirmation = true){
-
-    if(requiresConfirmation && !confirm('Are you sure you want to delete this time slot?\n\nIt will remove all registrations and associated events for this time.')){
-        return false;
-    }
-
+async function deleteTimeSlot(timeSlot, sendNotifications = true){
     $('#timeslot_' + timeSlot.groupId).remove();
-
-    await cancelTimeSlot(timeSlot, false);
-    await deleteCalendarEvent(timeSlot.eventId);
+    let promises = [];
+    promises.push(deleteCalendarEvent(timeSlot.eventId));
+    for(student of timeSlot.students){
+        promises.push(unenrollFromGroup(timeSlot, student, sendNotifications));
+    }
+    await Promise.all(promises);
     await deleteGroup(timeSlot.groupId);
 
     // remove timeSlot from existingTimeSlots
     existingTimeSlots = existingTimeSlots.filter(function( ets ) {
-        return ets.groupId !== timeSlotId;
+        return ets.groupId !== timeSlot.groupId;
     });
-
 }
 
-async function cancelTimeSlot(timeSlot, requiresConfirmation = true){
-    if(requiresConfirmation && !confirm('Are you sure you cancel this registration?\n\nThe student will be removed and they will be able to select a different time.')){
+async function manageEnrollment(groupId){
+    let group = await getGroup(groupId);
+    
+    let message = '<h3>Manage Registrations</h3>';
+
+    let studentTable = '<div><table class="d2l-table" id="student_table"><thead><tr><th onclick="clickSubInput(event)"><input type="checkbox" class="select_all" onclick="selectAll(this)"></th><th>Student</th></tr></thead><tbody>';
+    for(student of group.Enrollments){
+        studentTable += '<tr><td onclick="clickSubInput(event)"><input type="checkbox" class="select_row" id="select_student_'+student+'" value="' + student + '"></td><td><label for="select_student_'+student+'">' + CLASSLIST[student].DisplayName + '</label></td></tr>';
+    }
+    studentTable += '</tbody></table></div>';
+
+    message += studentTable;
+
+    message += '<p style="margin-top:20px;"><input type="button" class="btn btn-red" value="Remove Selected" onclick="let checked = $(\'#student_table\').find(\'.select_row:checked\').clone(); confirmRemoveStudentsFromGroup(' + groupId + ',checked);"></p>';
+
+    modalMessage(message);
+}
+
+function clickSubInput(e){
+    if($(e.target).not('input')){
+        $(e.target).find('input').click();
+    }
+}
+
+function confirmRemoveStudentsFromGroup(groupId, checkedStudents){
+    if(checkedStudents.length == 0){
         return false;
     }
-    $('#timeslot_' + timeSlot.groupId + ' .timeslot_student').html('&nbsp;-&nbsp;');
-    $('#timeslot_' + timeSlot.groupId).find('.cancel-timeslot').remove();
-    let result = await unenrolFromGroup(timeSlot.groupId, timeSlot.student);
-    timeSlot.student = false;
+    modalConfirm(
+        'Are you sure you want to cancel these registrations?<br />The selected students will be removed and they will be able to select a different time:<br />' + selectedStudentNames(checkedStudents),
+        function(){removeStudentsFromGroup(groupId, checkedStudents);}
+    );
+}
+
+function selectedStudentNames(checkedStudents){
+    let names = '';
+    checkedStudents.each(function(){
+        names += CLASSLIST[this.value].DisplayName + '<br>';
+    });
+    return names;
+}
+
+function removeStudentsFromGroup(groupId, checkedStudents){
+    //find the timeslot
+    let timeSlot = existingTimeSlots.find(function( ets ) {
+        return ets.groupId == groupId;
+    });
+
+    //remove the students from the group
+    checkedStudents.each(function(){
+        let studentId = this.value;
+        unenrollFromGroup(timeSlot, studentId);
+        //$(this).closest('tr').remove();
+        $('#student_' + studentId).remove();
+        timeSlot.students = timeSlot.students.filter(function( es ) {
+            return es != parseInt(studentId);
+        });
+    });
+
+    if(timeSlot.students.length == 0){
+        $('#timeslot_' + groupId).find('.manage-timeslot').remove();
+    }
+
+    $('#timeslot_' + groupId).find('.timeslot-student-count').html(timeSlot.students.length);
+}
+
+async function cancelTimeSlot(timeSlot){
+    $('#timeslot_' + timeSlot.groupId + ' .timeslot-registration').html('&nbsp;-&nbsp;');
+    $('#timeslot_' + timeSlot.groupId).find('.manage-timeslot').remove();
+    let result = await unenrollFromGroup(timeSlot, timeSlot.students[0]);
+    timeSlot.students = [];
     return result;
 }
 
+async function notifyOfCancellation(userId){
 
-function unenrolFromGroup(groupId, userId){
-    let url = '/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + GROUP_CATEGORY_ID + '/groups/' + groupId + '/enrollments/' + userId;
+    let pluginPath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf("/"));
+    let result = await fetch(pluginPath + '/resources/html/emailstudentcancelled.tpl');
+    let body = await result.text();
+    
+    let studentEmail = CLASSLIST[userId].Email;
+    let subject = 'Brightspace Scheduling: Your time slot was cancelled';
+    let topicUrl = 'https://' + window.top.location.host + '/d2l/le/content/' + ORG_UNIT_ID + '/viewContent/' + TOPIC_ID + '/View';
+    
+    body = body.replace(/\(courseName\)/g, COURSE.Name);
+    body = body.replace(/\(scheduleTitle\)/g, TITLE);
+    body = body.replace(/\(topicUrl\)/g, topicUrl);
+    
+    let email = sendEmail(studentEmail, subject, body);
+}
+
+async function unenrollFromGroup(timeSlot, userId, sendNotifications = true){
+    let url = '/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + GROUP_CATEGORY_ID + '/groups/' + timeSlot.groupId + '/enrollments/' + userId;
+    if(sendNotifications){
+        notifyOfCancellation(userId);
+    }
     return bs.delete(url);
 }
 
@@ -1057,46 +1043,41 @@ function deleteGroup(groupId){
     return bs.delete('/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + GROUP_CATEGORY_ID + '/groups/' + groupId);
 }
 
-async function getClassList(){
-    let classList = [];
-    for(student of await bs.get('/d2l/api/le/(version)/(orgUnitId)/classlist/')){
-        classList[student.Identifier] = student;
-    }
-    return classList;
+function deleteGroupCategory(){
+    return bs.delete('/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + GROUP_CATEGORY_ID);
 }
 
-function loading(){
-    $('.main').children().toggle();
-    $('#loading').toggle();
+function deleteTopic(){
+    return bs.delete('/d2l/api/le/(version)/(orgUnitId)/content/topics/' + TOPIC_ID);
 }
 
-function errorMessage(message, id = null, callback = null){
-    
-    if(id !== null){
-        if(typeof(id) == 'string')
-            $('#' + id).addClass('error');
-        else
-            $(id).addClass('error');
-    }
-    
-    $('#messageModel').find('.modal-title').html('Error');
-    $('#messageModal').find('.modal-body').html('<p>' + message + '</p>');
-
-    if(callback !== null){
-        $('#messageModal').find('.modal-footer').find('.btn-primary').on('click', callback);
-    }
-
-    // is it in an iframe?
-    let theWindow = window.self === window.top ? window : window.parent;
-
-    $('#messageModal').css('top', $(theWindow).scrollTop() + 'px');
-
-    $('#messageModal').modal('show');
-
+function confirmDeleteSchedule(){
+    modalConfirm('Are you sure you want to delete this schedule?<br />This will remove all time slots and registrations.',
+        function(){
+            function doubleConfirmDeleteSchedule(){
+                $('#messageModal').off('hidden.bs.modal', doubleConfirmDeleteSchedule);
+                modalConfirm(
+                    'Are you really sure?<br />This will remove all time slots and registrations.',
+                    deleteSchedule
+                );
+            }
+            $('#messageModal').on('hidden.bs.modal', doubleConfirmDeleteSchedule);
+        }
+    );
 }
 
-function clearErrorMessage(id){
-    $('#' + id).removeClass('error');
+async function deleteSchedule(){
+    let deleteArray = [];
+
+    for(let i = 0; i < existingTimeSlots.length; i++){
+        deleteArray.push(deleteTimeSlot(existingTimeSlots[i], false));
+    }
+
+    await Promise.all(deleteArray);
+    await deleteTopic();
+    await deleteGroupCategory();
+
+    window.top.location.href = '/d2l/le/content/' + ORG_UNIT_ID + '/Home';
 }
 
 function momentFromTime(time){
