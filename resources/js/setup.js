@@ -46,6 +46,11 @@ async function init(){
         TITLE = groupCategory.Name;
         $('#title').val(TITLE);
         $('#schedule_title').html(groupCategory.Name);
+
+        if(groupCategory.SelfEnrollmentExpiryDate != null){
+            $('#expiry_date').html("Last day to sign up: " . moment.utc(groupCategory.SelfEnrollmentExpiryDate, 'YYYY-MM-DDTHH:mm:ss.fffZ').subtract(1, 'days').tz(TIMEZONE).format('MMM Do YYYY'));
+        }
+
         $('#max_users__row').remove();
         $('#enddate__row').remove();
         //$('#max_users').val(groupCategory.MaxUsersPerGroup);
@@ -729,7 +734,10 @@ function createGroupCategory(){
     // if string matches date format
     if(endDateString.match(/^\d{4}-\d{2}-\d{2}$/)){
         let endDateMoment = moment(endDateString + ' 00:00', 'YYYY-MM-DD HH:mm').add(1, 'days');
-        endDateUTC = convertToUTCDateTimeString(endDateMoment);
+
+        if(endDateMoment.isAfter(moment())){
+            endDateUTC = convertToUTCDateTimeString(endDateMoment);
+        }
     }
 
     let category = {

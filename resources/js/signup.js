@@ -7,6 +7,7 @@ let USER = whoAmI();
 let MAX_STUDENTS = 1;
 let CLASSLIST = getClassList('bas');
 let COURSE;
+let EXPIRED = false;
 
 
 $(function(){init();});
@@ -30,21 +31,34 @@ async function init() {
     TITLE = groupCategory.Name;
     $('#schedule_title').html(TITLE);
 
+    if(groupCategory.SelfEnrollmentExpiryDate != null){
+        $('#expiry_date').html("Last day to sign up: " . moment.utc(groupCategory.SelfEnrollmentExpiryDate, 'YYYY-MM-DDTHH:mm:ss.fffZ').subtract(1, 'days').tz(TIMEZONE).format('MMM Do YYYY'));
+    }
+
     if(groupCategory.Description.Text != ''){
         $('#schedule_description').html(groupCategory.Description.Text.replace('\n', '<br />'));
         $('#schedule_description').show();
     }
     MAX_STUDENTS = groupCategory.MaxUsersPerGroup;
     
+    if(moment() > moment.utc(groupCategory.SelfEnrollmentExpiryDate, 'YYYY-MM-DDTHH:mm:ss.fffZ')){
+        EXPIRED = true;
+        $('#schedule_expired').show();
+    }
+
     let groups = await getGroupsInCategory();
     let availableGroups = await displayGroupsInCategory(groups);
 
     if(MY_TIME !== false){
-        $('#my_selection__content').html('<h3>' + MY_TIME.name + '</h3>' + '<p><button class="btn btn-secondary btn-sm cancel-timeslot" id="cancel-selection">Cancel my selection</button></p>');
-        $('#cancel-selection').on('click', function(){
-            modalConfirm('Are you sure you cancel this registration?<br />You will lose this time slot and you will need to select a new one.',
-                cancelMySelection);
-        });
+        $('#my_selection__content').html('<h3>' + MY_TIME.name + '</h3>');
+        
+        if(!EXPIRED){
+            $('#my_selection__content').append('<p><button class="btn btn-secondary btn-sm cancel-timeslot" id="cancel-selection">Cancel my selection</button></p>');
+            $('#cancel-selection').on('click', function(){
+                modalConfirm('Are you sure you cancel this registration?<br />You will lose this time slot and you will need to select a new one.',
+                    cancelMySelection);
+            });
+        }
         $('#my_selection').show();
     }
 }
@@ -52,7 +66,7 @@ async function init() {
 async function displayGroupsInCategory(groups){
     
     let availableGroups = 0;
-    let html = '<tr>' + (MAX_STUDENTS > 1 ? '<th>Enrollment</th>' : '') + '<th>Date & Time</th><th class="student_timeslot_actions">Actions</th></tr>';
+    let html = '<tr>' + (MAX_STUDENTS > 1 ? '<th>Enrollment</th>' : '') + '<th>Date & Time</th>' + (EXPIRED ? '' : '<th class="student_timeslot_actions">Actions</th>') + '</tr>';
 
     $('#existing_timeslots__table').html(html);
 
@@ -80,7 +94,9 @@ async function displayGroupsInCategory(groups){
             }
             html += '<td class="timeslot_datetime">' + group.Name + '</td>';
             html += '<td class="timeslot_actions student_timeslot_actions">';
-            html += '<button class="btn btn-secondary btn-sm select-timeslot" data-id="' + group.GroupId + '">Select this time</button>';
+            if(!EXPIRED){
+                html += '<button class="btn btn-secondary btn-sm select-timeslot" data-id="' + group.GroupId + '">Select this time</button>';
+            }
             html += '</td>';
             html += '</tr>';
 
@@ -108,7 +124,9 @@ async function displayGroupsInCategory(groups){
         $('.student_timeslot_actions').remove();
     }
     
-    if(availableGroups == 0){
+    if(EXPIRED){
+        $('#existing_timeslots__heading').html('Signup is now closed.<br />If you still need to sign up, please contact your instructor.');
+    } else if(availableGroups == 0){
         $('#existing_timeslots__heading').html('No additional time slots are available');
         $('#existing_timeslots__table').remove();
     } else if(MY_TIME !== false){
