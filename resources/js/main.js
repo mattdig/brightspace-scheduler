@@ -15,7 +15,7 @@ async function isInstructor(){
     return isInstructor;
 }
 
-function getGroupCategory(categoryId){
+function getGroupCategory(){
     let groupCategory = bs.get('/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + GROUP_CATEGORY_ID);
     return groupCategory;
 }

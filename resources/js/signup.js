@@ -15,11 +15,17 @@ $(function(){init();});
 async function init() {
 
     let myEnrollments = bs.get('/d2l/api/lp/(version)/enrollments/myenrollments/');
-    const promises = await Promise.all([USER, CLASSLIST, myEnrollments, getGroupCategory(GROUP_CATEGORY_ID)]);
+    let orgInfo = bs.get('/d2l/api/lp/(version)/organization/info');
+    const promises = await Promise.all([USER, CLASSLIST, myEnrollments, orgInfo, getGroupCategory(), getGroupsInCategory()]);
     USER = promises[0];
     CLASSLIST = promises[1];
     myEnrollments = promises[2];
-    let groupCategory = promises[3];
+    orgInfo = promises[3];
+    let groupCategory = promises[4];
+    let groups = promises[5];
+    
+    let timeZone = orgInfo.TimeZone;
+    moment.tz.setDefault(timeZone);
 
     for(item of myEnrollments.Items){
         if(item.OrgUnit.Type.Id == 3 && item.OrgUnit.Id == ORG_UNIT_ID){
@@ -32,21 +38,23 @@ async function init() {
     $('#schedule_title').html(TITLE);
 
     if(groupCategory.SelfEnrollmentExpiryDate != null){
-        $('#expiry_date').html("Last day to sign up: " . moment.utc(groupCategory.SelfEnrollmentExpiryDate, 'YYYY-MM-DDTHH:mm:ss.fffZ').subtract(1, 'days').tz(TIMEZONE).format('MMM Do YYYY'));
+        $('#expiry_date').html("Last day to sign up: " + moment.utc(groupCategory.SelfEnrollmentExpiryDate, 'YYYY-MM-DDTHH:mm:ss.fffZ').subtract(1, 'days').tz(timeZone).format('MMM Do, YYYY'));
+        $('#expiry_date').show();
     }
 
     if(groupCategory.Description.Text != ''){
         $('#schedule_description').html(groupCategory.Description.Text.replace('\n', '<br />'));
+        $('#schedule_description').show();
+    } else if(groupCategory.Description.Html != '') {
+        $('#schedule_description').html(groupCategory.Description.Html);
         $('#schedule_description').show();
     }
     MAX_STUDENTS = groupCategory.MaxUsersPerGroup;
     
     if(moment() > moment.utc(groupCategory.SelfEnrollmentExpiryDate, 'YYYY-MM-DDTHH:mm:ss.fffZ')){
         EXPIRED = true;
-        $('#schedule_expired').show();
     }
 
-    let groups = await getGroupsInCategory();
     let availableGroups = await displayGroupsInCategory(groups);
 
     if(MY_TIME !== false){
@@ -93,11 +101,11 @@ async function displayGroupsInCategory(groups){
                 html += '</td>';
             }
             html += '<td class="timeslot_datetime">' + group.Name + '</td>';
-            html += '<td class="timeslot_actions student_timeslot_actions">';
             if(!EXPIRED){
+                html += '<td class="timeslot_actions student_timeslot_actions">';
                 html += '<button class="btn btn-secondary btn-sm select-timeslot" data-id="' + group.GroupId + '">Select this time</button>';
+                html += '</td>';
             }
-            html += '</td>';
             html += '</tr>';
 
             $('#existing_timeslots__table').append(html);
@@ -125,7 +133,7 @@ async function displayGroupsInCategory(groups){
     }
     
     if(EXPIRED){
-        $('#existing_timeslots__heading').html('Signup is now closed.<br />If you still need to sign up, please contact your instructor.');
+        $('#existing_timeslots__heading').html('Sign up is now closed.').after('<p>If you still need to sign up, please contact your instructor.</p>');
     } else if(availableGroups == 0){
         $('#existing_timeslots__heading').html('No additional time slots are available');
         $('#existing_timeslots__table').remove();

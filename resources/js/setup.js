@@ -42,13 +42,14 @@ async function init(){
 
         // deadline not supported by api
         // TODO: switch to fetching the HTML page for the form and parsing it
-        let groupCategory = await getGroupCategory(GROUP_CATEGORY_ID);
+        let groupCategory = await getGroupCategory();
         TITLE = groupCategory.Name;
         $('#title').val(TITLE);
         $('#schedule_title').html(groupCategory.Name);
 
         if(groupCategory.SelfEnrollmentExpiryDate != null){
-            $('#expiry_date').html("Last day to sign up: " . moment.utc(groupCategory.SelfEnrollmentExpiryDate, 'YYYY-MM-DDTHH:mm:ss.fffZ').subtract(1, 'days').tz(TIMEZONE).format('MMM Do YYYY'));
+            $('#expiry_date').html("Last day to sign up: " + moment.utc(groupCategory.SelfEnrollmentExpiryDate, 'YYYY-MM-DDTHH:mm:ss.fffZ').subtract(1, 'days').tz(TIMEZONE).format('MMM Do, YYYY'));
+            $('#expiry_date').show();
         }
 
         $('#max_users__row').remove();
