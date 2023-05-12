@@ -12,3 +12,6 @@ Thumbs.db
 
 #config
 config.js
+
+#zip
+*.zip
