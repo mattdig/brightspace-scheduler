@@ -878,7 +878,10 @@ async function createTopic(){
     let response = await fetch(pluginPath + '/resources/html/landing.tpl');
     let content = await response.text();
     content = content.replace(/\(pluginPath\)/g, pluginPath);
-    content = content.replace(/\(groupCategoryId\)/g, GROUP_CATEGORY_ID);
+    
+    configOptionsJSON = '{gc:' + GROUP_CATEGORY_ID + ',t:' + TOPIC_ID + '}';
+
+    content = content.replace(/\(configOptionsJSON)/g, btoa(configOptionsJSON));
     
     let topic = [
         {

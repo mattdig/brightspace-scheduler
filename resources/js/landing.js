@@ -15,7 +15,7 @@ async function isInstructor(){
 }
 
 async function redirect(){
-    let config = JSON.parse(CONFIG);
+    let config = JSON.parse(atob(CONFIG));
     config.t = TOPIC_ID;
 
     let redirect = '/d2l/lp/navbars/' + ORG_UNIT_ID + '/customlinks/external/' + ((await isInstructor()) ? adminLinkId : signupLinkId) + '?config=' + encodeURIComponent(JSON.stringify(config));
