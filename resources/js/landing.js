@@ -15,10 +15,11 @@ async function isInstructor(){
 }
 
 async function redirect(){
-    let config = JSON.parse(atob(CONFIG));
+    let config = JSON.parse(CONFIG);
     config.t = TOPIC_ID;
+    config = btoa(JSON.stringify(config));
 
-    let redirect = '/d2l/lp/navbars/' + ORG_UNIT_ID + '/customlinks/external/' + ((await isInstructor()) ? adminLinkId : signupLinkId) + '?cfg=' + encodeURIComponent(JSON.stringify(config));
+    let redirect = '/d2l/lp/navbars/' + ORG_UNIT_ID + '/customlinks/external/' + ((await isInstructor()) ? adminLinkId : signupLinkId) + '?cfg=' + config;
     window.top.location.replace(redirect);
 }
 

@@ -1,7 +1,7 @@
 const params = new Proxy(new URLSearchParams(window.top.location.search), {get: (searchParams, prop) => searchParams.get(prop)});
 let CFG = params.cfg;
 if(CFG !== false){
-    CFG = JSON.parse(btoa(CFG));
+    CFG = JSON.parse(atob(CFG));
 }
 let MODE = (CFG !== false ? 'edit' : 'create');
 let GROUP_CATEGORY_ID = (MODE == 'edit' ? CFG.gc : null);
@@ -899,9 +899,9 @@ async function createTopic(){
     let content = await response.text();
     content = content.replace(/\(pluginPath\)/g, pluginPath);
     
-    configOptionsJSON = '{gc:' + GROUP_CATEGORY_ID + ',t:' + TOPIC_ID + '}';
+    configOptionsJSON = '{gc:' + GROUP_CATEGORY_ID + '}';
 
-    content = content.replace(/\(configOptionsJSON)/g, btoa(configOptionsJSON));
+    content = content.replace(/\(configOptionsJSON)/g, configOptionsJSON);
     
     let topic = [
         {

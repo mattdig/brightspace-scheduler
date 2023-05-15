@@ -1,7 +1,7 @@
 const params = new Proxy(new URLSearchParams(window.top.location.search), {get: (searchParams, prop) => searchParams.get(prop)});
 let CFG = params.cfg;
 if(CFG !== false){
-    CFG = JSON.parse(btoa(CFG));
+    CFG = JSON.parse(atob(CFG));
 }
 let GROUP_CATEGORY_ID = CFG.gc;
 let TOPIC_ID = CFG.t;
