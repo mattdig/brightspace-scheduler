@@ -18,7 +18,7 @@ async function redirect(){
     let config = JSON.parse(atob(CONFIG));
     config.t = TOPIC_ID;
 
-    let redirect = '/d2l/lp/navbars/' + ORG_UNIT_ID + '/customlinks/external/' + ((await isInstructor()) ? adminLinkId : signupLinkId) + '?config=' + encodeURIComponent(JSON.stringify(config));
+    let redirect = '/d2l/lp/navbars/' + ORG_UNIT_ID + '/customlinks/external/' + ((await isInstructor()) ? adminLinkId : signupLinkId) + '?cfg=' + encodeURIComponent(JSON.stringify(config));
     window.top.location.replace(redirect);
 }
 
