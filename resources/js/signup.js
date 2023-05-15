@@ -1,6 +1,10 @@
 const params = new Proxy(new URLSearchParams(window.top.location.search), {get: (searchParams, prop) => searchParams.get(prop)});
-let GROUP_CATEGORY_ID = params.gc;
-let TOPIC_ID = params.t;
+let CFG = params.cfg;
+if(CFG !== false){
+    CFG = JSON.parse(btoa(CFG));
+}
+let GROUP_CATEGORY_ID = CFG.gc;
+let TOPIC_ID = CFG.t;
 let TITLE;
 let MY_TIME = false;
 let USER = whoAmI();
@@ -254,4 +258,12 @@ function unenrollFromGroup(groupId){
         "d2l_action": "rpc"
     };
     return bs.submit('/d2l/lms/group/user_group_list.d2lfile?ou=(orgUnitId)&d2l_rh=rpc&d2l_rt=call', data);
+}
+
+function verifyMappedGroupEnrollment(group){
+    getGroup(group.GroupId).then(function(group){
+        if(group.Enrollments.lenght > 0){
+            
+        }
+    });
 }

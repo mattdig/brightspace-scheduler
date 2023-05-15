@@ -1,6 +1,10 @@
 const params = new Proxy(new URLSearchParams(window.top.location.search), {get: (searchParams, prop) => searchParams.get(prop)});
-let MODE = (window.top.location.search.indexOf('gc=') != -1 ? 'edit' : 'create');
-let GROUP_CATEGORY_ID = (MODE == 'edit' ? params.gc : null);
+let CFG = params.cfg;
+if(CFG !== false){
+    CFG = JSON.parse(btoa(CFG));
+}
+let MODE = (CFG !== false ? 'edit' : 'create');
+let GROUP_CATEGORY_ID = (MODE == 'edit' ? CFG.gc : null);
 let TOPIC_ID = 0;
 let SUBMITTING = false;
 let TIMEZONE;
@@ -36,7 +40,7 @@ async function init(){
 
         CLASSLIST = getClassList();
 
-        TOPIC_ID = params.t;
+        TOPIC_ID = CFG.t;
 
         $('#form_title').html('Edit Signup Schedule');
 
@@ -894,7 +898,10 @@ async function createTopic(){
     let response = await fetch(pluginPath + '/resources/html/landing.tpl');
     let content = await response.text();
     content = content.replace(/\(pluginPath\)/g, pluginPath);
-    content = content.replace(/\(groupCategoryId\)/g, GROUP_CATEGORY_ID);
+    
+    configOptionsJSON = '{gc:' + GROUP_CATEGORY_ID + ',t:' + TOPIC_ID + '}';
+
+    content = content.replace(/\(configOptionsJSON)/g, btoa(configOptionsJSON));
     
     let topic = [
         {
