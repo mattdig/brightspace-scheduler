@@ -123,8 +123,8 @@ let ORG_UNIT_ID = match[1];
                     </div>
                     <div class="row">
                         <div class="col-xs-12">
-                            <h2>Set the duration of each time slot</h2>
                             <label for="timeslot_duration">
+                                <h2>Set the duration of each time slot</h2>
                                 <p>The length of each time slot in minutes</p>
                                 <p><input type="text" name="timeslot_duration" id="timeslot_duration" class="form-control" value="30" /></p>
                             </label>
@@ -134,18 +134,32 @@ let ORG_UNIT_ID = match[1];
                 </div>
                 <div class="row" id="max_users__row">
                     <div class="col-xs-12">
-                        <h2>Set the number of students per time slot (group size)</h2>
                         <label for="max_users">
+                            <h2>Set the number of students per time slot (group size)</h2>
                             <p>Maximum number of students per time slot</p>
                             <p><input type="number" name="max_users" id="max_users" class="form-control" value="1" /></p>
+                        </label>
+                        <label for="associated_group_category" id="associated_group_category__label">
+                            <h2>Restrict timeslot signup to existing groups (optional)</h2>
+                            <p>Select the Group Category to use</p>
+                            <p><select name="associated_group_category" id="associated_group_category" class="form-control">
+                                <option value="">------</option>
+                            </select></p>
+                        </label>
+                        <label for="registration_type" id="registration_type__label">
+                            <p>Select the type of registration</p>
+                            <p><select name="registration_type" id="registration_type" class="form-control">
+                                <option value="1">All group members register</option>
+                                <option value="2">Only one group member registers</option>
+                            </select></p>
                         </label>
                     </div>
                 </div>
 
                 <div class="row" id="enddate__row">
                     <div class="col-xs-12">
-                        <h2>Set signup end-date</h2>
                         <label for="schedule_enddate">
+                            <h2>Set signup end-date</h2>
                             <p>Last day for signup: (optional) </p>
                             <p><input type="text" name="schedule_enddate" id="schedule_enddate" class="form-control date_input" /></p>
                         </label>

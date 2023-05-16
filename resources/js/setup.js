@@ -12,6 +12,7 @@ let CLASSLIST;
 let TITLE;
 let ORG_INFO = bs.get('/d2l/api/lp/(version)/organization/info');
 let COURSE = bs.get('/d2l/api/lp/(version)/courses/' + ORG_UNIT_ID);
+let OTHER_GROUPS = bs.get('/d2l/api/lp/(version)/' + ORG_UNIT_ID + '/groupcategories/');
 
 let timeBlocks = [];
 let existingTimeSlots = [];
@@ -21,9 +22,10 @@ $(function(){init();});
 
 async function init(){
 
-    const promises = await Promise.all([ORG_INFO, COURSE]);
+    const promises = await Promise.all([ORG_INFO, COURSE, OTHER_GROUPS]);
     ORG_INFO = promises[0];
     COURSE = promises[1];
+    OTHER_GROUPS = promises[2];
     
     TIMEZONE = ORG_INFO.TimeZone;
 
@@ -35,6 +37,10 @@ async function init(){
 
     // not supported by api
     //generateTimeOptions($('#deadline_time'));
+
+    for(const og of OTHER_GROUPS){
+        $('#associated_group_category').append($('<option>', {value: og.CategoryId, text: og.Name}));
+    }
 
     if(MODE == 'edit'){
 
@@ -65,6 +71,16 @@ async function init(){
             $('#description').val(groupCategory.Description.Text);
             $('#schedule_description').show();
         }
+
+        if('agc' in CFG){
+            $('#associated_group_category').val(CFG.agc).show();
+        }
+
+        if('rt' in CFG){
+            $('#registration_type').val(CFG.rt).show();
+        }
+
+
 
         // not supported by api
         // $('#deadline_date').val(moment.utc(groupCategory.SelfEnrollmentExpiryDate, 'YYYY-MM-DDTHH:mm:ss.fffZ').tz(TIMEZONE).format('YYYY-MM-DD'));
@@ -899,9 +915,15 @@ async function createTopic(){
     let content = await response.text();
     content = content.replace(/\(pluginPath\)/g, pluginPath);
     
-    configOptionsJSON = '{gc:' + GROUP_CATEGORY_ID + '}';
+    configOptionsJSON = {};
+    configOptionsJSON.gc = GROUP_CATEGORY_ID;
 
-    content = content.replace(/\(configOptionsJSON)/g, configOptionsJSON);
+    if($('#max_users').val() > 1 && $('#associated_group_category').val() != ''){
+        configOptionsJSON.agc = parseInt($('#associated_group_category').val());
+        configOptionsJSON.rt = parseInt($('#registration_type').val());
+    }
+
+    content = content.replace(/\(configOptionsJSON)/g, JSON.stringify(configOptionsJSON));
     
     let topic = [
         {
