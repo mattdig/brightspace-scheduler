@@ -20,8 +20,13 @@ function getGroupCategory(){
     return groupCategory;
 }
 
-function getGroupsInCategory(){
-    let groups = bs.get('/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + GROUP_CATEGORY_ID + '/groups/');
+function getGroupsInCategory(categoryId = false){
+
+    if(categoryId === false){
+        categoryId = GROUP_CATEGORY_ID;
+    }
+
+    let groups = bs.get('/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + categoryId + '/groups/');
     return groups;
 }
 

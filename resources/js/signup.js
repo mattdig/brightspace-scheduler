@@ -12,6 +12,8 @@ let MAX_STUDENTS = 1;
 let CLASSLIST = getClassList('bas');
 let COURSE;
 let EXPIRED = false;
+let ASSOCIATED_GROUPS = (CFG.agc ? getGroupsInCategory(CFG.agc) : false);
+let REGISTRATION_TYPE = (CFG.rt ? CFG.rt : false);
 
 
 $(function(){init();});
@@ -72,6 +74,28 @@ async function init() {
             });
         }
         $('#my_selection').show();
+    } else {
+
+        if(CFG.rt !== false && ASSOCIATED_GROUPS !== false){
+            if(CFG.rt == 1){
+
+                // find the associated group user is regisrered in
+                for(const ag of ASSOCIATED_GROUPS){
+                    if(ag.Enrollments.includes(USER.Identifier)){
+
+                        // find the timeslot group other members of the associated group are registered in
+                        for(const group of groups){
+                            for(const student of ag.Enrollments){
+                                if(group.Enrollments.includes(student)){
+                                    modalMessage('One of your group members has already registered for a time slot:<br />' + group.Name + 
+                                        '<br />You will be automatically registered for the same time slot.', null, selectTimeSlot(group));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 

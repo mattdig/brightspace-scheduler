@@ -76,11 +76,6 @@ async function init(){
             $('#associated_group_category').val(CFG.agc).show();
         }
 
-        if('rt' in CFG){
-            $('#registration_type').val(CFG.rt).show();
-        }
-
-
 
         // not supported by api
         // $('#deadline_date').val(moment.utc(groupCategory.SelfEnrollmentExpiryDate, 'YYYY-MM-DDTHH:mm:ss.fffZ').tz(TIMEZONE).format('YYYY-MM-DD'));
@@ -920,7 +915,7 @@ async function createTopic(){
 
     if($('#max_users').val() > 1 && $('#associated_group_category').val() != ''){
         configOptionsJSON.agc = parseInt($('#associated_group_category').val());
-        configOptionsJSON.rt = parseInt($('#registration_type').val());
+        configOptionsJSON.rt = 1;
     }
 
     content = content.replace(/\(configOptionsJSON)/g, JSON.stringify(configOptionsJSON));
