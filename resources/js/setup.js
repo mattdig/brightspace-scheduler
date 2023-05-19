@@ -12,7 +12,7 @@ let CLASSLIST;
 let TITLE;
 let ORG_INFO = bs.get('/d2l/api/lp/(version)/organization/info');
 let COURSE = bs.get('/d2l/api/lp/(version)/courses/' + ORG_UNIT_ID);
-let OTHER_GROUPS = bs.get('/d2l/api/lp/(version)/' + ORG_UNIT_ID + '/groupcategories/');
+let GROUPS = (MODE == 'edit' ? getGroupsInCategory() : null);
 
 let timeBlocks = [];
 let existingTimeSlots = [];
@@ -24,17 +24,18 @@ async function init(){
 
     let associatedGroupCategory = false;
     let associatedGroups = false;
-    if(CFG.agc !== undefined){
+    if('agc' in CFG){
         associatedGroupCategory = getGroupCategory(CFG.agc);
         associatedGroups = getGroupsInCategory(CFG.agc);
     }
 
-    const promises = await Promise.all([ORG_INFO, COURSE, OTHER_GROUPS, associatedGroupCategory, associatedGroups]);
+    const promises = await Promise.all([ORG_INFO, COURSE, GROUPS, bs.get('/d2l/api/lp/(version)/' + ORG_UNIT_ID + '/groupcategories/'), associatedGroupCategory, associatedGroups]);
     ORG_INFO = promises[0];
     COURSE = promises[1];
-    OTHER_GROUPS = promises[2];
-    associatedGroupCategory = promises[3];
-    associatedGroups = promises[4];
+    GROUPS = promises[2];
+    let otherGroupCategories = promises[3];
+    associatedGroupCategory = promises[4];
+    associatedGroups = promises[5];
     
     TIMEZONE = ORG_INFO.TimeZone;
 
@@ -47,7 +48,7 @@ async function init(){
     // not supported by api
     //generateTimeOptions($('#deadline_time'));
 
-    for(const og of OTHER_GROUPS){
+    for(const og of otherGroupCategories){
         $('#associated_group_category').append($('<option>', {value: og.CategoryId, text: og.Name}));
     }
 
@@ -81,17 +82,19 @@ async function init(){
             $('#schedule_description').show();
         }
 
+        if(groupCategory.MaxUsersPerGroup > 1){
+            $('#associated_group_category__label').show();
+        }
+
         if('agc' in CFG){
-            $('#associated_group_category').val(CFG.agc).show();
+            $('#associated_group_category').val(CFG.agc);
             $('#associated_group_category_name').html(associatedGroupCategory.Name);
+            $('#autofill_group_registration__buton').click(function(){
+                autofillGroupRegistration(associatedGroups);
+            });
             $('#autofill_group_registration').show();
         }
 
-
-        // not supported by api
-        // $('#deadline_date').val(moment.utc(groupCategory.SelfEnrollmentExpiryDate, 'YYYY-MM-DDTHH:mm:ss.fffZ').tz(TIMEZONE).format('YYYY-MM-DD'));
-        // $('#deadline_time').val(moment.utc(groupCategory.SelfEnrollmentExpiryDate, 'YYYY-MM-DDTHH:mm:ss.fffZ').tz(TIMEZONE).format('HH:mm'));
-        
         await getExistingTimeSlots();
         let calendarEvent = await bs.get('/d2l/api/le/(version)/(orgUnitId)/calendar/event/' + existingTimeSlots[0].eventId);
         $('#event_title').val(calendarEvent.Title);
@@ -149,10 +152,8 @@ async function updateEventTitle(element){
 }
 
 async function getExistingTimeSlots(){
-
-    let groups = await getGroupsInCategory();
         
-    for(const group of groups){
+    for(const group of GROUPS){
         
         let data = group.Code.split('_');
 
@@ -1052,6 +1053,73 @@ function removeStudentsFromGroup(groupId, checkedStudents){
     }
 
     $('#timeslot_' + groupId).find('.timeslot-student-count').html(timeSlot.students.length);
+}
+
+async function autofillGroupRegistration(associatedGroups){
+    let promises = [];
+    let groupEnrolledStudents = [];
+    
+    for(group of GROUPS){
+        for(student of group.Enrollments){
+            groupEnrolledStudents[student] = group.GroupId;
+        }
+    };
+
+    for(group of associatedGroups){
+
+        studentsToEnroll = [];
+        studentsAlreadyEnrolled = [];
+        for(student of group.Enrollments){
+            if(groupEnrolledStudents[student]){
+                studentsAlreadyEnrolled.push(student);
+            } else {
+                studentsToEnroll.push(student);
+            }
+        }
+
+        if(studentsToEnroll.length > 0 && studentsAlreadyEnrolled.length > 0){
+            for(student of studentsToEnroll){
+                promises.push(enrollStudentInGroup(groupEnrolledStudents[studentsAlreadyEnrolled[0]], student));
+            }
+        }
+    }
+    
+    await Promise.all(promises);
+    
+    reloadAfterSave();
+}
+
+async function enrollStudentInGroup(groupId, userId){
+    bs.post('/d2l/api/lp/(version)/' + ORG_UNIT_ID + '/groupcategories/' + GROUP_CATEGORY_ID + '/groups/' + groupId + '/enrollments/');
+
+    let host = window.top.location.host;
+
+    //let calendarSubscription = await bs.get('/d2l/le/calendar/(orgUnitId)/subscribe/subscribeDialogLaunch?subscriptionOptionId=-1');
+    // let feedToken = calendarSubscription.match(/feed\.ics\?token\=([a-zA-Z0-9]+)/)[1];
+    // let feedUrl = 'webcal://' + host + '/d2l/le/calendar/feed/user/feed.ics?token=' + feedToken;
+    
+    let calendarUrl = 'https://' + host + '/d2l/le/calendar/' + ORG_UNIT_ID;
+    let topicUrl = 'https://' + host + '/d2l/le/content/' + ORG_UNIT_ID + '/viewContent/' + TOPIC_ID + '/View';
+
+    let pluginPath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf("/"));
+
+    let subject = 'Brightspace Scheduling: Your time slot is confirmed';
+
+    result = await fetch(pluginPath + '/resources/html/emailstudentenrolled.tpl');
+    body = await result.text();
+
+    body = body.replace(/\(courseName\)/g, COURSE.Name);
+    body = body.replace(/\(scheduleTitle\)/g, TITLE);
+    body = body.replace(/\(timeSlot\)/g, group.Name);
+    
+    //body = body.replace(/\(feedUrl\)/g, feedUrl);
+    
+    body = body.replace(/\(topicUrl\)/g, topicUrl);
+    body = body.replace(/\(calendarUrl\)/g, calendarUrl);
+
+    let studentEmail = CLASSLIST[userId].Email;
+    let email = sendEmail(studentEmail, subject, body);
+    await Promise.all([enroll, email]);
 }
 
 async function cancelTimeSlot(timeSlot){

@@ -292,11 +292,3 @@ function unenrollFromGroup(groupId){
     };
     return bs.submit('/d2l/lms/group/user_group_list.d2lfile?ou=(orgUnitId)&d2l_rh=rpc&d2l_rt=call', data);
 }
-
-function verifyMappedGroupEnrollment(group){
-    getGroup(group.GroupId).then(function(group){
-        if(group.Enrollments.lenght > 0){
-            
-        }
-    });
-}
