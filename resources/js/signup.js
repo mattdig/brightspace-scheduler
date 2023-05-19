@@ -12,23 +12,23 @@ let MAX_STUDENTS = 1;
 let CLASSLIST = getClassList('bas');
 let COURSE;
 let EXPIRED = false;
-let ASSOCIATED_GROUPS = (CFG.agc ? getGroupsInCategory(CFG.agc) : false);
-let REGISTRATION_TYPE = (CFG.rt ? CFG.rt : false);
-
+let REQUIRED_GROUP = false;
 
 $(function(){init();});
 
 async function init() {
 
+    let associated_groups = (CFG.agc !== undefined ? getGroupsInCategory(CFG.agc) : false);
     let myEnrollments = bs.get('/d2l/api/lp/(version)/enrollments/myenrollments/');
     let orgInfo = bs.get('/d2l/api/lp/(version)/organization/info');
-    const promises = await Promise.all([USER, CLASSLIST, myEnrollments, orgInfo, getGroupCategory(), getGroupsInCategory()]);
+    const promises = await Promise.all([USER, CLASSLIST, myEnrollments, orgInfo, getGroupCategory(), getGroupsInCategory(), associated_groups]);
     USER = promises[0];
     CLASSLIST = promises[1];
     myEnrollments = promises[2];
     orgInfo = promises[3];
     let groupCategory = promises[4];
     let groups = promises[5];
+    associated_groups = promises[6];
     
     let timeZone = orgInfo.TimeZone;
     moment.tz.setDefault(timeZone);
@@ -75,26 +75,8 @@ async function init() {
         }
         $('#my_selection').show();
     } else {
-
-        if(CFG.rt !== false && ASSOCIATED_GROUPS !== false){
-            if(CFG.rt == 1){
-
-                // find the associated group user is regisrered in
-                for(const ag of ASSOCIATED_GROUPS){
-                    if(ag.Enrollments.includes(USER.Identifier)){
-
-                        // find the timeslot group other members of the associated group are registered in
-                        for(const group of groups){
-                            for(const student of ag.Enrollments){
-                                if(group.Enrollments.includes(student)){
-                                    modalMessage('One of your group members has already registered for a time slot:<br />' + group.Name + 
-                                        '<br />You will be automatically registered for the same time slot.', null, selectTimeSlot(group));
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+        if(CFG.rt !== undefined && associated_groups !== false){
+            findRequiredGroup(groups, associated_groups);
         }
     }
 }
@@ -177,6 +159,33 @@ async function displayGroupsInCategory(groups){
 
 }
 
+function findRequiredGroup(groups, associated_groups){
+    if(CFG.rt == 1){
+
+        // find the associated group user is regisrered in
+        for(const ag of associated_groups){
+            if(ag.Enrollments.includes(USER.Identifier)){
+
+                // find the timeslot group other members of the associated group are registered in
+                for(const group of groups){
+                    for(const student of ag.Enrollments){
+                        if(group.Enrollments.includes(student)){
+
+                            REQUIRED_GROUP = group;
+
+                            // register the uesr in the same timeslot
+                            modalMessage('One of your group members has already registered for a time slot:<br />' + group.Name + 
+                                '<br />You will be automatically registered for the same time slot.', null, selectTimeSlot(group));
+
+                            return false;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 async function cancelMySelection(){
     if(MY_TIME === false){
         return false;
@@ -192,7 +201,7 @@ async function cancelMySelection(){
 }
 
 async function selectTimeSlot(group){
-    if(MY_TIME !== false){
+    if(MY_TIME !== false || EXPIRED || group.Enrollments.length >= MAX_STUDENTS || group.GroupId != REQUIRED_GROUP.GroupId){
         return false;
     }
 

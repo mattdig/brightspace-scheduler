@@ -15,8 +15,13 @@ async function isInstructor(){
     return isInstructor;
 }
 
-function getGroupCategory(){
-    let groupCategory = bs.get('/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + GROUP_CATEGORY_ID);
+function getGroupCategory(categoryId = false){
+
+    if(categoryId === false){
+        categoryId = GROUP_CATEGORY_ID;
+    }
+
+    let groupCategory = bs.get('/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + categoryId);
     return groupCategory;
 }
 

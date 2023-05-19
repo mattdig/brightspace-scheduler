@@ -22,10 +22,19 @@ $(function(){init();});
 
 async function init(){
 
-    const promises = await Promise.all([ORG_INFO, COURSE, OTHER_GROUPS]);
+    let associatedGroupCategory = false;
+    let associatedGroups = false;
+    if(CFG.agc !== undefined){
+        associatedGroupCategory = getGroupCategory(CFG.agc);
+        associatedGroups = getGroupsInCategory(CFG.agc);
+    }
+
+    const promises = await Promise.all([ORG_INFO, COURSE, OTHER_GROUPS, associatedGroupCategory, associatedGroups]);
     ORG_INFO = promises[0];
     COURSE = promises[1];
     OTHER_GROUPS = promises[2];
+    associatedGroupCategory = promises[3];
+    associatedGroups = promises[4];
     
     TIMEZONE = ORG_INFO.TimeZone;
 
@@ -74,6 +83,8 @@ async function init(){
 
         if('agc' in CFG){
             $('#associated_group_category').val(CFG.agc).show();
+            $('#associated_group_category_name').html(associatedGroupCategory.Name);
+            $('#autofill_group_registration').show();
         }
 
 
