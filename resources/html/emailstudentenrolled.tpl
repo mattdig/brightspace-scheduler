@@ -4,8 +4,7 @@
 <h2>(timeSlot)</h2>
 <p><a href="(topicUrl)">Review or manage your selection</a></p>
 <p><a href="(calendarUrl)">View your Brightspace calendar</a></p>
-<p>You can add your Brightspace calendar to your favourite calendar app with this URL:</p>
-<pre>(feedUrl)</pre>
+(feedUrl)
 <p>If you have any questions or concerns please contact your course instructor.<p>
 <p>&nbsp;</p>
 <hr />

@@ -226,7 +226,8 @@ async function selectTimeSlot(group){
 
     let calendarSubscription = await bs.get('/d2l/le/calendar/(orgUnitId)/subscribe/subscribeDialogLaunch?subscriptionOptionId=-1');
     let feedToken = calendarSubscription.match(/feed\.ics\?token\=([a-zA-Z0-9]+)/)[1];
-    let feedUrl = 'webcal://' + host + '/d2l/le/calendar/feed/user/feed.ics?token=' + feedToken;
+    let feedUrl = '<p>You can add your Brightspace calendar to your favourite calendar app with this URL:</p>' +
+                  '<pre>webcal://' + host + '/d2l/le/calendar/feed/user/feed.ics?token=' + feedToken + '</pre>';
     let calendarUrl = 'https://' + host + '/d2l/le/calendar/' + ORG_UNIT_ID;
     let topicUrl = 'https://' + host + '/d2l/le/content/' + ORG_UNIT_ID + '/viewContent/' + TOPIC_ID + '/View';
 
