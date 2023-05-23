@@ -55,7 +55,9 @@ tr:first-child th:last-child{
 .nav-tabs{font-weight: bold;}
 .tab-pane{padding: 10px 10px 0px 10px; margin-bottom: 1px solid #ccc;}
 .error{background-color: #ffbbbb;}
-#expiry_date,#existing_timeslots,#signup_schedule__form,#edit_timeblocks,#edit_schedule,#add_new_timeblocks,#schedule_description,#module_selection{display: none;}
+#expiry_date,#existing_timeslots,#signup_schedule__form,#edit_timeblocks,#edit_schedule,
+#add_new_timeblocks,#schedule_description,#module_selection,
+#autofill_group_registration,#associated_group_category__label{display: none;}
 #expiry_date{font-size: 22px; font-weight: bold;}
 #schedule_description{font-size:20px;}
 #existing_timeslots__table{width: 100%;font-size: 16px;margin-bottom: 20px;}
