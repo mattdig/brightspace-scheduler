@@ -1,10 +1,8 @@
 const params = new Proxy(new URLSearchParams(window.top.location.search), {get: (searchParams, prop) => searchParams.get(prop)});
 let CFG = params.cfg;
-if(CFG !== false){
-    CFG = JSON.parse(atob(CFG));
-}
-let GROUP_CATEGORY_ID = CFG.gc;
-let TOPIC_ID = CFG.t;
+
+let GROUP_CATEGORY_ID = null;
+let TOPIC_ID = null;
 let TITLE;
 let MY_TIME = false;
 let USER = whoAmI();
@@ -13,10 +11,19 @@ let CLASSLIST = getClassList('bas');
 let COURSE;
 let EXPIRED = false;
 let REQUIRED_GROUP = false;
-
+ 
 $(function(){init();});
 
 async function init() {
+    
+    try {
+        CFG = JSON.parse(atob(CFG));
+        GROUP_CATEGORY_ID = CFG.gc;
+        TOPIC_ID = CFG.t;        
+    } catch(e) {
+        console.log('Error parsing CFG: ' + e);
+        return false;
+    }
 
     let associated_groups = (CFG.agc !== undefined ? getGroupsInCategory(CFG.agc) : false);
     let myEnrollments = bs.get('/d2l/api/lp/(version)/enrollments/myenrollments/');
@@ -175,7 +182,7 @@ function findRequiredGroup(groups, associated_groups){
 
                             // register the uesr in the same timeslot
                             modalMessage('One of your group members has already registered for a time slot:<br />' + group.Name + 
-                                '<br />You will be automatically registered for the same time slot.', null, selectTimeSlot(group));
+                                '<br />You will be automatically registered for the same time slot.', null, function(){selectTimeSlot(group)});
 
                             return false;
                         }
@@ -201,7 +208,7 @@ async function cancelMySelection(){
 }
 
 async function selectTimeSlot(group){
-    if(MY_TIME !== false || EXPIRED || group.Enrollments.length >= MAX_STUDENTS || group.GroupId != REQUIRED_GROUP.GroupId){
+    if(MY_TIME !== false || EXPIRED || group.Enrollments.length >= MAX_STUDENTS || (REQUIRED_GROUP !== false && group.GroupId != REQUIRED_GROUP.GroupId)){
         return false;
     }
 

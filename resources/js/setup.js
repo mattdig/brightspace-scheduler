@@ -1,9 +1,10 @@
 const params = new Proxy(new URLSearchParams(window.top.location.search), {get: (searchParams, prop) => searchParams.get(prop)});
 let CFG = params.cfg;
-if(CFG !== false){
+let MODE = 'create';
+if(CFG !== null){
     CFG = JSON.parse(atob(CFG));
+    MODE = 'edit';
 }
-let MODE = (CFG !== false ? 'edit' : 'create');
 let GROUP_CATEGORY_ID = (MODE == 'edit' ? CFG.gc : null);
 let TOPIC_ID = 0;
 let SUBMITTING = false;
@@ -22,34 +23,24 @@ $(function(){init();});
 
 async function init(){
 
-    let associatedGroupCategory = false;
     let associatedGroups = false;
-    if('agc' in CFG){
-        associatedGroupCategory = getGroupCategory(CFG.agc);
+    if(MODE == 'edit' && 'agc' in CFG){
         associatedGroups = getGroupsInCategory(CFG.agc);
     }
 
-    const promises = await Promise.all([ORG_INFO, COURSE, GROUPS, bs.get('/d2l/api/lp/(version)/' + ORG_UNIT_ID + '/groupcategories/'), associatedGroupCategory, associatedGroups]);
+    const promises = await Promise.all([ORG_INFO, COURSE, GROUPS, bs.get('/d2l/api/lp/(version)/' + ORG_UNIT_ID + '/groupcategories/'), associatedGroups]);
     ORG_INFO = promises[0];
     COURSE = promises[1];
     GROUPS = promises[2];
     let otherGroupCategories = promises[3];
-    associatedGroupCategory = promises[4];
-    associatedGroups = promises[5];
+    associatedGroups = promises[4];
     
     TIMEZONE = ORG_INFO.TimeZone;
 
     moment.tz.setDefault(TIMEZONE);
 
-    // $('#timeslot_number').on('change', function(){
-    //     updateTotalTimeSlots();
-    // });
-
-    // not supported by api
-    //generateTimeOptions($('#deadline_time'));
-
     for(const og of otherGroupCategories){
-        $('#associated_group_category').append($('<option>', {value: og.CategoryId, text: og.Name}));
+        $('#associated_group_category').append($('<option>', {value: og.GroupCategoryId, text: og.Name}));
     }
 
     if(MODE == 'edit'){
@@ -60,8 +51,6 @@ async function init(){
 
         $('#form_title').html('Edit Signup Schedule');
 
-        // deadline not supported by api
-        // TODO: switch to fetching the HTML page for the form and parsing it
         let groupCategory = await getGroupCategory();
         TITLE = groupCategory.Name;
         $('#title').val(TITLE);
@@ -74,7 +63,6 @@ async function init(){
 
         $('#max_users__row').remove();
         $('#enddate__row').remove();
-        //$('#max_users').val(groupCategory.MaxUsersPerGroup);
 
         if(groupCategory.Description.Text != ''){
             $('#schedule_description').html(groupCategory.Description.Text.replace('\n','<br />'));
@@ -87,6 +75,14 @@ async function init(){
         }
 
         if('agc' in CFG){
+            let associatedGroupCategory = false;
+            for(const og of otherGroupCategories){
+                if(og.GroupCategoryId == CFG.agc){
+                    associatedGroupCategory = og;
+                    break;
+                }
+            }
+
             $('#associated_group_category').val(CFG.agc);
             $('#associated_group_category_name').html(associatedGroupCategory.Name);
             $('#autofill_group_registration__buton').click(function(){
@@ -124,15 +120,16 @@ async function init(){
     initializeDatetime(firstDateTime);
     firstDateTime.find('.btn-remove').on('click', removeDatetime);
 
-    // not supported by api
-    // $('#deadline_date').datetimepicker({
-    //     format: 'YYYY-MM-DD',
-    //     defaultDate: moment(),
-    //     maxDate: moment().clone().add(1, 'years')
-    // });
-
     $('#timeslot_duration').on('change', function(){
         updateTotalTimeSlots();
+    });
+
+    $('#max_users').on('change', function(){
+        if($('#max_users').val() > 1){
+            $('#associated_group_category__label').show();
+        } else {
+            $('#associated_group_category__label').hide();
+        }
     });
 
 }
@@ -930,7 +927,7 @@ async function createTopic(){
         configOptionsJSON.rt = 1;
     }
 
-    content = content.replace(/\(configOptionsJSON)/g, JSON.stringify(configOptionsJSON));
+    content = content.replace(/\(configOptionsJSON\)/g, JSON.stringify(configOptionsJSON));
     
     let topic = [
         {
@@ -1090,13 +1087,16 @@ async function autofillGroupRegistration(associatedGroups){
 }
 
 async function enrollStudentInGroup(groupId, userId){
-    bs.post('/d2l/api/lp/(version)/' + ORG_UNIT_ID + '/groupcategories/' + GROUP_CATEGORY_ID + '/groups/' + groupId + '/enrollments/');
+
+    //find group with groupId
+    let group = GROUPS.find(function( g ) {
+        return g.GroupId == groupId;
+    });
+
+    let user = {"UserId": userId};
+    let enroll = bs.post('/d2l/api/lp/(version)/' + ORG_UNIT_ID + '/groupcategories/' + GROUP_CATEGORY_ID + '/groups/' + groupId + '/enrollments/', user);
 
     let host = window.top.location.host;
-
-    //let calendarSubscription = await bs.get('/d2l/le/calendar/(orgUnitId)/subscribe/subscribeDialogLaunch?subscriptionOptionId=-1');
-    // let feedToken = calendarSubscription.match(/feed\.ics\?token\=([a-zA-Z0-9]+)/)[1];
-    // let feedUrl = 'webcal://' + host + '/d2l/le/calendar/feed/user/feed.ics?token=' + feedToken;
     
     let calendarUrl = 'https://' + host + '/d2l/le/calendar/' + ORG_UNIT_ID;
     let topicUrl = 'https://' + host + '/d2l/le/content/' + ORG_UNIT_ID + '/viewContent/' + TOPIC_ID + '/View';
@@ -1112,7 +1112,7 @@ async function enrollStudentInGroup(groupId, userId){
     body = body.replace(/\(scheduleTitle\)/g, TITLE);
     body = body.replace(/\(timeSlot\)/g, group.Name);
     
-    //body = body.replace(/\(feedUrl\)/g, feedUrl);
+    body = body.replace(/\(feedUrl\)/g, '');
     
     body = body.replace(/\(topicUrl\)/g, topicUrl);
     body = body.replace(/\(calendarUrl\)/g, calendarUrl);
