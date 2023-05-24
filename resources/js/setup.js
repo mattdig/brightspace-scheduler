@@ -803,15 +803,10 @@ async function updateGroupCategory(){
     let category = {
         "Name": title,
         "Description": {"Content": description, "Type":"Text"},
-        // "EnrollmentStyle": "PeoplePerNumberOfGroupsSelfEnrollment",
-        // "EnrollmentQuantity": null,
         "AutoEnroll": false,
         "RandomizeEnrollments": false,
-        // "NumberOfGroups": null,
         // "MaxUsersPerGroup": maxUsers,
-        // "AllocateAfterExpiry": false,
         // "SelfEnrollmentExpiryDate": null, //deadlineUTCDateTime, //<string:UTCDateTime>( yyyy-MM-ddTHH:mm:ss.fffZ )|null,
-        // "GroupPrefix": null,
         // "RestrictedByOrgUnitId": null,
         "DescriptionsVisibleToEnrolees": true
     };
