@@ -976,7 +976,7 @@ async function deleteTimeSlot(timeSlot, sendNotifications = true){
     await deleteGroup(timeSlot.groupId);
 
     // remove timeSlot from existingTimeSlots
-    existingTimeSlots = existingTimeSlots.filter(function( ets ) {
+    existingTimeSlots = existingTimeSlots.filter(function(ets) {
         return ets.groupId !== timeSlot.groupId;
     });
 }
@@ -1025,7 +1025,7 @@ function selectedStudentNames(checkedStudents){
 
 function removeStudentsFromGroup(groupId, checkedStudents){
     //find the timeslot
-    let timeSlot = existingTimeSlots.find(function( ets ) {
+    let timeSlot = existingTimeSlots.find(function(ets) {
         return ets.groupId == groupId;
     });
 
@@ -1035,8 +1035,8 @@ function removeStudentsFromGroup(groupId, checkedStudents){
         unenrollFromGroup(timeSlot, studentId);
         //$(this).closest('tr').remove();
         $('#student_' + studentId).remove();
-        timeSlot.students = timeSlot.students.filter(function( es ) {
-            return es != parseInt(studentId);
+        timeSlot.students = timeSlot.students.filter(function(id) {
+            return id != parseInt(studentId);
         });
     });
 
@@ -1084,7 +1084,7 @@ async function autofillGroupRegistration(associatedGroups){
 async function enrollStudentInGroup(groupId, userId){
 
     //find group with groupId
-    let group = GROUPS.find(function( g ) {
+    let group = GROUPS.find(function(g) {
         return g.GroupId == groupId;
     });
 
@@ -1149,11 +1149,11 @@ async function unenrollFromGroup(timeSlot, userId, sendNotifications = true){
     }
 
     //remove the student from group.Enrollment in GROUPS
-    let group = GROUPS.find(function( g ) {
+    let group = GROUPS.find(function(g) {
         return g.GroupId == timeSlot.groupId;
     });
-    group.Enrollments = group.Enrollments.filter(function( es ) {
-        return es != userId;
+    group.Enrollments = group.Enrollments.filter(function(id) {
+        return id != userId;
     });
 
     return bs.delete(url);
