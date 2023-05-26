@@ -1147,6 +1147,15 @@ async function unenrollFromGroup(timeSlot, userId, sendNotifications = true){
     if(sendNotifications){
         notifyOfCancellation(userId);
     }
+
+    //remove the student from group.Enrollment in GROUPS
+    let group = GROUPS.find(function( g ) {
+        return g.GroupId == timeSlot.groupId;
+    });
+    group.Enrollments = group.Enrollments.filter(function( es ) {
+        return es != userId;
+    });
+
     return bs.delete(url);
 }
 
