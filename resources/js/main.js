@@ -121,7 +121,7 @@ function modalInit(){
     return myModal;
 }
 
-function modalMessage(message, id = null, callback = null, title = null, okText = 'Okay', cancelText = null){
+function modalMessage(message, id = null, callback = null, title = null, okText = 'OK', cancelText = null){
     if(typeof(message) == 'object'){
         id = message.id;
         callback = message.callback;
@@ -158,6 +158,6 @@ function modalMessage(message, id = null, callback = null, title = null, okText 
     myModal.modal('show');
 }
 
-function modalConfirm(message, callback = null, title = null, okText = 'Okay', cancelText = 'Cancel'){
+function modalConfirm(message, callback = null, title = null, okText = 'OK', cancelText = 'Cancel'){
     modalMessage(message, null, callback, title, okText, cancelText);
 }
