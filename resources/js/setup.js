@@ -997,20 +997,49 @@ async function deleteTimeSlot(timeSlot, sendNotifications = true){
     });
 }
 
-async function manageEnrollment(groupId){
+async function manageEnrollment(action, groupId){
     let group = await getGroup(groupId);
     
-    let message = '<h3>Manage Registrations</h3>';
+    let message = '<h3>' + (action == 'add' ? 'Add' : 'Remove') + ' Registrations</h3>';
 
-    let studentTable = '<div><table class="d2l-table" id="student_table"><thead><tr><th onclick="clickSubInput(event)"><input type="checkbox" class="select_all" onclick="selectAll(this)"></th><th>Student</th></tr></thead><tbody>';
-    for(student of group.Enrollments){
-        studentTable += '<tr><td onclick="clickSubInput(event)"><input type="checkbox" class="select_row" id="select_student_'+student+'" value="' + student + '"></td><td><label for="select_student_'+student+'">' + CLASSLIST[student].DisplayName + '</label></td></tr>';
+    let studentTable = '<div><table class="d2l-table" id="student_table"><thead><tr>';
+    
+    let studentList = [];
+
+    if(action == 'add'){
+        studentList = CLASSLIST.filter(function(student) {
+            return !group.Enrollments.includes(student.Identifier);
+        });
+
+        studentTable += '<th>&nbsp;</th>';
+    } else {
+        for(student of group.Enrollments){
+            studentList.push(CLASSLIST[student]);
+        }
+
+        studentTable += '<th onclick="clickSubInput(event)"><input type="checkbox" class="select_all" onclick="selectAll(this)"></th>';
+    };
+    
+    studentTable += '<th>Student</th></tr></thead><tbody>';
+
+    studentList.Sort(dynamicSort("DisplayName"));
+
+    for(student of studentList){
+        studentTable += '<tr><td onclick="clickSubInput(event)"><input type="checkbox" class="select_row" id="select_student_'+student.Identifier+'" value="' + student.Identifier + '"></td><td><label for="select_student_'+student.Identifier+'">' + student.DisplayName + '</label></td></tr>';
     }
     studentTable += '</tbody></table></div>';
 
     message += studentTable;
 
-    message += '<p style="margin-top:20px;"><input type="button" class="btn btn-red" value="Remove Selected" onclick="let checked = $(\'#student_table\').find(\'.select_row:checked\').clone(); confirmRemoveStudentsFromGroup(' + groupId + ',checked);"></p>';
+    message += '<p style="margin-top:20px;">';
+    
+    if(action == 'add'){
+        message += '<input type="button" class="btn btn-primary" value="Add Selected" onclick="let checked = $(\'#student_table\').find(\'.select_row:checked\').clone(); addStudentsToGroup(' + groupId + ',checked);">';
+    } else {
+        message += '<input type="button" class="btn btn-red" value="Remove Selected" onclick="let checked = $(\'#student_table\').find(\'.select_row:checked\').clone(); confirmRemoveStudentsFromGroup(' + groupId + ',checked);">';
+    }
+    
+    message += '</p>';
 
     modalMessage(message);
 }
@@ -1039,17 +1068,19 @@ function selectedStudentNames(checkedStudents){
     return names;
 }
 
-function removeStudentsFromGroup(groupId, checkedStudents){
+async function removeStudentsFromGroup(groupId, checkedStudents){
+
     //find the timeslot
     let timeSlot = existingTimeSlots.find(function(ets) {
         return ets.groupId == groupId;
     });
 
+    let promises = [];
+
     //remove the students from the group
     checkedStudents.each(function(){
         let studentId = this.value;
-        unenrollFromGroup(timeSlot, studentId);
-        //$(this).closest('tr').remove();
+        promises.push(unenrollFromGroup(timeSlot, studentId));
         $('#student_' + studentId).remove();
         timeSlot.students = timeSlot.students.filter(function(id) {
             return id != parseInt(studentId);
@@ -1057,10 +1088,27 @@ function removeStudentsFromGroup(groupId, checkedStudents){
     });
 
     if(timeSlot.students.length == 0){
-        $('#timeslot_' + groupId).find('.manage-timeslot').remove();
+        $('#timeslot_' + groupId).find('.manage-timeslot').hide();
     }
 
     $('#timeslot_' + groupId).find('.timeslot-student-count').html(timeSlot.students.length);
+
+    await Promise.all(promises);
+
+}
+
+async function addStudentsToGroup(groupId, checkedStudents){
+
+    promises = [];
+
+    for(student of checkedStudents){
+        promises.push(enrollStudentInGroup(groupId, student.value));
+    }
+
+    await Promise.all(promises);
+
+    reloadAfterSave();
+
 }
 
 async function autofillGroupRegistration(associatedGroups){
@@ -1103,6 +1151,8 @@ async function enrollStudentInGroup(groupId, userId){
     let group = GROUPS.find(function(g) {
         return g.GroupId == groupId;
     });
+
+    group.Enrollments.push(userId);
 
     let user = {"UserId": userId};
     let enroll = bs.post('/d2l/api/lp/(version)/' + ORG_UNIT_ID + '/groupcategories/' + GROUP_CATEGORY_ID + '/groups/' + groupId + '/enrollments/', user);
