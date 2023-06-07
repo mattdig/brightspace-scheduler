@@ -28,12 +28,24 @@ async function init(){
         associatedGroups = getGroupsInCategory(CFG.agc);
     }
 
-    const promises = await Promise.all([ORG_INFO, COURSE, GROUPS, bs.get('/d2l/api/lp/(version)/' + ORG_UNIT_ID + '/groupcategories/'), associatedGroups]);
+    const promises = await Promise.all([
+        ORG_INFO,
+        COURSE,
+        GROUPS, 
+        bs.get('/d2l/api/lp/(version)/' + ORG_UNIT_ID + '/groupcategories/'), 
+        associatedGroups,
+        bs.get('/d2l/api/lp/(version)/enrollments/myenrollments/(orgUnitId)/access')
+    ]);
+
     ORG_INFO = promises[0];
     COURSE = promises[1];
     GROUPS = promises[2];
     let otherGroupCategories = promises[3];
     associatedGroups = promises[4];
+    let roles = promises[5];
+
+    // not universal for all institutions
+    let isTA = roles.Access.ClasslistRoleName.indexOf('Teaching Assistant') > -1;
     
     TIMEZONE = ORG_INFO.TimeZone;
 
@@ -63,6 +75,10 @@ async function init(){
 
         $('#max_users__row').remove();
         $('#enddate__row').remove();
+
+        if(isTA){
+            $('#delete_schedule').remove();
+        }
 
         if(groupCategory.Description.Text != ''){
             $('#schedule_description').html(groupCategory.Description.Text.replace('\n','<br />'));
