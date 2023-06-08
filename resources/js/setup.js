@@ -83,6 +83,7 @@ async function init(){
         $('#max_users__row').remove();
         $('#enddate__row').remove();
 
+        // tas can't delete the schedule, this can be removed if you want
         if(isTA){
             $('#delete_schedule').remove();
         }
@@ -1027,7 +1028,7 @@ async function manageEnrollment(action, groupId){
 
             // define roles in config file
             for(role of STUDENT_ROLES){
-                
+
                 if(student.ClasslistRoleDisplayName.indexOf(role) > -1){
                     isStudent = true;
 
