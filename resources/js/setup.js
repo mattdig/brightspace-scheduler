@@ -229,11 +229,14 @@ async function displayExistingTimeSlots(groupCategory){
         html += '<td class="timeslot-registration">' + students + '</td>';
         html += '<td class="timeslot_datetime">' + timeSlot.name + '</td>';
         html += '<td class="timeslot_actions">';
+
+        html += '<button class="btn btn-secondary btn-sm enrollStudents" data-id="' + timeSlot.groupId + '">Add Registrations</button>';
+        
         if(timeSlot.students.length > 0){
             if(groupCategory.MaxUsersPerGroup > 1)
-                html += '<button class="btn btn-secondary btn-sm manage-timeslot" data-id="' + timeSlot.groupId + '">Cancel Registrations...</button>';
+                html += '<button class="btn btn-secondary btn-sm unenrollStudents" data-id="' + timeSlot.groupId + '">Cancel Registrations</button>';
             else
-                html += '<button class="btn btn-secondary btn-sm manage-timeslot" data-id="' + timeSlot.groupId + '">Cancel Registration</button>';
+                html += '<button class="btn btn-secondary btn-sm unenrollStudents" data-id="' + timeSlot.groupId + '">Cancel Registration</button>';
         }
         html += '<button class="btn btn-red btn-sm delete-timeslot" data-id="' + timeSlot.groupId + '">Delete Time Slot</button></td>';
         html += '</td>';
@@ -242,9 +245,12 @@ async function displayExistingTimeSlots(groupCategory){
         $('#existing_timeslots__table').append(html);
         
         if(groupCategory.MaxUsersPerGroup > 1)
-            $('#existing_timeslots__table #timeslot_' + timeSlot.groupId).find('.manage-timeslot').on('click', function(){manageEnrollment(timeSlot.groupId)});
+            $('#existing_timeslots__table #timeslot_' + timeSlot.groupId).find('.enrollStudents').on('click', function(){manageEnrollment('add', timeSlot.groupId)});
+
+        if(groupCategory.MaxUsersPerGroup > 1)
+            $('#existing_timeslots__table #timeslot_' + timeSlot.groupId).find('.unenrollStudents').on('click', function(){manageEnrollment('remove', timeSlot.groupId)});
         else
-            $('#existing_timeslots__table #timeslot_' + timeSlot.groupId).find('.manage-timeslot').on('click', function(){
+            $('#existing_timeslots__table #timeslot_' + timeSlot.groupId).find('.unenrollStudents').on('click', function(){
                 modalConfirm(
                     'Are you sure you cancel this registration?<br />The student will be removed and they will be able to select a different time.',
                     function(){cancelTimeSlot(timeSlot);}
@@ -997,20 +1003,63 @@ async function deleteTimeSlot(timeSlot, sendNotifications = true){
     });
 }
 
-async function manageEnrollment(groupId){
-    let group = await getGroup(groupId);
+async function manageEnrollment(action, groupId){
     
-    let message = '<h3>Manage Registrations</h3>';
+    let message = '<h3>' + (action == 'add' ? 'Add' : 'Remove') + ' Registrations</h3>';
 
-    let studentTable = '<div><table class="d2l-table" id="student_table"><thead><tr><th onclick="clickSubInput(event)"><input type="checkbox" class="select_all" onclick="selectAll(this)"></th><th>Student</th></tr></thead><tbody>';
-    for(student of group.Enrollments){
-        studentTable += '<tr><td onclick="clickSubInput(event)"><input type="checkbox" class="select_row" id="select_student_'+student+'" value="' + student + '"></td><td><label for="select_student_'+student+'">' + CLASSLIST[student].DisplayName + '</label></td></tr>';
+    let studentTable = '<div><table class="d2l-table" id="student_table"><thead><tr>';
+    
+    let studentList = [];
+
+    if(action == 'add'){
+        studentList = CLASSLIST.filter(function(student) {
+
+            let isStudent = (student.ClasslistRoleDisplayName.indexOf('Learner') > -1 || student.ClasslistRoleDisplayName.indexOf('Student') > -1);
+            let inGroup = false;
+
+            if(isStudent){
+                for(g of GROUPS){
+                    if(g.Enrollments.includes(student.Identifier)){
+                        inGroup = true;
+                        break;
+                    }
+                }
+            }
+
+            return isStudent && !inGroup;
+        });
+
+        studentTable += '<th>&nbsp;</th>';
+    } else {
+        let group = await getGroup(groupId);
+
+        for(student of group.Enrollments){
+            studentList.push(CLASSLIST[student]);
+        }
+
+        studentTable += '<th onclick="clickSubInput(event)"><input type="checkbox" class="select_all" onclick="selectAll(this)"></th>';
+    };
+    
+    studentTable += '<th>Student</th></tr></thead><tbody>';
+
+    studentList.sort(dynamicSort("DisplayName"));
+
+    for(student of studentList){
+        studentTable += '<tr><td onclick="clickSubInput(event)"><input type="checkbox" class="select_row" id="select_student_'+student.Identifier+'" value="' + student.Identifier + '"></td><td><label for="select_student_'+student.Identifier+'">' + student.DisplayName + '</label></td></tr>';
     }
     studentTable += '</tbody></table></div>';
 
     message += studentTable;
 
-    message += '<p style="margin-top:20px;"><input type="button" class="btn btn-red" value="Remove Selected" onclick="let checked = $(\'#student_table\').find(\'.select_row:checked\').clone(); confirmRemoveStudentsFromGroup(' + groupId + ',checked);"></p>';
+    message += '<p style="margin-top:20px;">';
+    
+    if(action == 'add'){
+        message += '<input type="button" class="btn btn-primary" value="Add Selected" onclick="let checked = $(\'#student_table\').find(\'.select_row:checked\').clone(); addStudentsToGroup(' + groupId + ',checked);">';
+    } else {
+        message += '<input type="button" class="btn btn-red" value="Remove Selected" onclick="let checked = $(\'#student_table\').find(\'.select_row:checked\').clone(); confirmRemoveStudentsFromGroup(' + groupId + ',checked);">';
+    }
+    
+    message += '</p>';
 
     modalMessage(message);
 }
@@ -1039,17 +1088,19 @@ function selectedStudentNames(checkedStudents){
     return names;
 }
 
-function removeStudentsFromGroup(groupId, checkedStudents){
+async function removeStudentsFromGroup(groupId, checkedStudents){
+
     //find the timeslot
     let timeSlot = existingTimeSlots.find(function(ets) {
         return ets.groupId == groupId;
     });
 
+    let promises = [];
+
     //remove the students from the group
     checkedStudents.each(function(){
         let studentId = this.value;
-        unenrollFromGroup(timeSlot, studentId);
-        //$(this).closest('tr').remove();
+        promises.push(unenrollFromGroup(timeSlot, studentId));
         $('#student_' + studentId).remove();
         timeSlot.students = timeSlot.students.filter(function(id) {
             return id != parseInt(studentId);
@@ -1057,10 +1108,27 @@ function removeStudentsFromGroup(groupId, checkedStudents){
     });
 
     if(timeSlot.students.length == 0){
-        $('#timeslot_' + groupId).find('.manage-timeslot').remove();
+        $('#timeslot_' + groupId).find('.manage-timeslot').hide();
     }
 
     $('#timeslot_' + groupId).find('.timeslot-student-count').html(timeSlot.students.length);
+
+    await Promise.all(promises);
+
+}
+
+async function addStudentsToGroup(groupId, checkedStudents){
+
+    promises = [];
+
+    for(student of checkedStudents){
+        promises.push(enrollStudentInGroup(groupId, student.value));
+    }
+
+    await Promise.all(promises);
+
+    reloadAfterSave();
+
 }
 
 async function autofillGroupRegistration(associatedGroups){
@@ -1103,6 +1171,8 @@ async function enrollStudentInGroup(groupId, userId){
     let group = GROUPS.find(function(g) {
         return g.GroupId == groupId;
     });
+
+    group.Enrollments.push(userId);
 
     let user = {"UserId": userId};
     let enroll = bs.post('/d2l/api/lp/(version)/' + ORG_UNIT_ID + '/groupcategories/' + GROUP_CATEGORY_ID + '/groups/' + groupId + '/enrollments/', user);
