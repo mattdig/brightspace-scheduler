@@ -230,8 +230,7 @@ async function displayExistingTimeSlots(groupCategory){
         html += '<td class="timeslot_datetime">' + timeSlot.name + '</td>';
         html += '<td class="timeslot_actions">';
 
-        if(groupCategory.MaxUsersPerGroup > 1)
-            html += '<button class="btn btn-secondary btn-sm enrollStudents" data-id="' + timeSlot.groupId + '">Add Registrations</button>';
+        html += '<button class="btn btn-secondary btn-sm enrollStudents" data-id="' + timeSlot.groupId + '">Add Registrations</button>';
         
         if(timeSlot.students.length > 0){
             if(groupCategory.MaxUsersPerGroup > 1)
