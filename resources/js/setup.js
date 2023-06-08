@@ -42,10 +42,17 @@ async function init(){
     GROUPS = promises[2];
     let otherGroupCategories = promises[3];
     associatedGroups = promises[4];
-    let roles = promises[5];
+    let access = promises[5];
 
-    // not universal for all institutions
-    let isTA = roles.Access.ClasslistRoleName.indexOf('Teaching Assistant') > -1;
+    let isTA = false;
+
+    // define roles in config file
+    for(role of TEACHING_ASSISTANT_ROLES){
+        if(access.Access.ClasslistRoleName.indexOf(role) > -1){
+            isTA = true;
+            break;
+        }
+    }
     
     TIMEZONE = ORG_INFO.TimeZone;
 
@@ -1014,7 +1021,16 @@ async function manageEnrollment(action, groupId){
     if(action == 'add'){
         studentList = CLASSLIST.filter(function(student) {
 
-            let isStudent = (student.ClasslistRoleDisplayName.indexOf('Learner') > -1 || student.ClasslistRoleDisplayName.indexOf('Student') > -1);
+            let isStudent = false;
+
+            // define roles in config file
+            for(role of STUDENT_ROLES){
+                if(student.ClasslistRoleDisplayName.indexOf(role) > -1){
+                    isStudent = true;
+                    break;
+                }
+            }
+
             let inGroup = false;
 
             if(isStudent){
