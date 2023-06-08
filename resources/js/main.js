@@ -49,10 +49,14 @@ async function getClassList(product = 'le'){
     }
 
     for(student of response){
-        if(student.Identifier !== undefined)
+        if(student.Identifier !== undefined){
+            student.Identifier = parseInt(student.Identifier);
             classList[student.Identifier] = student;
-        else
+        }
+        else{
+            student.UserId = parseInt(student.UserId);
             classList[student.UserId] = student;
+        }
     }
     return classList;
 }

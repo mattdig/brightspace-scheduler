@@ -229,11 +229,15 @@ async function displayExistingTimeSlots(groupCategory){
         html += '<td class="timeslot-registration">' + students + '</td>';
         html += '<td class="timeslot_datetime">' + timeSlot.name + '</td>';
         html += '<td class="timeslot_actions">';
+
+        if(groupCategory.MaxUsersPerGroup > 1)
+            html += '<button class="btn btn-secondary btn-sm enrollStudents" data-id="' + timeSlot.groupId + '">Add Registrations</button>';
+        
         if(timeSlot.students.length > 0){
             if(groupCategory.MaxUsersPerGroup > 1)
-                html += '<button class="btn btn-secondary btn-sm manage-timeslot" data-id="' + timeSlot.groupId + '">Cancel Registrations...</button>';
+                html += '<button class="btn btn-secondary btn-sm unenrollStudents" data-id="' + timeSlot.groupId + '">Cancel Registrations</button>';
             else
-                html += '<button class="btn btn-secondary btn-sm manage-timeslot" data-id="' + timeSlot.groupId + '">Cancel Registration</button>';
+                html += '<button class="btn btn-secondary btn-sm unenrollStudents" data-id="' + timeSlot.groupId + '">Cancel Registration</button>';
         }
         html += '<button class="btn btn-red btn-sm delete-timeslot" data-id="' + timeSlot.groupId + '">Delete Time Slot</button></td>';
         html += '</td>';
@@ -242,9 +246,12 @@ async function displayExistingTimeSlots(groupCategory){
         $('#existing_timeslots__table').append(html);
         
         if(groupCategory.MaxUsersPerGroup > 1)
-            $('#existing_timeslots__table #timeslot_' + timeSlot.groupId).find('.manage-timeslot').on('click', function(){manageEnrollment(timeSlot.groupId)});
+            $('#existing_timeslots__table #timeslot_' + timeSlot.groupId).find('.enrollStudents').on('click', function(){manageEnrollment('add', timeSlot.groupId)});
+
+        if(groupCategory.MaxUsersPerGroup > 1)
+            $('#existing_timeslots__table #timeslot_' + timeSlot.groupId).find('.unenrollStudents').on('click', function(){manageEnrollment('remove', timeSlot.groupId)});
         else
-            $('#existing_timeslots__table #timeslot_' + timeSlot.groupId).find('.manage-timeslot').on('click', function(){
+            $('#existing_timeslots__table #timeslot_' + timeSlot.groupId).find('.unenrollStudents').on('click', function(){
                 modalConfirm(
                     'Are you sure you cancel this registration?<br />The student will be removed and they will be able to select a different time.',
                     function(){cancelTimeSlot(timeSlot);}
@@ -998,7 +1005,6 @@ async function deleteTimeSlot(timeSlot, sendNotifications = true){
 }
 
 async function manageEnrollment(action, groupId){
-    let group = await getGroup(groupId);
     
     let message = '<h3>' + (action == 'add' ? 'Add' : 'Remove') + ' Registrations</h3>';
 
@@ -1008,11 +1014,26 @@ async function manageEnrollment(action, groupId){
 
     if(action == 'add'){
         studentList = CLASSLIST.filter(function(student) {
-            return !group.Enrollments.includes(student.Identifier);
+
+            let isStudent = (student.ClasslistRoleDisplayName.indexOf('Learner') > -1 || student.ClasslistRoleDisplayName.indexOf('Student') > -1);
+            let inGroup = false;
+
+            if(isStudent){
+                for(g of GROUPS){
+                    if(g.Enrollments.includes(student.Identifier)){
+                        inGroup = true;
+                        break;
+                    }
+                }
+            }
+
+            return isStudent && !inGroup;
         });
 
         studentTable += '<th>&nbsp;</th>';
     } else {
+        let group = await getGroup(groupId);
+
         for(student of group.Enrollments){
             studentList.push(CLASSLIST[student]);
         }
@@ -1022,7 +1043,7 @@ async function manageEnrollment(action, groupId){
     
     studentTable += '<th>Student</th></tr></thead><tbody>';
 
-    studentList.Sort(dynamicSort("DisplayName"));
+    studentList.sort(dynamicSort("DisplayName"));
 
     for(student of studentList){
         studentTable += '<tr><td onclick="clickSubInput(event)"><input type="checkbox" class="select_row" id="select_student_'+student.Identifier+'" value="' + student.Identifier + '"></td><td><label for="select_student_'+student.Identifier+'">' + student.DisplayName + '</label></td></tr>';
