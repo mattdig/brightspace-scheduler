@@ -1023,22 +1023,22 @@ async function manageEnrollment(action, groupId){
 
             let isStudent = false;
 
-            // define roles in config file
-            for(role of STUDENT_ROLES){
-                if(student.ClasslistRoleDisplayName.indexOf(role) > -1){
-                    isStudent = true;
-                    break;
-                }
-            }
-
             let inGroup = false;
 
-            if(isStudent){
-                for(g of GROUPS){
-                    if(g.Enrollments.includes(student.Identifier)){
-                        inGroup = true;
-                        break;
+            // define roles in config file
+            for(role of STUDENT_ROLES){
+                
+                if(student.ClasslistRoleDisplayName.indexOf(role) > -1){
+                    isStudent = true;
+
+                    for(g of GROUPS){
+                        if(g.Enrollments.includes(student.Identifier)){
+                            inGroup = true;
+                            break;
+                        }
                     }
+
+                    break;
                 }
             }
 
