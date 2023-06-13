@@ -254,7 +254,7 @@ async function displayExistingTimeSlots(groupCategory){
             $('#existing_timeslots__table #timeslot_' + group.GroupId).find('.unenrollStudents').on('click', function(){
                 modalConfirm(
                     'Are you sure you cancel this registration?<br />The student will be removed and they will be able to select a different time.',
-                    function(){cancelTimeSlot(timeSlot);}
+                    function(){cancelSingleEnrollment(group);}
                 );
             });
         
@@ -747,17 +747,17 @@ function cancelSubmit(){
     return false;
 }
 
-async function createGroupAndEvent(timeSlot, group){
+async function createGroupAndEvent(newGroup, targetGroup){
     
-    if(!group){
-        group = await createGroup(timeSlot);
+    if(!targetGroup){
+        targetGroup = await createGroup(newGroup);
     }
     
-    let newEvent = await createCalendarEvent(group);
+    let newEvent = await createCalendarEvent(targetGroup);
     
-    group.EventId = newEvent.CalendarEventId;
+    targetGroup.EventId = newEvent.CalendarEventId;
     
-    return await updateGroup(group);
+    return await updateGroup(targetGroup);
     
 }
 
@@ -860,7 +860,7 @@ async function updateGroup(group){
     
 }
 
-function createCalendarEvent(timeSlot){
+function createCalendarEvent(group){
 
     let event_title = $('#event_title').val().trim();
     if(event_title == ''){
@@ -892,7 +892,7 @@ function createCalendarEvent(timeSlot){
    
 }
 
-async function updateCalendarEvent(timeSlot){
+async function updateCalendarEvent(group){
     let event_title = $('#event_title').val().trim();
     if(event_title == ''){
         event_title = $('#title').val().trim();
@@ -986,19 +986,19 @@ async function updateTopic(){
 
 }
 
-async function deleteTimeSlot(timeSlot, sendNotifications = true){
+async function deleteTimeSlot(group, sendNotifications = true){
     $('#timeslot_' + group.GroupId).remove();
     let promises = [];
     promises.push(deleteCalendarEvent(group.EventId));
     for(student of group.Enrollments){
-        promises.push(unenrollFromGroup(timeSlot, student, sendNotifications));
+        promises.push(unenrollFromGroup(group, student, sendNotifications));
     }
     await Promise.all(promises);
     await deleteGroup(group.GroupId);
 
-    // remove timeSlot from existingTimeSlots
-    existingTimeSlots = existingTimeSlots.filter(function(ets) {
-        return ets.groupId !== group.GroupId;
+    // remove group from GROUPS
+    GROUPS = GROUPS.filter(function(g) {
+        return g.GroupId !== group.GroupId;
     });
 }
 
@@ -1098,9 +1098,9 @@ function selectedStudentNames(checkedStudents){
 
 async function removeStudentsFromGroup(groupId, checkedStudents){
 
-    //find the timeslot
-    let timeSlot = existingTimeSlots.find(function(ets) {
-        return ets.groupId == groupId;
+    //find the group
+    let group = GROUPS.find(function(g) {
+        return g.groupId == groupId;
     });
 
     let promises = [];
@@ -1108,7 +1108,7 @@ async function removeStudentsFromGroup(groupId, checkedStudents){
     //remove the students from the group
     checkedStudents.each(function(){
         let studentId = this.value;
-        promises.push(unenrollFromGroup(timeSlot, studentId));
+        promises.push(unenrollFromGroup(group, studentId));
         $('#student_' + studentId).remove();
         group.Enrollments = group.Enrollments.filter(function(id) {
             return id != parseInt(studentId);
@@ -1211,11 +1211,12 @@ async function enrollStudentInGroup(groupId, userId){
     await Promise.all([enroll, email]);
 }
 
-async function cancelTimeSlot(timeSlot){
+async function cancelSingleEnrollment(group){
     $('#timeslot_' + group.GroupId + ' .timeslot-registration').html('&nbsp;-&nbsp;');
     $('#timeslot_' + group.GroupId).find('.manage-timeslot').remove();
-    let result = await unenrollFromGroup(timeSlot, group.Enrollments[0]);
-    group.Enrollments = [];
+    
+    let result = await unenrollFromGroup(group, group.Enrollments[0]);
+
     return result;
 }
 
@@ -1236,16 +1237,12 @@ async function notifyOfCancellation(userId){
     let email = sendEmail(studentEmail, subject, body);
 }
 
-async function unenrollFromGroup(timeSlot, userId, sendNotifications = true){
+async function unenrollFromGroup(group, userId, sendNotifications = true){
     let url = '/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + GROUP_CATEGORY_ID + '/groups/' + group.GroupId + '/enrollments/' + userId;
     if(sendNotifications){
         notifyOfCancellation(userId);
     }
 
-    //remove the student from group.Enrollment in GROUPS
-    let group = GROUPS.find(function(g) {
-        return g.GroupId == group.GroupId;
-    });
     group.Enrollments = group.Enrollments.filter(function(id) {
         return id != userId;
     });
