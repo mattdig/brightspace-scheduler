@@ -706,10 +706,8 @@ async function submitForm(){
 
         if(GROUP_CATEGORY_ID != null){
 
-            let groupsInCategory = null;
-
             if(MODE == 'create'){
-                groupsInCategory = await getGroupsInCategory();
+                GROUPS = await getGroupsInCategory();
             } else {
 
                 promiseArray = [];
@@ -725,9 +723,9 @@ async function submitForm(){
 
             for(const [index,newGroup] of newGroups.entries()){
 
-                let group = (MODE == 'create' ? groupsInCategory[index] : false);
+                let targetGroup = (MODE == 'create' ? GROUPS[index] : false);
                 
-                promiseArray.push(createGroupAndEvent(newGroup, group));
+                promiseArray.push(createGroupAndEvent(newGroup, targetGroup));
 
             };
 
