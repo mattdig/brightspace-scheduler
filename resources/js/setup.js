@@ -48,7 +48,7 @@ async function init(){
 
     // define roles in config file
     for(role of TEACHING_ASSISTANT_ROLES){
-        if(access.Access.ClasslistRoleName.indexOf(role) > -1){
+        if(access.Access.ClasslistRoleName.toLowerCase().indexOf(role) > -1){
             isTA = true;
             break;
         }
@@ -1029,7 +1029,7 @@ async function manageEnrollment(action, groupId){
             // define roles in config file
             for(role of STUDENT_ROLES){
 
-                if(student.ClasslistRoleDisplayName.indexOf(role) > -1){
+                if(student.ClasslistRoleDisplayName.toLowerCase().indexOf(role) > -1){
                     isStudent = true;
 
                     for(g of GROUPS){
