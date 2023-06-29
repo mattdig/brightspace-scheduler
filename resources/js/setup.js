@@ -381,12 +381,12 @@ function initializeDatetime(datetimeElem){
         let minTime = momentFromTime('00:00');
         let maxTime = latestTime.clone().add(1, 'hours');
 
-        generateTimeOptions($(datetimeElem).find('.starttime_input'), latestTime, minTime, maxTime, interval);
+        generateTimeOptions($(datetimeElem).find('.starttime_input'), latestTime, 0, 0, interval);
 
         minTime = latestTime.clone().add(30, 'minutes');
         maxTime = momentFromTime('23:59');
 
-        generateTimeOptions($(datetimeElem).find('.endtime_input'), latestTime.clone().add(1, 'hours'), minTime, maxTime, interval);
+        generateTimeOptions($(datetimeElem).find('.endtime_input'), latestTime.clone().add(1, 'hours'), 0, 0, interval);
     }
 
     $(datetimeElem).find('.starttime_input').on('change', function(){
@@ -394,7 +394,7 @@ function initializeDatetime(datetimeElem){
         let time = momentFromTime(object.val());
         let startTime = momentFromTime($(this).val()).add(interval, 'minutes');
         let endTime = momentFromTime('23:59');
-        generateTimeOptions(object, time, startTime, endTime, interval);
+        generateTimeOptions(object, time, 0, 0, interval);
         validateTimeFields(false);
     });
 
@@ -403,7 +403,7 @@ function initializeDatetime(datetimeElem){
         let time = momentFromTime(object.val());
         let startTime = momentFromTime('00:00');
         let endTime = momentFromTime($(this).val());
-        generateTimeOptions(object, time, startTime, endTime, interval);
+        generateTimeOptions(object, time, 0, 0, interval);
         validateTimeFields(false);
     });
 
