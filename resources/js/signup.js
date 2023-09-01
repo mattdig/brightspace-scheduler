@@ -47,6 +47,10 @@ async function init() {
         }
     }
 
+    if(CFG.notifyInstructor === undefined){
+        CFG.notifyInstructor = false;
+    }
+
     TITLE = groupCategory.Name;
     $('#schedule_title').html(TITLE);
 
@@ -201,6 +205,7 @@ async function cancelMySelection(){
     $('#cancel-selection').remove();
     let unenroll = unenrollFromGroup(MY_TIME.groupId);
     let sendEmail = notifyOfCancellation();
+
     await Promise.all([unenroll, sendEmail]);
     MY_TIME = false;
 
@@ -280,6 +285,17 @@ async function notifyOfCancellation(){
     classList = await classList;
     
     let studentEmail = classList[USER.Identifier].Email;
+
+    if(CFG.notifyInstructor){
+        for(person of classList){
+            if(hasRole(person.ClasslistRoleDisplayName, INSTRUCTOR_ROLES)){
+                let instructorEmail = person.Email;
+                let email = sendEmail(instructorEmail, subject, body);
+                await email;
+            }
+        }
+    }
+        
     let subject = 'Brightspace Scheduling: Your time slot was cancelled';
     let topicUrl = 'https://' + window.top.location.host + '/d2l/le/content/' + ORG_UNIT_ID + '/viewContent/' + TOPIC_ID + '/View';
     

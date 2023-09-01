@@ -15,6 +15,16 @@ async function isInstructor(){
     return isInstructor;
 }
 
+function hasRole(existingRole, rolesArray){
+    for(role of rolesArray){
+        if(existingRole.toLowerCase().indexOf(role) > -1){
+            return true;
+        }
+    }
+
+    return false;
+}
+
 function getGroupCategory(categoryId = false){
 
     if(categoryId === false){
