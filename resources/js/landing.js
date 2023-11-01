@@ -15,7 +15,13 @@ async function isInstructor(){
 }
 
 async function redirect(){
-    let config = JSON.parse(CONFIG);
+    let config = {};
+    if(typeof(CONFIG) !== 'undefined'){
+        config = JSON.parse(CONFIG);
+    } else {
+        config.gc = GROUP_CATEGORY_ID;
+    }
+    
     config.t = TOPIC_ID;
     config = btoa(JSON.stringify(config));
 
