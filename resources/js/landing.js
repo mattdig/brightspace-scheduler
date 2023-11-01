@@ -5,16 +5,20 @@ let TOPIC_ID = match[2];
 
 const bs = new Brightspace(ORG_UNIT_ID);
 
-async function isInstructor(){
+async function isStudent(){
     let myEnrollment = await bs.get('/d2l/api/lp/(version)/enrollments/myenrollments/(orgUnitId)/access');
-    let isInstructor = myEnrollment.Access.LISRoles.some(element => {
-        let isLeanrer = (element.indexOf('Learner') > -1 || element.indexOf('Student') > -1);
-        return !isLeanrer;
-    });
-    return isInstructor;
+    for(LISRole of myEnrollment.Access.LISRoles){
+        for(role of IMS_STUDENT_ROLES){
+            if(LISRole.indexOf(role) > -1){
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 async function redirect(){
+    let student = isStudent();
     let config = {};
     if(typeof(CONFIG) !== 'undefined'){
         config = JSON.parse(CONFIG);
@@ -25,7 +29,7 @@ async function redirect(){
     config.t = TOPIC_ID;
     config = btoa(JSON.stringify(config));
 
-    let redirect = '/d2l/lp/navbars/' + ORG_UNIT_ID + '/customlinks/external/' + ((await isInstructor()) ? adminLinkId : signupLinkId) + '?cfg=' + config;
+    let redirect = '/d2l/lp/navbars/' + ORG_UNIT_ID + '/customlinks/external/' + ((await student) ? signupLinkId : adminLinkId) + '?cfg=' + config;
     window.top.location.replace(redirect);
 }
 

@@ -14,6 +14,7 @@ let TITLE;
 let ORG_INFO = bs.get('/d2l/api/lp/(version)/organization/info');
 let COURSE = bs.get('/d2l/api/lp/(version)/courses/' + ORG_UNIT_ID);
 let GROUPS = (MODE == 'edit' ? getGroupsInCategory() : null);
+let USER = whoAmI();
 
 let timeBlocks = [];
 let existingTimeSlots = [];
@@ -34,7 +35,7 @@ async function init(){
         GROUPS, 
         bs.get('/d2l/api/lp/(version)/' + ORG_UNIT_ID + '/groupcategories/'), 
         associatedGroups,
-        bs.get('/d2l/api/lp/(version)/enrollments/myenrollments/(orgUnitId)/access')
+        USER
     ]);
 
     ORG_INFO = promises[0];
@@ -42,16 +43,14 @@ async function init(){
     GROUPS = promises[2];
     let otherGroupCategories = promises[3];
     associatedGroups = promises[4];
-    let access = promises[5];
+    USER = promises[5];
 
     let isTA = false;
+    let myEnrollment = await bs.get('/d2l/api/lp/(version)/enrollments/orgUnits/' + ORG_UNIT_ID + '/users/' + USER.Identifier);
 
-    // define roles in config file
-    for(role of TEACHING_ASSISTANT_ROLES){
-        if(access.Access.ClasslistRoleName.toLowerCase().indexOf(role) > -1){
-            isTA = true;
-            break;
-        }
+    // Uses IMS defined roles
+    if('Errors' in myEnrollment || TEACHING_ASSISTANT_ROLE_IDS.includes(myEnrollment.RoleId)){
+        isTA = true;
     }
     
     TIMEZONE = ORG_INFO.TimeZone;
@@ -1027,19 +1026,14 @@ async function manageEnrollment(action, groupId){
             let inGroup = false;
 
             // define roles in config file
-            for(role of STUDENT_ROLES){
+            if(STUDENT_ROLE_IDS.includes(student.RoleId)){
+                isStudent = true;
 
-                if(student.ClasslistRoleDisplayName.toLowerCase().indexOf(role) > -1){
-                    isStudent = true;
-
-                    for(g of GROUPS){
-                        if(g.Enrollments.includes(student.Identifier)){
-                            inGroup = true;
-                            break;
-                        }
+                for(g of GROUPS){
+                    if(g.Enrollments.includes(student.Identifier)){
+                        inGroup = true;
+                        break;
                     }
-
-                    break;
                 }
             }
 

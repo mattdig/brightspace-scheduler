@@ -8,11 +8,15 @@ async function whoAmI(){
 
 async function isInstructor(){
     let myEnrollment = await bs.get('/d2l/api/lp/(version)/enrollments/myenrollments/(orgUnitId)/access');
-    let isInstructor = myEnrollment.Access.LISRoles.some(element => {
-        let isLeanrer = (element.indexOf('Learner') > -1 || element.indexOf('Student') > -1);
-        return !isLeanrer;
-    });
-    return isInstructor;
+    for(LISRole of myEnrollment.Access.LISRoles){
+        // uses IMS defined roles, not the role names from the system
+        for(role of IMS_INSTRUCTOR_ROLES){
+            if(element.indexOf(role) > -1){
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 function getGroupCategory(categoryId = false){
