@@ -22,8 +22,10 @@ let ORG_UNIT_ID = match[1];
             <div class="row" id="existing_timeslots">
                 <div class="col-xs-12">
                     <h1 id="schedule_title"></h1>
+                    <p id="expiry_date"></p>
                     <p id="schedule_description"></p>
                     <h2 id="existing_timeslots__heading">Available Time Slots</h2>
+                    <p id="autofill_group_registration"><button id="autofill_group_registration__buton" type="button" class="button">Populate timeslot registrations based on "<span id="associated_group_category_name"></span>"</button></p>
                     <table class="d2l-table" id="existing_timeslots__table">
                     </table>
                 </div>
@@ -62,25 +64,6 @@ let ORG_UNIT_ID = match[1];
                         </div>
                     </div>
                 </div>
-                <!--div class="row" id="deadline__div">
-                    <div class="col-xs-12 col-sm-offset-2 col-sm-8">                        
-                        <div>
-                            <h2>Signup Deadline</h2>
-                        </div>
-                    </div>
-                    <div class="col col-sm-offset-2 col-sm-4">
-                        <label for="date_1" class="date_label">
-                            <p>Date</p>
-                            <input type="text" name="deadline_date" id="deadline_date" class="form-control date_input" />
-                        </label>
-                    </div>
-                    <div class="col col-sm-2">
-                        <label for="starttime_1" class="starttime_label">
-                            <p>Time</p>
-                            <select name="deadline_time" id="deadline_time" class="form-control time_input"></select>
-                        </label>
-                    </div>
-                </div-->
                 <div id="edit_timeblocks">
                     <div class="row">
                         <div class="col-xs-12">
@@ -122,8 +105,8 @@ let ORG_UNIT_ID = match[1];
                     </div>
                     <div class="row">
                         <div class="col-xs-12">
-                            <h2>Set the duration of each time slot</h2>
                             <label for="timeslot_duration">
+                                <h2>Set the duration of each time slot</h2>
                                 <p>The length of each time slot in minutes</p>
                                 <p><input type="text" name="timeslot_duration" id="timeslot_duration" class="form-control" value="30" /></p>
                             </label>
@@ -133,10 +116,27 @@ let ORG_UNIT_ID = match[1];
                 </div>
                 <div class="row" id="max_users__row">
                     <div class="col-xs-12">
-                        <h2>Set the number of students per time slot (group size)</h2>
                         <label for="max_users">
+                            <h2>Set the number of students per time slot (group size)</h2>
                             <p>Maximum number of students per time slot</p>
                             <p><input type="number" name="max_users" id="max_users" class="form-control" value="1" /></p>
+                        </label>
+                        <label for="associated_group_category" id="associated_group_category__label">
+                            <h2>Join time slot groups to existing groups (optional)</h2>
+                            <p>If one member of a group picks a time slot, all the other members of that group must pick the same time slot</p>
+                            <p><select name="associated_group_category" id="associated_group_category" class="form-control">
+                                <option value="">Unrestricted</option>
+                            </select></p>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="row" id="enddate__row">
+                    <div class="col-xs-12">
+                        <label for="schedule_enddate">
+                            <h2>Set signup end-date</h2>
+                            <p>Last day for signup: (optional) </p>
+                            <p><input type="text" name="schedule_enddate" id="schedule_enddate" class="form-control date_input" /></p>
                         </label>
                     </div>
                 </div>
@@ -162,6 +162,7 @@ let ORG_UNIT_ID = match[1];
             </div>
 		</main>
 	</div>
+<script type="text/javascript" src="resources/js/config.js"></script>
 <script type="text/javascript" src="resources/js/main.js"></script>
 <script type="text/javascript" src="resources/js/setup.js"></script>
 </body>

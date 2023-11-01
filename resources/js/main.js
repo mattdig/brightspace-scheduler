@@ -8,20 +8,34 @@ async function whoAmI(){
 
 async function isInstructor(){
     let myEnrollment = await bs.get('/d2l/api/lp/(version)/enrollments/myenrollments/(orgUnitId)/access');
-    let isInstructor = myEnrollment.Access.LISRoles.some(element => {
-        let isLeanrer = (element.indexOf('Learner') > -1 || element.indexOf('Student') > -1);
-        return !isLeanrer;
-    });
-    return isInstructor;
+    for(LISRole of myEnrollment.Access.LISRoles){
+        // uses IMS defined roles, not the role names from the system
+        for(role of IMS_INSTRUCTOR_ROLES){
+            if(element.indexOf(role) > -1){
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
-function getGroupCategory(categoryId){
-    let groupCategory = bs.get('/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + GROUP_CATEGORY_ID);
+function getGroupCategory(categoryId = false){
+
+    if(categoryId === false){
+        categoryId = GROUP_CATEGORY_ID;
+    }
+
+    let groupCategory = bs.get('/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + categoryId);
     return groupCategory;
 }
 
-function getGroupsInCategory(){
-    let groups = bs.get('/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + GROUP_CATEGORY_ID + '/groups/');
+function getGroupsInCategory(categoryId = false){
+
+    if(categoryId === false){
+        categoryId = GROUP_CATEGORY_ID;
+    }
+
+    let groups = bs.get('/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + categoryId + '/groups/');
     return groups;
 }
 
@@ -39,10 +53,14 @@ async function getClassList(product = 'le'){
     }
 
     for(student of response){
-        if(student.Identifier !== undefined)
+        if(student.Identifier !== undefined){
+            student.Identifier = parseInt(student.Identifier);
             classList[student.Identifier] = student;
-        else
+        }
+        else{
+            student.UserId = parseInt(student.UserId);
             classList[student.UserId] = student;
+        }
     }
     return classList;
 }
@@ -98,7 +116,7 @@ function selectAll(obj){
 }
 
 function modalInit(){
-    let newModal = '<div class="modal modal-dialog-scrollable fade" id="messageModal" tabindex="-1" role="dialog" aria-labelledby="messageModalCenterTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered" role="document"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button></div><div class="modal-body"></div><div class="modal-footer"><button type="button" id="modalOk" class="btn btn-primary" data-dismiss="modal">Okay</button> <button id="modalCancel" type="button" class="btn btn-secondary btn-close" data-dismiss="modal">Cancel</button></div></div></div></div>';
+    let newModal = '<div class="modal modal-dialog-scrollable fade" id="messageModal" tabindex="-1" role="dialog" aria-labelledby="messageModalCenterTitle" aria-hidden="true"><div class="modal-dialog modal-dialog-centered" role="document"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button></div><div class="modal-body"></div><div class="modal-footer"><button type="button" id="modalOk" class="btn btn-primary" data-dismiss="modal">OK</button> <button id="modalCancel" type="button" class="btn btn-secondary btn-close" data-dismiss="modal">Cancel</button></div></div></div></div>';
     $('body').append(newModal);
     let myModal = $('#messageModal');
     myModal.on('shown.bs.modal', function () {
@@ -111,7 +129,7 @@ function modalInit(){
     return myModal;
 }
 
-function modalMessage(message, id = null, callback = null, title = null, okText = 'Okay', cancelText = null){
+function modalMessage(message, id = null, callback = null, title = null, okText = 'OK', cancelText = null){
     if(typeof(message) == 'object'){
         id = message.id;
         callback = message.callback;
@@ -148,6 +166,35 @@ function modalMessage(message, id = null, callback = null, title = null, okText 
     myModal.modal('show');
 }
 
-function modalConfirm(message, callback = null, title = null, okText = 'Okay', cancelText = 'Cancel'){
+function modalConfirm(message, callback = null, title = null, okText = 'OK', cancelText = 'Cancel'){
     modalMessage(message, null, callback, title, okText, cancelText);
+}
+
+function dynamicSortMultiple() {
+    var props=[];
+    /*Let's separate property name from ascendant or descendant keyword*/
+    for(var i=0; i < arguments.length; i++){
+        var splittedArg=arguments[i].split(/ +/);
+        props[props.length]=[splittedArg[0], (splittedArg[1] ? splittedArg[1].toUpperCase() : "ASC")];
+    }
+    return function (obj1, obj2) {
+        var i = 0, result = 0, numberOfProperties = props.length ;
+        /*Cycle on values until find a difference!*/
+        while(result === 0 && i < numberOfProperties) {
+            result = dynamicSort(props[i][0], props[i][1])(obj1, obj2);
+            i++;
+        }
+        return result;
+    }
+}
+
+/*Base function returning -1,1,0 for custom sorting*/
+function dynamicSort(property, isAscDesc) { 
+    return function (obj1,obj2) {
+        if(isAscDesc==="DESC"){
+            return ((obj1[property] > obj2[property]) ? (-1) : ((obj1[property] < obj2[property]) ? (1) : (0)));
+        }
+        /*else, if isAscDesc==="ASC"*/
+        return ((obj1[property] > obj2[property]) ? (1) : ((obj1[property] < obj2[property]) ? (-1) : (0)));
+    }
 }

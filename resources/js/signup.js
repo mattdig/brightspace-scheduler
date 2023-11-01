@@ -1,24 +1,44 @@
 const params = new Proxy(new URLSearchParams(window.top.location.search), {get: (searchParams, prop) => searchParams.get(prop)});
-let GROUP_CATEGORY_ID = params.gc;
-let TOPIC_ID = params.t;
+let CFG = params.cfg;
+
+let GROUP_CATEGORY_ID = null;
+let TOPIC_ID = null;
 let TITLE;
 let MY_TIME = false;
 let USER = whoAmI();
 let MAX_STUDENTS = 1;
 let CLASSLIST = getClassList('bas');
 let COURSE;
-
-
+let EXPIRED = false;
+let REQUIRED_GROUP = false;
+ 
 $(function(){init();});
 
 async function init() {
+    
+    try {
+        CFG = JSON.parse(atob(CFG));
+        GROUP_CATEGORY_ID = CFG.gc;
+        TOPIC_ID = CFG.t;        
+    } catch(e) {
+        console.log('Error parsing CFG: ' + e);
+        return false;
+    }
 
+    let associated_groups = (CFG.agc !== undefined ? getGroupsInCategory(CFG.agc) : false);
     let myEnrollments = bs.get('/d2l/api/lp/(version)/enrollments/myenrollments/');
-    const promises = await Promise.all([USER, CLASSLIST, myEnrollments, getGroupCategory(GROUP_CATEGORY_ID)]);
+    let orgInfo = bs.get('/d2l/api/lp/(version)/organization/info');
+    const promises = await Promise.all([USER, CLASSLIST, myEnrollments, orgInfo, getGroupCategory(), getGroupsInCategory(), associated_groups]);
     USER = promises[0];
     CLASSLIST = promises[1];
     myEnrollments = promises[2];
-    let groupCategory = promises[3];
+    orgInfo = promises[3];
+    let groupCategory = promises[4];
+    let groups = promises[5];
+    associated_groups = promises[6];
+    
+    let timeZone = orgInfo.TimeZone;
+    moment.tz.setDefault(timeZone);
 
     for(item of myEnrollments.Items){
         if(item.OrgUnit.Type.Id == 3 && item.OrgUnit.Id == ORG_UNIT_ID){
@@ -30,29 +50,48 @@ async function init() {
     TITLE = groupCategory.Name;
     $('#schedule_title').html(TITLE);
 
+    if(groupCategory.SelfEnrollmentExpiryDate != null){
+        $('#expiry_date').html("Last day to sign up: " + moment.utc(groupCategory.SelfEnrollmentExpiryDate, 'YYYY-MM-DDTHH:mm:ss.fffZ').subtract(1, 'days').tz(timeZone).format('MMM Do, YYYY'));
+        $('#expiry_date').show();
+    }
+
     if(groupCategory.Description.Text != ''){
         $('#schedule_description').html(groupCategory.Description.Text.replace('\n', '<br />'));
+        $('#schedule_description').show();
+    } else if(groupCategory.Description.Html != '') {
+        $('#schedule_description').html(groupCategory.Description.Html);
         $('#schedule_description').show();
     }
     MAX_STUDENTS = groupCategory.MaxUsersPerGroup;
     
-    let groups = await getGroupsInCategory();
+    if(moment() > moment.utc(groupCategory.SelfEnrollmentExpiryDate, 'YYYY-MM-DDTHH:mm:ss.fffZ')){
+        EXPIRED = true;
+    }
+
     let availableGroups = await displayGroupsInCategory(groups);
 
     if(MY_TIME !== false){
-        $('#my_selection__content').html('<h3>' + MY_TIME.name + '</h3>' + '<p><button class="btn btn-secondary btn-sm cancel-timeslot" id="cancel-selection">Cancel my selection</button></p>');
-        $('#cancel-selection').on('click', function(){
-            modalConfirm('Are you sure you cancel this registration?<br />You will lose this time slot and you will need to select a new one.',
-                cancelMySelection);
-        });
+        $('#my_selection__content').html('<h3>' + MY_TIME.name + '</h3>');
+        
+        if(!EXPIRED){
+            $('#my_selection__content').append('<p><button class="btn btn-secondary btn-sm cancel-timeslot" id="cancel-selection">Cancel my selection</button></p>');
+            $('#cancel-selection').on('click', function(){
+                modalConfirm('Are you sure you cancel this registration?<br />You will lose this time slot and you will need to select a new one.',
+                    cancelMySelection);
+            });
+        }
         $('#my_selection').show();
+    } else {
+        if(CFG.rt !== undefined && associated_groups !== false){
+            findRequiredGroup(groups, associated_groups);
+        }
     }
 }
 
 async function displayGroupsInCategory(groups){
     
     let availableGroups = 0;
-    let html = '<tr>' + (MAX_STUDENTS > 1 ? '<th>Enrollment</th>' : '') + '<th>Date & Time</th><th class="student_timeslot_actions">Actions</th></tr>';
+    let html = '<tr>' + (MAX_STUDENTS > 1 ? '<th>Enrollment</th>' : '') + '<th>Date & Time</th>' + (EXPIRED ? '' : '<th class="student_timeslot_actions">Actions</th>') + '</tr>';
 
     $('#existing_timeslots__table').html(html);
 
@@ -79,9 +118,11 @@ async function displayGroupsInCategory(groups){
                 html += '</td>';
             }
             html += '<td class="timeslot_datetime">' + group.Name + '</td>';
-            html += '<td class="timeslot_actions student_timeslot_actions">';
-            html += '<button class="btn btn-secondary btn-sm select-timeslot" data-id="' + group.GroupId + '">Select this time</button>';
-            html += '</td>';
+            if(!EXPIRED){
+                html += '<td class="timeslot_actions student_timeslot_actions">';
+                html += '<button class="btn btn-secondary btn-sm select-timeslot" data-id="' + group.GroupId + '">Select this time</button>';
+                html += '</td>';
+            }
             html += '</tr>';
 
             $('#existing_timeslots__table').append(html);
@@ -108,7 +149,9 @@ async function displayGroupsInCategory(groups){
         $('.student_timeslot_actions').remove();
     }
     
-    if(availableGroups == 0){
+    if(EXPIRED){
+        $('#existing_timeslots__heading').html('Sign up is now closed.').after('<p>If you still need to sign up, please contact your instructor.</p>');
+    } else if(availableGroups == 0){
         $('#existing_timeslots__heading').html('No additional time slots are available');
         $('#existing_timeslots__table').remove();
     } else if(MY_TIME !== false){
@@ -121,6 +164,33 @@ async function displayGroupsInCategory(groups){
 
     return availableGroups;
 
+}
+
+function findRequiredGroup(groups, associated_groups){
+    if(CFG.rt == 1){
+
+        // find the associated group user is regisrered in
+        for(const ag of associated_groups){
+            if(ag.Enrollments.includes(USER.Identifier)){
+
+                // find the timeslot group other members of the associated group are registered in
+                for(const group of groups){
+                    for(const student of ag.Enrollments){
+                        if(group.Enrollments.includes(student)){
+
+                            REQUIRED_GROUP = group;
+
+                            // register the uesr in the same timeslot
+                            modalMessage('One of your group members has already registered for a time slot:<br />' + group.Name + 
+                                '<br />You will be automatically registered for the same time slot.', null, function(){selectTimeSlot(group)});
+
+                            return false;
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 async function cancelMySelection(){
@@ -138,7 +208,7 @@ async function cancelMySelection(){
 }
 
 async function selectTimeSlot(group){
-    if(MY_TIME !== false){
+    if(MY_TIME !== false || EXPIRED || group.Enrollments.length >= MAX_STUDENTS || (REQUIRED_GROUP !== false && group.GroupId != REQUIRED_GROUP.GroupId)){
         return false;
     }
 
@@ -163,7 +233,8 @@ async function selectTimeSlot(group){
 
     let calendarSubscription = await bs.get('/d2l/le/calendar/(orgUnitId)/subscribe/subscribeDialogLaunch?subscriptionOptionId=-1');
     let feedToken = calendarSubscription.match(/feed\.ics\?token\=([a-zA-Z0-9]+)/)[1];
-    let feedUrl = 'webcal://' + host + '/d2l/le/calendar/feed/user/feed.ics?token=' + feedToken;
+    let feedUrl = '<p>You can add your Brightspace calendar to your favourite calendar app with this URL:</p>' +
+                  '<pre>webcal://' + host + '/d2l/le/calendar/feed/user/feed.ics?token=' + feedToken + '</pre>';
     let calendarUrl = 'https://' + host + '/d2l/le/calendar/' + ORG_UNIT_ID;
     let topicUrl = 'https://' + host + '/d2l/le/content/' + ORG_UNIT_ID + '/viewContent/' + TOPIC_ID + '/View';
 
