@@ -43,3 +43,5 @@ Access the course as an instructor to create a new schedule for the students.
 
 TODO:
 - Email enrollment updates to instructor(s)
+- Remove time selection restrictions (all times are available to select)
+- Add recurring events (eg. every Monday & Wednesday at 1 - 3 pm)
