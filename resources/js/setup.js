@@ -178,7 +178,7 @@ async function getExistingTimeSlots(){
     
     for(i in GROUPS){
         
-        let data = group.Code.split('_');
+        let data = GROUPS[i].Code.split('_');
 
         let startTime = moment.utc(data[0], 'YYYYMMDDHHmm').tz(TIMEZONE);
         let endTime = moment.utc(data[1], 'YYYYMMDDHHmm').tz(TIMEZONE);
