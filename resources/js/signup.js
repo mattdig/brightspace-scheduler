@@ -36,6 +36,11 @@ async function init() {
     let groupCategory = promises[4];
     let groups = promises[5];
     associated_groups = promises[6];
+
+    // run through the groups and remove unenrolled students
+    for(i in groups){
+        groups[i].Enrollments = groups[i].Enrollments.filter(userId => userId in CLASSLIST);
+    }
     
     let timeZone = orgInfo.TimeZone;
     moment.tz.setDefault(timeZone);

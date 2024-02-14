@@ -114,6 +114,9 @@ async function init(){
             $('#autofill_group_registration').show();
         }
 
+        // wait for the classlist to load
+        CLASSLIST = await CLASSLIST;
+
         await getExistingTimeSlots();
         let calendarEvent = await bs.get('/d2l/api/le/(version)/(orgUnitId)/calendar/event/' + existingTimeSlots[0].eventId);
         $('#event_title').val(calendarEvent.Title);
@@ -172,8 +175,8 @@ async function updateEventTitle(element){
 }
 
 async function getExistingTimeSlots(){
-        
-    for(const group of GROUPS){
+    
+    for(i in GROUPS){
         
         let data = group.Code.split('_');
 
@@ -181,14 +184,17 @@ async function getExistingTimeSlots(){
         let endTime = moment.utc(data[1], 'YYYYMMDDHHmm').tz(TIMEZONE);
 
         let localDateTimeFormat = startTime.format('MMM[&nbsp;]Do[&nbsp;]YYYY, h:mm[&nbsp;]A') + '&nbsp;-&nbsp;' + endTime.format('h:mm[&nbsp;]A');
+
+        // Brightspace includes unenrolled students in the groups, so they need to be filtered out
+        GROUPS[i].Enrollments = GROUPS[i].Enrollments.filter(userId => userId in CLASSLIST);
         
         let timeslot = {
             start: startTime,
             end: endTime,
             name: localDateTimeFormat,
-            groupId: group.GroupId,
+            groupId: GROUPS[i].GroupId,
             eventId: data[2],
-            students: group.Enrollments
+            students: GROUPS[i].Enrollments
         };
 
         existingTimeSlots.push(timeslot);
@@ -208,8 +214,6 @@ async function displayExistingTimeSlots(groupCategory){
     let html = '<tr><th>Registration</th><th>Date & Time</th><th>Actions</th></tr>';
 
     $('#existing_timeslots__table').html(html);
-
-    CLASSLIST = await CLASSLIST;
 
     existingTimeSlots.forEach(timeSlot => {
         
