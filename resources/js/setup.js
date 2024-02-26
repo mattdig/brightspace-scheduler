@@ -255,10 +255,9 @@ async function displayExistingTimeSlots(groupCategory){
 
         $('#existing_timeslots__table').append(html);
         
-        if(groupCategory.MaxUsersPerGroup > 1)
-            $('#existing_timeslots__table #timeslot_' + timeSlot.groupId).find('.enrollStudents').on('click', function(){manageEnrollment('add', timeSlot.groupId)});
+        $('#existing_timeslots__table #timeslot_' + timeSlot.groupId).find('.enrollStudents').on('click', function(){manageEnrollment('add', timeSlot.groupId)});
 
-        if(groupCategory.MaxUsersPerGroup > 1)
+        if(timeSlot.students.length < 2)
             $('#existing_timeslots__table #timeslot_' + timeSlot.groupId).find('.unenrollStudents').on('click', function(){manageEnrollment('remove', timeSlot.groupId)});
         else
             $('#existing_timeslots__table #timeslot_' + timeSlot.groupId).find('.unenrollStudents').on('click', function(){
@@ -1015,7 +1014,6 @@ async function deleteTimeSlot(timeSlot, sendNotifications = true){
 }
 
 async function manageEnrollment(action, groupId){
-    
     let message = '<h3>' + (action == 'add' ? 'Add' : 'Remove') + ' Registrations</h3>';
 
     let studentTable = '<div><table class="d2l-table" id="student_table"><thead><tr>';
@@ -1034,7 +1032,7 @@ async function manageEnrollment(action, groupId){
                 isStudent = true;
 
                 for(g of GROUPS){
-                    if(g.Enrollments.includes(student.Identifier)){
+                    if(g.Enrollments.length > 0 && g.Enrollments.includes(student.Identifier)){
                         inGroup = true;
                         break;
                     }
