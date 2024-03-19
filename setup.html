@@ -24,6 +24,8 @@ let ORG_UNIT_ID = match[1];
                     <h1 id="schedule_title"></h1>
                     <p id="expiry_date"></p>
                     <p id="schedule_description"></p>
+                    <p><input type="button" class="btn btn-primary btn-sm" value="Export Schedule for Grading" onclick="downloadSchedule()" />
+                    Delete the first 4 columns from the CSV file before Importing to the Gradebook.</p>
                     <h2 id="existing_timeslots__heading">Available Time Slots</h2>
                     <p id="autofill_group_registration"><button id="autofill_group_registration__buton" type="button" class="button">Populate timeslot registrations based on "<span id="associated_group_category_name"></span>"</button></p>
                     <table class="d2l-table" id="existing_timeslots__table">

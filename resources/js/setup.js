@@ -1303,6 +1303,26 @@ async function deleteSchedule(){
     window.top.location.href = '/d2l/le/content/' + ORG_UNIT_ID + '/Home';
 }
 
+function downloadSchedule(){
+
+    let filename = 'schedule-grades.csv';
+    let lines = ['Last Name,First Name,Email,Time Slot,OrgDefinedId,"' + TITLE + ' Points Grade",End-of-Line Indicator'];
+
+    for(group of GROUPS){
+        for(student of group.Enrollments){
+            let line = [];
+            line.push(CLASSLIST[student].LastName, CLASSLIST[student].FirstName, CLASSLIST[student].Email, '"' + group.Name + '"', CLASSLIST[student].OrgDefinedId, '','#');
+            lines.push(line.join(','));
+        }
+    }
+
+    if(lines.length > 1){
+        let csv = lines.join('\n');
+
+        download(filename, 'text/csv', csv);
+    }
+}
+
 function momentFromTime(time){
 
     let defaultDate = '2020-01-01 ';

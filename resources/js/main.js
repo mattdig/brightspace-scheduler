@@ -170,6 +170,18 @@ function modalConfirm(message, callback = null, title = null, okText = 'OK', can
     modalMessage(message, null, callback, title, okText, cancelText);
 }
 
+function download(filename, mime, text) {
+    
+    let blob = new Blob([text], { type: mime });
+    let a = window.document.createElement('a');
+    a.href = window.URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    
+}
+
 function dynamicSortMultiple() {
     var props=[];
     /*Let's separate property name from ascendant or descendant keyword*/
