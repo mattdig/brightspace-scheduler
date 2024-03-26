@@ -215,8 +215,14 @@ async function displayExistingTimeSlots(groupCategory){
 
     $('#existing_timeslots__table').html(html);
 
+    let hasRegistrations = false;
+
     existingTimeSlots.forEach(timeSlot => {
         
+        if(!hasRegistrations && timeSlot.students.length > 0){
+            hasRegistrations = true;
+        }
+
         let students = '';
 
         if(groupCategory.MaxUsersPerGroup > 0){
@@ -275,6 +281,10 @@ async function displayExistingTimeSlots(groupCategory){
             );
         });
     });
+
+    if(!hasRegistrations){
+        $('#download_schedule').hide();
+    }
     
     $('#existing_timeslots').show();
     $('#timeslot_duration').val(duration);
@@ -1005,12 +1015,18 @@ async function deleteTimeSlot(timeSlot, sendNotifications = true){
         promises.push(unenrollFromGroup(timeSlot, student, sendNotifications));
     }
     await Promise.all(promises);
-    await deleteGroup(timeSlot.groupId);
+    let deleted = await deleteGroup(timeSlot.groupId);
 
     // remove timeSlot from existingTimeSlots
     existingTimeSlots = existingTimeSlots.filter(function(ets) {
         return ets.groupId !== timeSlot.groupId;
     });
+
+    if(sendNotifications){
+        reloadAfterSave();
+    } else {
+        return deleted;
+    }
 }
 
 async function manageEnrollment(action, groupId){
@@ -1128,6 +1144,8 @@ async function removeStudentsFromGroup(groupId, checkedStudents){
 
     await Promise.all(promises);
 
+    reloadAfterSave();
+
 }
 
 async function addStudentsToGroup(groupId, checkedStudents){
@@ -1219,9 +1237,10 @@ async function enrollStudentInGroup(groupId, userId){
 async function cancelTimeSlot(timeSlot){
     $('#timeslot_' + timeSlot.groupId + ' .timeslot-registration').html('&nbsp;-&nbsp;');
     $('#timeslot_' + timeSlot.groupId).find('.manage-timeslot').remove();
-    let result = await unenrollFromGroup(timeSlot, timeSlot.students[0]);
+    await unenrollFromGroup(timeSlot, timeSlot.students[0]);
     timeSlot.students = [];
-    return result;
+    
+    reloadAfterSave();
 }
 
 async function notifyOfCancellation(userId){
