@@ -263,7 +263,7 @@ async function displayExistingTimeSlots(groupCategory){
         
         $('#existing_timeslots__table #timeslot_' + timeSlot.groupId).find('.enrollStudents').on('click', function(){manageEnrollment('add', timeSlot.groupId)});
 
-        if(timeSlot.students.length < 2)
+        if(timeSlot.students.length > 1)
             $('#existing_timeslots__table #timeslot_' + timeSlot.groupId).find('.unenrollStudents').on('click', function(){manageEnrollment('remove', timeSlot.groupId)});
         else
             $('#existing_timeslots__table #timeslot_' + timeSlot.groupId).find('.unenrollStudents').on('click', function(){
