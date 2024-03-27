@@ -35,7 +35,7 @@ Get the new link's ID:
 - Look at the URL for "customlink/edit/{ID_NUMBER}"
 - This ID must be set as the value for signupLinkId in config.js
 
-Save the config.js file with the new link IDs, and upload it to Plugins/Scheduler/resources/js/
+Save the config.js file with the new link IDs. Add the numeric IDs for any Student, Teaching Assistant, and Instructor roles to the config.js file. Upload config.js to Plugins/Scheduler/resources/js/
 
 Add the first link, "Scheduler" to a navbar in a course (or all courses).
 
