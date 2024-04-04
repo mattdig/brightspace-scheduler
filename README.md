@@ -25,7 +25,7 @@ Get the new link's ID:
 
 Second Link:
 - Name: Scheduler Signup (only used by the scheduler, never shown in a navbar)
-- URL: https://{YOUR_BRIGHTSPACE_DOMAIN}/shared/Plugins/Scheduler/setup.html
+- URL: https://{YOUR_BRIGHTSPACE_DOMAIN}/shared/Plugins/Scheduler/signup.html
 - Behaviour: Same window
 - Availability: Share with child org units
 - Save
