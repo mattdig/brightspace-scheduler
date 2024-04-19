@@ -1063,12 +1063,13 @@ async function manageEnrollment(action, groupId){
         let group = await getGroup(groupId);
 
         for(student of group.Enrollments){
-            studentList.push(CLASSLIST[student]);
+            if(CLASSLIST[student] != undefined)
+                studentList.push(CLASSLIST[student]);
         }
 
         studentTable += '<th onclick="clickSubInput(event)"><input type="checkbox" class="select_all" onclick="selectAll(this)"></th>';
-    };
-    
+    }
+
     studentTable += '<th>Student</th></tr></thead><tbody>';
 
     studentList.sort(dynamicSort("DisplayName"));
