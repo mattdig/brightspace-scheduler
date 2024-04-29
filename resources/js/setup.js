@@ -384,44 +384,17 @@ function initializeDatetime(datetimeElem){
         validateTimeFields(false);
     });
 
-    
-    
 
     if(initializeTimes){
         latestTime = momentFromTime(latestTime.format('HH:mm'));
     
         let minTime = momentFromTime('00:00');
-        let maxTime = latestTime.clone().add(1, 'hours');
+        maxTime = momentFromTime('23:59');
 
         generateTimeOptions($(datetimeElem).find('.starttime_input'), latestTime, minTime, maxTime, interval);
 
-        minTime = latestTime.clone().add(30, 'minutes');
-        maxTime = momentFromTime('23:59');
-
         generateTimeOptions($(datetimeElem).find('.endtime_input'), latestTime.clone().add(1, 'hours'), minTime, maxTime, interval);
     }
-
-    $(datetimeElem).find('.starttime_input').on('change', function(){
-        let object = $(datetimeElem).find('.endtime_input')
-        let time = momentFromTime(object.val());
-        let startTime = momentFromTime($(this).val()).add(interval, 'minutes');
-        let endTime = momentFromTime('23:59');
-        generateTimeOptions(object, time, startTime, endTime, interval);
-        validateTimeFields(false);
-    });
-
-    $(datetimeElem).find('.endtime_input').on('change', function(){
-        let object = $(datetimeElem).find('.starttime_input')
-        let time = momentFromTime(object.val());
-        let startTime = momentFromTime('00:00');
-        let endTime = momentFromTime($(this).val());
-        generateTimeOptions(object, time, startTime, endTime, interval);
-        validateTimeFields(false);
-    });
-
-    // minTime = latestTime.clone().add(30, 'minutes');
-    // maxTime = moment([0, 0, 0, 23, 30, 0, 0]);
-
     
     validateTimeFields(false);
 
@@ -545,20 +518,58 @@ function validateTimeFields(withErrors){
 
     let datetimes = [];
     
-    let latestTime = moment();
-
-    //let selectedTab = $('.tab-pane.active').find('label').attr('for');
-    //let blockValue = parseInt($('#' + selectedTab).val());
-
     if($('#edit_timeblocks').is(':visible')){
         $('.datetime__div').each(function(){
-            let datetime = {};
+
             let format = "YYYY-MM-DD HH:mm";
-            let date = $(this).find('.date_input').val() + " ";
-            datetime.id = $(this).attr('id');
-            datetime.start = moment(date + $(this).find('.starttime_input').val(), format);
-            datetime.end = moment(date + $(this).find('.endtime_input').val(), format);
-            datetimes.push(datetime);
+
+            if($(this).find('.timeblock_type__recurring:checked')){
+                let startdate = $(this).find('.startdate_input').val();
+                let enddate = $(this).find('.enddate_input').val();
+
+                if(enddate < startdate){
+                    if(withErrors){
+                        modalMessage('End date must be after start date.', $(this).find('.date_input'));
+                    }
+                    return false;
+                } else if (moment(enddate).diff(moment(startdate), 'days') > 365){
+                    if(withErrors){
+                        modalMessage('Date range must be less than 1 year.', $(this).find('.date_input'));
+                    }
+                    return false;
+                }
+
+                let date = startdate + ' ';
+                let starttime = $(this).find('.starttime_input').val();
+                let endtime = $(this).find('.endtime_input').val();
+
+                let startdatetime = moment(date + starttime, format);
+
+                for(i = 0; i < moment(enddate).diff(moment(startdate), 'days'); i++){
+                                        
+                    // if the day of the week is selected
+                    if($(this).find('.day_of_week__' + startdatetime.day() + ':checked').length > 0){
+                        let datetime = {};
+                        datetime.id = $(this).attr('id');
+                        datetime.start = startdatetime;
+                        datetime.end = moment(date + endtime, format).add(i, 'days');
+                        datetimes.push(datetime);
+                    }
+
+                    startdatetime.add(1, 'days');
+                }
+
+            } else {
+
+                let datetime = {};
+                let date = $(this).find('.date_input').val() + " ";
+                datetime.id = $(this).attr('id');
+                datetime.start = moment(date + $(this).find('.starttime_input').val(), format);
+                datetime.end = moment(date + $(this).find('.endtime_input').val(), format);
+                datetimes.push(datetime);
+
+            }
+
         });
     } else {
         return true;
@@ -579,6 +590,7 @@ function validateTimeFields(withErrors){
             let spliceIndexes = [];
 
             for(const [j, datetime2] of datetimes.slice(i + 1).entries()){
+
                 if(datetime1.id != datetime2.id && (
                     datetime1.start.isAfter(datetime2.start) && datetime1.start.isBefore(datetime2.end) || 
                     datetime1.end.isAfter(datetime2.start) && datetime1.end.isBefore(datetime2.end) ||
@@ -621,9 +633,6 @@ function validateTimeFields(withErrors){
                 datetimes.splice(index, 1);
             });
             
-            if(datetime1.end.isAfter(latestTime)){
-                latestTime = datetime1.end.clone();
-            }
         }
     }
 
@@ -632,8 +641,6 @@ function validateTimeFields(withErrors){
         valid = false;
     }
     
-    //updateGlobalLatestTime(latestTime);
-
     return valid;
 
 }
