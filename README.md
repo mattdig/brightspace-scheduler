@@ -45,3 +45,4 @@ TODO:
 - Email enrollment updates to instructor(s)
 - Remove time selection restrictions (all times are available to select)
 - Add recurring events (eg. every Monday & Wednesday at 1 - 3 pm)
+- merge GROUPS and existingTimeSlots global vars in js/signup.js
