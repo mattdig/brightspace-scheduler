@@ -76,13 +76,23 @@ let ORG_UNIT_ID = match[1];
                         <div class="row">
                             <div class="col-xs-12">
                                 <h3 class="datetime_title"><span>Date & Time 1</span> <button type="button" class="btn btn-remove btn-red btn-sm" data-counter="1">Remove</button></h3>
+                                <p>Type: 
+                                   <label class="timeslottype_single_label" for="timeslottype_single_1">Single </label><input class="timeslottype_single_input" id="timeslottype_single_1" type="radio" name="timeslottype_single_1" value="single" />
+                                   <label class="timeslottype_recurring_label" for="timeslottype_recurring_1">Recurring </label><input class="timeslottype_recurring_input" id="timeslottype_recurring_1" type="radio" name="timeslottype_recurring_1" value="recurring" />
+                                </p>
                             </div>
                         </div>
                         <div class="row">
-                            <div class="col col-sm-6 col-xs-12">
+                            <div class="col col-sm-6 col-xs-12 startdate">
                                 <label for="date_1" class="date_label">
-                                    <p>Date</p>
-                                    <p><input type="text" name="date_1" id="date_1" class="form-control date_input timeblock_datetime_input" required /></p>
+                                    <p class="label">Date</p>
+                                    <p><input type="text" name="date_1" id="date_1" class="form-control date_input startdate_input timeblock_datetime_input" required /></p>
+                                </label>
+                            </div>
+                            <div class="col col-sm-3 col-xs-12 hidden enddate">
+                                <label for="enddate_1" class="enddate_label">
+                                    <p>End Date</p>
+                                    <p><input type="text" name="enddate_1" id="enddate_1" class="form-control date_input enddate_input timeblock_datetime_input" required /></p>
                                 </label>
                             </div>
                             <div class="col col-sm-3 col-xs-6">
@@ -96,6 +106,20 @@ let ORG_UNIT_ID = match[1];
                                     <p>End&nbsp;Time</p>
                                     <p><select name="endtime_1" id="endtime_1" class="form-control endtime_input timeblock_datetime_input" required></select></p>
                                 </label>
+                            </div>
+                        </div>
+                        <div class="row hidden">
+                            <div class="col-xs-12">
+                                <p>
+                                    Days:
+                                    <label class="monday_label" for="monday_1">Monday </label><input id="monday_1" type="checkbox" name="monday_1" class="day_of_week day_of_week__1" />
+                                    <label class="tuesday_label" for="tuesday_1">Tuesday </label><input id="tuesday_1" type="checkbox" name="tuesday_1" class="day_of_week day_of_week__2" />
+                                    <label class="wednesday_label" for="wednesday_1">Wednesday </label><input id="wednesday_1" type="checkbox" name="wednesday_1" class="day_of_week day_of_week__3" />
+                                    <label class="thursday_label" for="thursday_1">Thursday </label><input id="thursday_1" type="checkbox" name="thursday_1" class="day_of_week day_of_week__4" />
+                                    <label class="friday_label" for="friday_1">Friday </label><input id="friday_1" type="checkbox" name="friday_1" class="day_of_week day_of_week__5" />
+                                    <label class="saturday_label" for="saturday_1">Saturday </label><input id="saturday_1" type="checkbox" name="saturday_1" class="day_of_week day_of_week__6" />
+                                    <label class="sunday_label" for="sunday_1">Sunday </label><input id="sunday_1" type="checkbox" name="sunday_1" class="day_of_week day_of_week__0" />
+                                </p>
                             </div>
                         </div>
                     </div>

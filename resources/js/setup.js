@@ -342,13 +342,39 @@ function orderDatetimeElems(element = null, counter = null){
         elem.attr('id', 'datetime_' + index);
         elem.find('h3').find('span').text('Date & Time ' + index);
         elem.find('h3').find('button').data('counter', index);
+        
+        elem.find('label.timeslottype_single_label').attr('for', 'timeslottype_single_' + index);
+        elem.find('input.timeslottype_single_input').attr('id', 'timeslottype_single_' + index).attr('name', 'timeslottype_single_' + index);
+
+        elem.find('label.timeslottype_recurring_label').attr('for', 'timeslottype_recurring_' + index);
+        elem.find('input.timeslottype_recurring_input').attr('id', 'timeslottype_recurring_' + index).attr('name', 'timeslottype_recurring_' + index);
+        
         elem.find('label.date_label').attr('for', 'date_' + index);
+        elem.find('label.enddate_label').attr('for', 'enddate_' + index);
         elem.find('label.starttime_label').attr('for', 'starttime_' + index);
         elem.find('label.endtime_label').attr('for', 'endtime_' + index);
         
-        elem.find('input.date_input').attr('id', 'date_' + index).attr('name', 'date_' + index);
+        elem.find('input.startdate_input').attr('id', 'date_' + index).attr('name', 'date_' + index);
+        elem.find('input.enddate_input').attr('id', 'enddate_' + index).attr('name', 'enddate_' + index);
         elem.find('select.starttime_input').attr('id', 'starttime_' + index).attr('name', 'starttime_' + index);
         elem.find('select.endtime_input').attr('id', 'endtime_' + index).attr('name', 'endtime_' + index);
+
+        elem.find('label.monday_label').attr('for', 'monday_' + index);
+        elem.find('label.tuesday_label').attr('for', 'tuesday_' + index);
+        elem.find('label.wednesday_label').attr('for', 'wednesday_' + index);
+        elem.find('label.thursday_label').attr('for', 'thursday_' + index);
+        elem.find('label.friday_label').attr('for', 'friday_' + index);
+        elem.find('label.saturday_label').attr('for', 'saturday_' + index);
+        elem.find('label.sunday_label').attr('for', 'sunday_' + index);
+
+        elem.find('input.day_of_week__0').attr('id', 'sunday_' + index).attr('name', 'sunday_' + index);
+        elem.find('input.day_of_week__1').attr('id', 'monday_' + index).attr('name', 'monday_' + index);
+        elem.find('input.day_of_week__2').attr('id', 'tuesday_' + index).attr('name', 'tuesday_' + index);
+        elem.find('input.day_of_week__3').attr('id', 'wednesday_' + index).attr('name', 'wednesday_' + index);
+        elem.find('input.day_of_week__4').attr('id', 'thursday_' + index).attr('name', 'thursday_' + index);
+        elem.find('input.day_of_week__5').attr('id', 'friday_' + index).attr('name', 'friday_' + index);
+        elem.find('input.day_of_week__6').attr('id', 'saturday_' + index).attr('name', 'saturday_' + index);
+        
     });
 
     return element;
@@ -356,15 +382,13 @@ function orderDatetimeElems(element = null, counter = null){
 
 function initializeDatetime(datetimeElem){
 
-    //let latestTime = globalLatestTime.clone();
-
     let latestTime = moment();
     let initializeTimes = true;
 
     if($('.datetime__div').length > 1){
         initializeTimes = false;
         let lastDatetime = $('.datetime__div').last().prev();
-        latestTime = moment(lastDatetime.find('.date_input').val() + ' ' + lastDatetime.find('.starttime_input').val(), 'YYYY-MM-DD HH:mm').add(1, 'days');
+        latestTime = moment(lastDatetime.find('.startdate_input').val() + ' ' + lastDatetime.find('.starttime_input').val(), 'YYYY-MM-DD HH:mm').add(1, 'days');
     }
 
     let interval = 30;
@@ -562,7 +586,7 @@ function validateTimeFields(withErrors){
             } else {
 
                 let datetime = {};
-                let date = $(this).find('.date_input').val() + " ";
+                let date = $(this).find('.startdate_input').val() + " ";
                 datetime.id = $(this).attr('id');
                 datetime.start = moment(date + $(this).find('.starttime_input').val(), format);
                 datetime.end = moment(date + $(this).find('.endtime_input').val(), format);
