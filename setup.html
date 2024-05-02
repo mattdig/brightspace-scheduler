@@ -26,7 +26,7 @@ let ORG_UNIT_ID = match[1];
                     <p id="schedule_description"></p>
                     <p id="download_schedule"><input type="button" class="btn btn-primary btn-sm" value="Export Schedule for Grading" onclick="downloadSchedule()" />
                     Delete the first 4 columns from the CSV file before Importing to the Gradebook.</p>
-                    <h2 id="existing_timeslots__heading">Available Time Slots</h2>
+                    <h2 id="existing_timeslots__heading">Available timeslots</h2>
                     <p id="autofill_group_registration"><button id="autofill_group_registration__buton" type="button" class="button">Populate timeslot registrations based on "<span id="associated_group_category_name"></span>"</button></p>
                     <table class="d2l-table" id="existing_timeslots__table">
                     </table>
@@ -66,6 +66,17 @@ let ORG_UNIT_ID = match[1];
                         </div>
                     </div>
                 </div>
+                <div class="row">
+                    <div class="col-xs-12">
+                        <h2>Allow Students to Re-register</h2>
+                        <p>Select whether students will be able to register for a new timeslot after their first selection has passed. They can still only be in one timeslot at a time.</p>
+                        <p>
+                            <label for="re_register_no">No</label> <input type="radio" name="re_register" id="re_register_no" value="no" checked />
+                            <label for="re_register_yes">Yes</label> <input type="radio" name="re_register" id="re_register_yes" value="yes" />
+                        </p>
+                        <p>Note: If you enable re-registraion you will not get a record of previous registrations.</p>
+                    </div>
+                </div>
                 <div id="edit_timeblocks">
                     <div class="row">
                         <div class="col-xs-12">
@@ -77,8 +88,8 @@ let ORG_UNIT_ID = match[1];
                             <div class="col-xs-12">
                                 <h3 class="datetime_title"><span>Date & Time 1</span> <button type="button" class="btn btn-remove btn-red btn-sm" data-counter="1">Remove</button></h3>
                                 <p>Type: 
-                                   <label class="timeslottype_single_label" for="timeslottype_single_1">Single </label><input class="timeslottype_single_input" id="timeslottype_single_1" type="radio" name="timeslottype_single_1" value="single" />
-                                   <label class="timeslottype_recurring_label" for="timeslottype_recurring_1">Recurring </label><input class="timeslottype_recurring_input" id="timeslottype_recurring_1" type="radio" name="timeslottype_recurring_1" value="recurring" />
+                                   <label class="timeslottype_single_label" for="timeslottype_single_1">Single </label><input class="timeslottype timeslottype_single_input" id="timeslottype_single_1" type="radio" name="timeslottype_single_1" value="single" />
+                                   <label class="timeslottype_recurring_label" for="timeslottype_recurring_1">Recurring </label><input class="timeslottype timeslottype_recurring_input" id="timeslottype_recurring_1" type="radio" name="timeslottype_recurring_1" value="recurring" />
                                 </p>
                             </div>
                         </div>
@@ -89,7 +100,7 @@ let ORG_UNIT_ID = match[1];
                                     <p><input type="text" name="date_1" id="date_1" class="form-control date_input startdate_input timeblock_datetime_input" required /></p>
                                 </label>
                             </div>
-                            <div class="col col-sm-3 col-xs-12 hidden enddate">
+                            <div class="col col-sm-3 col-xs-12 enddate">
                                 <label for="enddate_1" class="enddate_label">
                                     <p>End Date</p>
                                     <p><input type="text" name="enddate_1" id="enddate_1" class="form-control date_input enddate_input timeblock_datetime_input" required /></p>
@@ -108,7 +119,7 @@ let ORG_UNIT_ID = match[1];
                                 </label>
                             </div>
                         </div>
-                        <div class="row hidden">
+                        <div class="row day_checkboxes">
                             <div class="col-xs-12">
                                 <p>
                                     Days:
@@ -132,24 +143,24 @@ let ORG_UNIT_ID = match[1];
                     <div class="row">
                         <div class="col-xs-12">
                             <label for="timeslot_duration">
-                                <h2>Set the duration of each time slot</h2>
-                                <p>The length of each time slot in minutes</p>
+                                <h2>Set the duration of each timeslot</h2>
+                                <p>The length of each timeslot in minutes</p>
                                 <p><input type="text" name="timeslot_duration" id="timeslot_duration" class="form-control" value="30" /></p>
                             </label>
-                            <h3 id="total_timeslots">This will create 2 time slots of 30 minutes each.</h3>
+                            <h3 id="total_timeslots">This will create 2 timeslots of 30 minutes each.</h3>
                         </div>
                     </div>
                 </div>
                 <div class="row" id="max_users__row">
                     <div class="col-xs-12">
                         <label for="max_users">
-                            <h2>Set the number of students per time slot (group size)</h2>
-                            <p>Maximum number of students per time slot</p>
+                            <h2>Set the number of students per timeslot (group size)</h2>
+                            <p>Maximum number of students per timeslot</p>
                             <p><input type="number" name="max_users" id="max_users" class="form-control" value="1" /></p>
                         </label>
                         <label for="associated_group_category" id="associated_group_category__label">
-                            <h2>Join time slot groups to existing groups (optional)</h2>
-                            <p>If one member of a group picks a time slot, all the other members of that group must pick the same time slot</p>
+                            <h2>Join timeslot groups to existing groups (optional)</h2>
+                            <p>If one member of a group picks a timeslot, all the other members of that group must pick the same timeslot</p>
                             <p><select name="associated_group_category" id="associated_group_category" class="form-control">
                                 <option value="">Unrestricted</option>
                             </select></p>

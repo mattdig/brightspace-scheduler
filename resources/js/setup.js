@@ -374,7 +374,7 @@ function orderDatetimeElems(element = null, counter = null){
         elem.find('input.day_of_week__4').attr('id', 'thursday_' + index).attr('name', 'thursday_' + index);
         elem.find('input.day_of_week__5').attr('id', 'friday_' + index).attr('name', 'friday_' + index);
         elem.find('input.day_of_week__6').attr('id', 'saturday_' + index).attr('name', 'saturday_' + index);
-        
+
     });
 
     return element;
@@ -384,6 +384,16 @@ function initializeDatetime(datetimeElem){
 
     let latestTime = moment();
     let initializeTimes = true;
+
+    $(datetimeElem).find('.timeslottype').on('change', function(){
+        if($(this).val() == 'single' && $(this).is(':checked')){
+            $(datetimeElem).find('.day_checkboxes').show();
+            $(datetimeElem).find('.startdate').removeClass('col-sm-6').addClass('col-sm-3');
+        } else {
+            $(datetimeElem).find('.day_checkboxes').hide();
+            $(datetimeElem).find('.startdate').removeClass('col-sm-3').addClass('col-sm-6');
+        }
+    });
 
     if($('.datetime__div').length > 1){
         initializeTimes = false;
@@ -417,7 +427,7 @@ function initializeDatetime(datetimeElem){
 
         generateTimeOptions($(datetimeElem).find('.starttime_input'), latestTime, minTime, maxTime, interval);
 
-        generateTimeOptions($(datetimeElem).find('.endtime_input'), latestTime.clone().add(1, 'hours'), minTime, maxTime, interval);
+        generateTimeOptions($(datetimeElem).find('.endtime_input'), latestTime.add(1, 'hours'), minTime, maxTime, interval);
     }
     
     validateTimeFields(false);
