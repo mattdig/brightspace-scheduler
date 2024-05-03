@@ -73,6 +73,7 @@ async function init() {
         EXPIRED = true;
     }
 
+    // sets MY_TIME from the groups array
     let availableGroups = await displayGroupsInCategory(groups);
 
     if(MY_TIME !== false){
@@ -105,6 +106,14 @@ async function displayGroupsInCategory(groups){
     USER = results[1];
 
     for(let group of groups){
+
+        let data = group.Code.split('_');
+        let endTime = moment.utc(data[1], 'YYYYMMDDHHmm').tz(TIMEZONE);
+
+        if(group.Enrollments.includes(USER.Identifier) && CFG.dr !== undefined && CFG.dr == 1 && moment() < endTime){
+            //remove enrollment from group
+            group = deregisterFromGroup(group);
+        }
         
         if(group.Enrollments.length < MAX_STUDENTS && !group.Enrollments.includes(USER.Identifier)){
 
@@ -210,6 +219,15 @@ async function cancelMySelection(){
     MY_TIME = false;
 
     window.location.reload();
+}
+
+async function deregisterFromGroup(group){
+    let unenroll = unenrollFromGroup(group.GroupId);
+    // remove user id from group.Enrollemnts
+    group.Enrollments = group.Enrollments.filter(userId => userId != USER.Identifier);
+
+    await unenroll;
+    return group;
 }
 
 async function selectTimeSlot(group){
