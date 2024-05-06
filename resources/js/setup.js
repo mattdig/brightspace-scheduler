@@ -187,9 +187,6 @@ async function getExistingTimeSlots(){
 
         let localDateTimeFormat = startTime.format('MMM[&nbsp;]Do[&nbsp;]YYYY, h:mm[&nbsp;]A') + '&nbsp;-&nbsp;' + endTime.format('h:mm[&nbsp;]A');
 
-        // Brightspace includes unenrolled students in the groups, so they need to be filtered out
-        GROUPS[i].Enrollments = GROUPS[i].Enrollments.filter(userId => userId in CLASSLIST);
-
         if(CFG.dr !== undefined && CFG.dr == 1){
             if(endTime < moment()){
                 for(const userId of GROUPS[i].Enrollments){
@@ -199,6 +196,10 @@ async function getExistingTimeSlots(){
             }
         }
         
+        // Brightspace includes unenrolled students in the groups, so they need to be filtered out
+        if(GROUPS[i].Enrollments.length > 0)
+            GROUPS[i].Enrollments = GROUPS[i].Enrollments.filter(userId => userId in CLASSLIST);
+
         let timeslot = {
             start: startTime,
             end: endTime,
@@ -1324,14 +1325,16 @@ function unenrollFromGroup(groupId, userId, sendNotifications = true){
     }
 
     //remove the student from group.Enrollment in GROUPS
-    let group = GROUPS.find(function(g) {
-        return g.GroupId == groupId;
-    });
-
-    if(group != undefined){
-        group.Enrollments = group.Enrollments.filter(function(id) {
-            return id != userId;
+    if(sendNotifications){
+        let group = GROUPS.find(function(g) {
+            return g.GroupId == groupId;
         });
+
+        if(group != undefined){
+            group.Enrollments = group.Enrollments.filter(function(id) {
+                return id != userId;
+            });
+        }
     }
 
     return bs.delete(url);
