@@ -1021,6 +1021,10 @@ async function createTopic(){
         configOptionsJSON.rt = 1;
     }
 
+    if($('#de_register_yes').is(':checked')){
+        configOptionsJSON.dr = 1;
+    }
+
     content = content.replace(/\(configOptionsJSON\)/g, JSON.stringify(configOptionsJSON));
     
     let topic = [
