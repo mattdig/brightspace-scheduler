@@ -176,6 +176,8 @@ async function updateEventTitle(element){
 
 async function getExistingTimeSlots(){
     
+    let promiseArray = [];
+
     for(i in GROUPS){
         
         let data = GROUPS[i].Code.split('_');
@@ -187,6 +189,15 @@ async function getExistingTimeSlots(){
 
         // Brightspace includes unenrolled students in the groups, so they need to be filtered out
         GROUPS[i].Enrollments = GROUPS[i].Enrollments.filter(userId => userId in CLASSLIST);
+
+        if(CFG.dr !== undefined && CFG.dr == 1){
+            if(endTime < moment()){
+                for(const userId of GROUPS[i].Enrollments){
+                    promiseArray.push(unenrollFromGroup(timeSlot, userId, false));
+                }
+                GROUPS[i].Enrollments = [];
+            }
+        }
         
         let timeslot = {
             start: startTime,
@@ -199,6 +210,10 @@ async function getExistingTimeSlots(){
 
         existingTimeSlots.push(timeslot);
     };
+
+    if(promiseArray.length > 0){
+        await Promise.all(promiseArray);
+    }
 
     existingTimeSlots.sort(compareStarttime);
 }
@@ -1302,19 +1317,22 @@ async function notifyOfCancellation(userId){
     let email = sendEmail(studentEmail, subject, body);
 }
 
-async function unenrollFromGroup(timeSlot, userId, sendNotifications = true){
-    let url = '/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + GROUP_CATEGORY_ID + '/groups/' + timeSlot.groupId + '/enrollments/' + userId;
+function unenrollFromGroup(groupId, userId, sendNotifications = true){
+    let url = '/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + GROUP_CATEGORY_ID + '/groups/' + groupId + '/enrollments/' + userId;
     if(sendNotifications){
         notifyOfCancellation(userId);
     }
 
     //remove the student from group.Enrollment in GROUPS
     let group = GROUPS.find(function(g) {
-        return g.GroupId == timeSlot.groupId;
+        return g.GroupId == groupId;
     });
-    group.Enrollments = group.Enrollments.filter(function(id) {
-        return id != userId;
-    });
+
+    if(group != undefined){
+        group.Enrollments = group.Enrollments.filter(function(id) {
+            return id != userId;
+        });
+    }
 
     return bs.delete(url);
 }
