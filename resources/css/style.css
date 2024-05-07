@@ -5,8 +5,9 @@
 /*styles*/
 .container-fluid{padding:0px 30px 20px 30px; max-width: 1230px;}
 input[type=text],label,textarea{width: 100%;}
-input[type=checkbox], input[type=radio]{width: 25px; height: 25px; margin-right: 10px;}
-label.inline{width:auto; margin-right:10px;}
+input[type=checkbox], input[type=radio]{width: 25px; height: 25px; margin:0px;}
+label{margin-bottom:0px;}
+label.inline{width:auto; padding-left:10px; margin-right:10px;}
 .vertical-align{display: flex; align-items: center;}
 h3,h4{font-weight: bold;}
 .d2l-table {
