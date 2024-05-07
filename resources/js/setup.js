@@ -402,12 +402,14 @@ function initializeDatetime(datetimeElem){
     let initializeTimes = true;
 
     $(datetimeElem).find('.timeslottype').on('change', function(){
-        if($(this).val() == 'single' && $(this).is(':checked')){
+        if($(this).val() == 'recurring' && $(this).is(':checked')){
             $(datetimeElem).find('.day_checkboxes').show();
             $(datetimeElem).find('.startdate').removeClass('col-sm-6').addClass('col-sm-3');
+            $(datetimeElem).find('.enddate').show();
         } else {
             $(datetimeElem).find('.day_checkboxes').hide();
             $(datetimeElem).find('.startdate').removeClass('col-sm-3').addClass('col-sm-6');
+            $(datetimeElem).find('.enddate').hide();
         }
     });
 

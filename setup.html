@@ -70,9 +70,10 @@ let ORG_UNIT_ID = match[1];
                     <div class="col-xs-12">
                         <h2>Automatic De-registration After Timeslot has Passed</h2>
                         <p>Select whether the student will be automatically deregistered after their timeslot selection has passed. This is useful for recurring events.</p>
-                        <p>
-                            <label for="re_register_no">No</label> <input type="radio" name="re_register" id="re_register_no" value="no" checked />
-                            <label for="re_register_yes">Yes</label> <input type="radio" name="re_register" id="re_register_yes" value="yes" />
+                        <p class="vertical-align">
+                            <input type="radio" name="re_register" id="re_register_no" value="no" checked /><label for="re_register_no" class="inline">No</label>
+                            <br>
+                            <input type="radio" name="re_register" id="re_register_yes" value="yes" /><label for="re_register_yes" class="inline">Yes</label>
                         </p>
                         <p>Note: Students can still only be in one timeslot at a time. You will not get a record of previous registrations.</p>
                     </div>
@@ -87,49 +88,51 @@ let ORG_UNIT_ID = match[1];
                         <div class="row">
                             <div class="col-xs-12">
                                 <h3 class="datetime_title"><span>Date & Time 1</span> <button type="button" class="btn btn-remove btn-red btn-sm" data-counter="1">Remove</button></h3>
-                                <p>Type: 
-                                   <label class="timeslottype_single_label" for="timeslottype_single_1">Single </label><input class="timeslottype timeslottype_single_input" id="timeslottype_single_1" type="radio" name="timeslottype_single_1" value="single" />
-                                   <label class="timeslottype_recurring_label" for="timeslottype_recurring_1">Recurring </label><input class="timeslottype timeslottype_recurring_input" id="timeslottype_recurring_1" type="radio" name="timeslottype_recurring_1" value="recurring" />
+                                <h4>Type: </h4>
+                                <p class="vertical-align">
+                                    <input class="timeslottype timeslottype_single_input" id="timeslottype_single_1" type="radio" name="timeslottype_1" value="single" checked /><label class="timeslottype_single_label inline" for="timeslottype_single_1">Single</label>
+                                    <br>
+                                    <input class="timeslottype timeslottype_recurring_input" id="timeslottype_recurring_1" type="radio" name="timeslottype_1" value="recurring" /><label class="timeslottype_recurring_label inline" for="timeslottype_recurring_1">Recurring</label>
                                 </p>
                             </div>
                         </div>
                         <div class="row">
                             <div class="col col-sm-6 col-xs-12 startdate">
-                                <label for="date_1" class="date_label">
-                                    <p class="label">Date</p>
-                                    <p><input type="text" name="date_1" id="date_1" class="form-control date_input startdate_input timeblock_datetime_input" required /></p>
+                                <label for="date_1" class="startdate_label">
+                                    <p>Date</p>
                                 </label>
+                                <p><input type="text" name="date_1" id="date_1" class="form-control date_input startdate_input timeblock_datetime_input" required /></p>
                             </div>
                             <div class="col col-sm-3 col-xs-12 enddate">
-                                <label for="enddate_1" class="enddate_label">
-                                    <p>End Date</p>
-                                    <p><input type="text" name="enddate_1" id="enddate_1" class="form-control date_input enddate_input timeblock_datetime_input" required /></p>
+                                <label for="enddate_1" class="endate_label">
+                                    End Date
                                 </label>
+                                <p><input type="text" name="enddate_1" id="enddate_1" class="form-control date_input enddate_input timeblock_datetime_input" required /></p>                               
                             </div>
                             <div class="col col-sm-3 col-xs-6">
                                 <label for="starttime_1" class="starttime_label">
-                                    <p>Start&nbsp;Time</p>
-                                    <p><select name="starttime_1" id="starttime_1" class="form-control starttime_input timeblock_datetime_input" required></select></p>
+                                    <p>Start Time</p>
                                 </label>
+                                <p><select name="starttime_1" id="starttime_1" class="form-control starttime_input timeblock_datetime_input" required></select></p>
                             </div>
                             <div class="col col-sm-3 col-xs-6">
                                 <label for="endtime_1" class="endtime_label">
-                                    <p>End&nbsp;Time</p>
-                                    <p><select name="endtime_1" id="endtime_1" class="form-control endtime_input timeblock_datetime_input" required></select></p>
+                                    <p>End Time</p>
                                 </label>
+                                <p><select name="endtime_1" id="endtime_1" class="form-control endtime_input timeblock_datetime_input" required></select></p>
                             </div>
                         </div>
                         <div class="row day_checkboxes">
                             <div class="col-xs-12">
-                                <p>
-                                    Days:
-                                    <label class="monday_label" for="monday_1">Monday </label><input id="monday_1" type="checkbox" name="monday_1" class="day_of_week day_of_week__1" />
-                                    <label class="tuesday_label" for="tuesday_1">Tuesday </label><input id="tuesday_1" type="checkbox" name="tuesday_1" class="day_of_week day_of_week__2" />
-                                    <label class="wednesday_label" for="wednesday_1">Wednesday </label><input id="wednesday_1" type="checkbox" name="wednesday_1" class="day_of_week day_of_week__3" />
-                                    <label class="thursday_label" for="thursday_1">Thursday </label><input id="thursday_1" type="checkbox" name="thursday_1" class="day_of_week day_of_week__4" />
-                                    <label class="friday_label" for="friday_1">Friday </label><input id="friday_1" type="checkbox" name="friday_1" class="day_of_week day_of_week__5" />
-                                    <label class="saturday_label" for="saturday_1">Saturday </label><input id="saturday_1" type="checkbox" name="saturday_1" class="day_of_week day_of_week__6" />
-                                    <label class="sunday_label" for="sunday_1">Sunday </label><input id="sunday_1" type="checkbox" name="sunday_1" class="day_of_week day_of_week__0" />
+                                <h4>Days:</h4>
+                                <p class="tablecell">
+                                    <label class="monday_label inline" for="monday_1">Monday </label><input id="monday_1" type="checkbox" name="monday_1" class="day_of_week day_of_week__1" />
+                                    <label class="tuesday_label inline" for="tuesday_1">Tuesday </label><input id="tuesday_1" type="checkbox" name="tuesday_1" class="day_of_week day_of_week__2" />
+                                    <label class="wednesday_label inline" for="wednesday_1">Wednesday </label><input id="wednesday_1" type="checkbox" name="wednesday_1" class="day_of_week day_of_week__3" />
+                                    <label class="thursday_label inline" for="thursday_1">Thursday </label><input id="thursday_1" type="checkbox" name="thursday_1" class="day_of_week day_of_week__4" />
+                                    <label class="friday_label inline" for="friday_1">Friday </label><input id="friday_1" type="checkbox" name="friday_1" class="day_of_week day_of_week__5" />
+                                    <label class="saturday_label inline" for="saturday_1">Saturday </label><input id="saturday_1" type="checkbox" name="saturday_1" class="day_of_week day_of_week__6" />
+                                    <label class="sunday_label inline" for="sunday_1">Sunday </label><input id="sunday_1" type="checkbox" name="sunday_1" class="day_of_week day_of_week__0" />
                                 </p>
                             </div>
                         </div>
