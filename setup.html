@@ -99,40 +99,42 @@ let ORG_UNIT_ID = match[1];
                         <div class="row">
                             <div class="col col-sm-6 col-xs-12 startdate">
                                 <label for="date_1" class="startdate_label">
-                                    Date
+                                    <p>Date</p>
                                 </label>
                                 <p><input type="text" name="date_1" id="date_1" class="form-control date_input startdate_input timeblock_datetime_input" required /></p>
                             </div>
                             <div class="col col-sm-3 col-xs-12 enddate">
                                 <label for="enddate_1" class="endate_label">
-                                    End Date
+                                    <p>End Date</p>
                                 </label>
                                 <p><input type="text" name="enddate_1" id="enddate_1" class="form-control date_input enddate_input timeblock_datetime_input" required /></p>                               
                             </div>
                             <div class="col col-sm-3 col-xs-6">
                                 <label for="starttime_1" class="starttime_label">
-                                    Start Time
+                                    <p>Start Time</p>
                                 </label>
                                 <p><select name="starttime_1" id="starttime_1" class="form-control starttime_input timeblock_datetime_input" required></select></p>
                             </div>
                             <div class="col col-sm-3 col-xs-6">
                                 <label for="endtime_1" class="endtime_label">
-                                    End Time
+                                    <p>End Time</p>
                                 </label>
                                 <p><select name="endtime_1" id="endtime_1" class="form-control endtime_input timeblock_datetime_input" required></select></p>
                             </div>
                         </div>
                         <div class="row day_checkboxes">
-                            <div class="col-xs-12">
+                            <div class="col-xs-1 col-sm-12">
                                 <h4>Days:</h4>
-                                <p class="tablecell">
-                                    <label class="monday_label inline" for="monday_1">Monday </label><input id="monday_1" type="checkbox" name="monday_1" class="day_of_week day_of_week__1" />
-                                    <label class="tuesday_label inline" for="tuesday_1">Tuesday </label><input id="tuesday_1" type="checkbox" name="tuesday_1" class="day_of_week day_of_week__2" />
-                                    <label class="wednesday_label inline" for="wednesday_1">Wednesday </label><input id="wednesday_1" type="checkbox" name="wednesday_1" class="day_of_week day_of_week__3" />
-                                    <label class="thursday_label inline" for="thursday_1">Thursday </label><input id="thursday_1" type="checkbox" name="thursday_1" class="day_of_week day_of_week__4" />
-                                    <label class="friday_label inline" for="friday_1">Friday </label><input id="friday_1" type="checkbox" name="friday_1" class="day_of_week day_of_week__5" />
-                                    <label class="saturday_label inline" for="saturday_1">Saturday </label><input id="saturday_1" type="checkbox" name="saturday_1" class="day_of_week day_of_week__6" />
-                                    <label class="sunday_label inline" for="sunday_1">Sunday </label><input id="sunday_1" type="checkbox" name="sunday_1" class="day_of_week day_of_week__0" />
+                                <p class="flex-parent">
+                                    <span class="vertical-align"><input id="monday_1" type="checkbox" name="monday_1" class="day_of_week day_of_week__1" /><label class="monday_label inline" for="monday_1">Monday </label></span>
+                                    <span class="vertical-align"><input id="tuesday_1" type="checkbox" name="tuesday_1" class="day_of_week day_of_week__2" /><label class="tuesday_label inline" for="tuesday_1">Tuesday </label></span>
+                                    <span class="vertical-align"><input id="wednesday_1" type="checkbox" name="wednesday_1" class="day_of_week day_of_week__3" /><label class="wednesday_label inline" for="wednesday_1">Wednesday </label></span>
+                                    <span class="vertical-align"><input id="thursday_1" type="checkbox" name="thursday_1" class="day_of_week day_of_week__4" /><label class="thursday_label inline" for="thursday_1">Thursday </label></span>
+                                    <span class="vertical-align"><input id="friday_1" type="checkbox" name="friday_1" class="day_of_week day_of_week__5" /><label class="friday_label inline" for="friday_1">Friday </label></span>
+                                    <span class="vertical-align">
+                                        <input id="saturday_1" type="checkbox" name="saturday_1" class="day_of_week day_of_week__6" /><label class="saturday_label inline" for="saturday_1">Saturday </label>
+                                        <input id="sunday_1" type="checkbox" name="sunday_1" class="day_of_week day_of_week__0" /><label class="sunday_label inline" for="sunday_1">Sunday </label>
+                                    </span>
                                 </p>
                             </div>
                         </div>

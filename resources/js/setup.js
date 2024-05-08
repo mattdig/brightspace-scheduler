@@ -360,12 +360,12 @@ function orderDatetimeElems(element = null, counter = null){
         elem.find('h3').find('button').data('counter', index);
         
         elem.find('label.timeslottype_single_label').attr('for', 'timeslottype_single_' + index);
-        elem.find('input.timeslottype_single_input').attr('id', 'timeslottype_single_' + index).attr('name', 'timeslottype_single_' + index);
+        elem.find('input.timeslottype_single_input').attr('id', 'timeslottype_single_' + index).attr('name', 'timeslottype_' + index);
 
         elem.find('label.timeslottype_recurring_label').attr('for', 'timeslottype_recurring_' + index);
-        elem.find('input.timeslottype_recurring_input').attr('id', 'timeslottype_recurring_' + index).attr('name', 'timeslottype_recurring_' + index);
+        elem.find('input.timeslottype_recurring_input').attr('id', 'timeslottype_recurring_' + index).attr('name', 'timeslottype_' + index);
         
-        elem.find('label.date_label').attr('for', 'date_' + index);
+        elem.find('label.startdate_label').attr('for', 'date_' + index);
         elem.find('label.enddate_label').attr('for', 'enddate_' + index);
         elem.find('label.starttime_label').attr('for', 'starttime_' + index);
         elem.find('label.endtime_label').attr('for', 'endtime_' + index);
@@ -403,10 +403,12 @@ function initializeDatetime(datetimeElem){
 
     $(datetimeElem).find('.timeslottype').on('change', function(){
         if($(this).val() == 'recurring' && $(this).is(':checked')){
+            $(datetimeElem).find('label.startdate_label p').text('Start Date');
             $(datetimeElem).find('.day_checkboxes').show();
             $(datetimeElem).find('.startdate').removeClass('col-sm-6').addClass('col-sm-3');
             $(datetimeElem).find('.enddate').show();
         } else {
+            $(datetimeElem).find('label.startdate_label p').text('Date');
             $(datetimeElem).find('.day_checkboxes').hide();
             $(datetimeElem).find('.startdate').removeClass('col-sm-3').addClass('col-sm-6');
             $(datetimeElem).find('.enddate').hide();
@@ -575,7 +577,7 @@ function validateTimeFields(withErrors){
 
             let format = "YYYY-MM-DD HH:mm";
 
-            if($(this).find('.timeblock_type__recurring:checked')){
+            if($(this).find('.timeslottype_recurring_input:checked')){
                 let startdate = $(this).find('.startdate_input').val();
                 let enddate = $(this).find('.enddate_input').val();
 
