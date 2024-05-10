@@ -317,6 +317,8 @@ function addDatetime(){
         // set select values from last datetime (clone doesn't work?)
         newDateTime.find('.starttime_input').val(lastDatetime.find('.starttime_input').val());
         newDateTime.find('.endtime_input').val(lastDatetime.find('.endtime_input').val());
+
+        newDateTime.find('.day_of_week').prop('checked', false);
         
         newDateTime.find('.btn-remove').on('click', removeDatetime);
         newDateTime.insertAfter(lastDatetime);
@@ -413,12 +415,28 @@ function initializeDatetime(datetimeElem){
             $(datetimeElem).find('.startdate').removeClass('col-sm-3').addClass('col-sm-6');
             $(datetimeElem).find('.enddate').hide();
         }
+
+        validateTimeFields(false);
     });
 
     if($('.datetime__div').length > 1){
+
         initializeTimes = false;
-        let lastDatetime = $('.datetime__div').last().prev();
-        latestTime = moment(lastDatetime.find('.startdate_input').val() + ' ' + lastDatetime.find('.starttime_input').val(), 'YYYY-MM-DD HH:mm').add(1, 'days');
+        
+        $('.datetime__div').each(function(){
+            let datetime;
+            if($(this).find('.timeslottype_recurring_input').is(':checked')){
+                datetime = moment($(this).find('.enddate_input').val() + ' ' + $(this).find('.starttime_input').val(), 'YYYY-MM-DD HH:mm');                
+            } else {
+                datetime = moment($(this).find('.startdate_input').val() + ' ' + $(this).find('.starttime_input').val(), 'YYYY-MM-DD HH:mm');
+            }
+
+            if(datetime.isAfter(latestTime)){
+                latestTime = datetime;
+            }
+        });
+        
+        latestTime.add(1, 'days');
     }
 
     let interval = 30;
@@ -434,21 +452,28 @@ function initializeDatetime(datetimeElem){
         defaultDate: moment(latestTime),
         minDate: moment().subtract(1, 'days'),
         maxDate: moment().add(1, 'years')
-    }).on('dp.hide', function(e){
+    }).on('dp.change', function(){
         validateTimeFields(false);
     });
-
 
     if(initializeTimes){
         latestTime = momentFromTime(latestTime.format('HH:mm'));
     
         let minTime = momentFromTime('00:00');
-        maxTime = momentFromTime('23:59');
+        maxTime = momentFromTime('23:30');
 
         generateTimeOptions($(datetimeElem).find('.starttime_input'), latestTime, minTime, maxTime, interval);
 
-        generateTimeOptions($(datetimeElem).find('.endtime_input'), latestTime.add(1, 'hours'), minTime, maxTime, interval);
+        generateTimeOptions($(datetimeElem).find('.endtime_input'), latestTime.add(1, 'hours'), minTime, maxTime.add(29, 'minutes'), interval);
     }
+
+    $(datetimeElem).find('.timeblock_datetime_input').on('change', function(){
+        validateTimeFields(false);
+    });
+
+    $(datetimeElem).find('.day_of_week').on('change', function(){
+        validateTimeFields(false);
+    });
     
     validateTimeFields(false);
 
@@ -575,18 +600,39 @@ function validateTimeFields(withErrors){
     if($('#edit_timeblocks').is(':visible')){
         $('.datetime__div').each(function(){
 
-            let format = "YYYY-MM-DD HH:mm";
+            let dateFormat = 'YYYY-MM-DD';
+            let timeFormat = 'HH:mm';
+            let format = dateFormat + ' ' + timeFormat;
 
-            if($(this).find('.timeslottype_recurring_input:checked')){
-                let startdate = $(this).find('.startdate_input').val();
-                let enddate = $(this).find('.enddate_input').val();
+            let startdate = $(this).find('.startdate_input').val();
+            let enddate = $(this).find('.enddate_input').val();
 
-                if(enddate < startdate){
+            let isRecurring = $(this).find('.timeslottype_recurring_input').is(':checked');
+
+            console.log(isRecurring);
+
+            if(startdate == '' || enddate == ''){
+                if(withErrors){
+                    modalMessage('Please enter a start ' + (isRecurring ? 'and end ' : '') + 'date.', $(this).find('.date_input'));
+                }
+                return false;
+            }
+
+            if(isRecurring){
+
+                let startdateMoment = moment(startdate, dateFormat);
+                let enddateMoment = moment(enddate, dateFormat);
+
+                let dayDifference = enddateMoment.diff(startdateMoment, 'days');
+
+                console.log(startdateMoment, enddateMoment,dayDifference);
+
+                if(startdateMoment.isAfter(enddateMoment)){
                     if(withErrors){
                         modalMessage('End date must be after start date.', $(this).find('.date_input'));
                     }
                     return false;
-                } else if (moment(enddate).diff(moment(startdate), 'days') > 365){
+                } else if (dayDifference > 365){
                     if(withErrors){
                         modalMessage('Date range must be less than 1 year.', $(this).find('.date_input'));
                     }
@@ -598,15 +644,18 @@ function validateTimeFields(withErrors){
                 let endtime = $(this).find('.endtime_input').val();
 
                 let startdatetime = moment(date + starttime, format);
+                let enddatetime = date + endtime;
 
-                for(i = 0; i < moment(enddate).diff(moment(startdate), 'days'); i++){
+                for(i = 0; i <= dayDifference; i++){
+
+                    console.log(startdatetime.day());
                                         
                     // if the day of the week is selected
                     if($(this).find('.day_of_week__' + startdatetime.day() + ':checked').length > 0){
                         let datetime = {};
                         datetime.id = $(this).attr('id');
-                        datetime.start = startdatetime;
-                        datetime.end = moment(date + endtime, format).add(i, 'days');
+                        datetime.start = startdatetime.clone();
+                        datetime.end = moment(enddatetime, format).add(i, 'days');
                         datetimes.push(datetime);
                     }
 
@@ -617,6 +666,9 @@ function validateTimeFields(withErrors){
 
                 let datetime = {};
                 let date = $(this).find('.startdate_input').val() + " ";
+
+                console.log(date);
+
                 datetime.id = $(this).attr('id');
                 datetime.start = moment(date + $(this).find('.starttime_input').val(), format);
                 datetime.end = moment(date + $(this).find('.endtime_input').val(), format);
@@ -625,6 +677,9 @@ function validateTimeFields(withErrors){
             }
 
         });
+
+        console.log(datetimes);
+
     } else {
         return true;
     }
