@@ -74,6 +74,14 @@ async function init(){
         $('#title').val(TITLE);
         $('#schedule_title').html(groupCategory.Name);
 
+        
+        if('dr' in CFG && CFG.dr == 1){
+            $('#deregister_yes').prop('checked', true);
+        } else {
+            $('#deregister_no').prop('checked', true);
+        }
+        
+
         if(groupCategory.SelfEnrollmentExpiryDate != null){
             $('#expiry_date').html("Last day to sign up: " + moment.utc(groupCategory.SelfEnrollmentExpiryDate, 'YYYY-MM-DDTHH:mm:ss.fffZ').subtract(1, 'days').tz(TIMEZONE).format('MMM Do, YYYY'));
             $('#expiry_date').show();
@@ -129,6 +137,7 @@ async function init(){
 
     } else {
         $('#form_title').html('Create New Signup Schedule');
+        $('#deregister_no').prop('checked', true);
         await getModules();
         $('#module_selection').show();
         $('#edit_timeblocks').show();
@@ -1080,7 +1089,7 @@ async function createTopic(){
         configOptionsJSON.rt = 1;
     }
 
-    if($('#de_register_yes').is(':checked')){
+    if($('#deregister_yes').is(':checked')){
         configOptionsJSON.dr = 1;
     }
 
