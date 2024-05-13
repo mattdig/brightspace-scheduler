@@ -618,8 +618,6 @@ function validateTimeFields(withErrors){
 
             let isRecurring = $(this).find('.timeslottype_recurring_input').is(':checked');
 
-            console.log(isRecurring);
-
             if(startdate == '' || enddate == ''){
                 if(withErrors){
                     modalMessage('Please enter a start ' + (isRecurring ? 'and end ' : '') + 'date.', $(this).find('.date_input'));
@@ -633,8 +631,6 @@ function validateTimeFields(withErrors){
                 let enddateMoment = moment(enddate, dateFormat);
 
                 let dayDifference = enddateMoment.diff(startdateMoment, 'days');
-
-                console.log(startdateMoment, enddateMoment,dayDifference);
 
                 if(startdateMoment.isAfter(enddateMoment)){
                     if(withErrors){
@@ -656,8 +652,6 @@ function validateTimeFields(withErrors){
                 let enddatetime = date + endtime;
 
                 for(i = 0; i <= dayDifference; i++){
-
-                    console.log(startdatetime.day());
                                         
                     // if the day of the week is selected
                     if($(this).find('.day_of_week__' + startdatetime.day() + ':checked').length > 0){
@@ -676,8 +670,6 @@ function validateTimeFields(withErrors){
                 let datetime = {};
                 let date = $(this).find('.startdate_input').val() + " ";
 
-                console.log(date);
-
                 datetime.id = $(this).attr('id');
                 datetime.start = moment(date + $(this).find('.starttime_input').val(), format);
                 datetime.end = moment(date + $(this).find('.endtime_input').val(), format);
@@ -686,8 +678,6 @@ function validateTimeFields(withErrors){
             }
 
         });
-
-        console.log(datetimes);
 
     } else {
         return true;
@@ -833,6 +823,7 @@ async function submitForm(){
 
         let groupCategory;
         let newTopic;
+        let refreshCFG = false;
 
         if(MODE == 'create'){
             groupCategory = await createGroupCategory();
@@ -845,6 +836,12 @@ async function submitForm(){
                 updateGroupCategory(),
                 updateTopic()
             ]);
+
+            if($('#deregister_yes').is(':checked') && !('dr' in CFG) || CFG.dr == 0 ||
+                $('#deregister_no').is(':checked') && 'dr' in CFG && CFG.dr == 1){
+                await updateTopicFile(result[1]);
+                refreshCFG = true;
+            }
         }
 
 
@@ -878,7 +875,8 @@ async function submitForm(){
             await Promise.all(promiseArray);
         }
 
-        reloadAfterSave();
+        
+        reloadAfterSave(refreshCFG);
 
     }
 
@@ -907,8 +905,8 @@ async function createGroupAndEvent(timeSlot, group){
     
 }
 
-function reloadAfterSave(){
-    if(MODE == 'create'){
+function reloadAfterSave(refreshCFG){
+    if(MODE == 'create' || refreshCFG){
         window.top.location.href = '/d2l/le/content/' + ORG_UNIT_ID + '/viewContent/' + TOPIC_ID + '/View'; 
     } else {
         window.top.location.reload();
@@ -1069,7 +1067,7 @@ async function updateCalendarEvent(timeSlot){
 }
 
 
-async function createTopic(){
+async function createTopic(doCreate = true){
 
     let title = $('#title').val().trim();
 
@@ -1094,6 +1092,10 @@ async function createTopic(){
     }
 
     content = content.replace(/\(configOptionsJSON\)/g, JSON.stringify(configOptionsJSON));
+
+    if(!doCreate){
+        return content;
+    }
     
     let topic = [
         {
@@ -1111,11 +1113,12 @@ async function createTopic(){
         content
     ];
 
+    
     return bs.post('/d2l/api/le/(version)/(orgUnitId)/content/modules/' + targetModuleId + '/structure/?renameFileIfExists=true', topic);
-
+    
 }
 
-async function updateTopic(){
+async function updateTopic(updateOptions = false){
 
     let title = $('#title').val().trim();
 
@@ -1127,12 +1130,32 @@ async function updateTopic(){
         "Type": 1,
         "TopicType": 1,
         "Url": topic.Url,
-        "IsHidden": false,
-        "IsLocked": false,
-        "MajorUpdateText": ""        
+        "IsHidden": topic.IsHidden,
+        "IsLocked": topic.IsLocked,
+        "MajorUpdateText": ""
     }
 
-    return bs.put('/d2l/api/le/(version)/(orgUnitId)/content/topics/' + TOPIC_ID, topic);
+    await bs.put('/d2l/api/le/(version)/(orgUnitId)/content/topics/' + TOPIC_ID, topic);
+
+    return topic;
+
+}
+
+async function updateTopicFile(topic){
+
+    let content = await createTopic(false);
+
+    let filename = topic.Url.substring(topic.Url.lastIndexOf('/') + 1);
+
+    let formdata  = 'Content-Disposition:form-data;name="file";filename="' + filename + '"\r\n';
+        formdata += 'Content-Type:text/html; charset="UTF-8"\r\n\r\n';
+        formdata += content + '\r\n';
+
+    await bs.put("/d2l/api/le/(version)/(orgUnitId)/content/topics/" + TOPIC_ID + "/file", [formdata]);
+
+    await bs.delete('/d2l/api/lp/(version)/(orgUnitId)/managefiles/file?path=' + encodeURIComponent(topic.Url));
+        
+    return true;
 
 }
 
