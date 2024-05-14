@@ -320,7 +320,7 @@ async function displayExistingTimeSlots(groupCategory){
         if('agc' in CFG){
             $('#autofill_group_registration').show();
         }
-    } 
+    }
     
     $('#existing_timeslots').show();
     $('#timeslot_duration').val(duration);

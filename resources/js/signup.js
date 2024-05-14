@@ -235,13 +235,6 @@ async function deregisterFromGroup(group){
     // remove user id from group.Enrollemnts
     group.Enrollments = group.Enrollments.filter(userId => userId != USER.Identifier);
 
-    console.log(typeof group.Enrollments);
-    console.log(group.Enrollments);
-
-    if(group.Enrollments === undefined){
-        group.Enrollments = [];
-    }
-
     await unenroll;
     return group;
 }
