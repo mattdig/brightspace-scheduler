@@ -9,9 +9,9 @@ class Brightspace{
         }
 
         this.versions = {
-            le : '1.70',
-            lp : '1.42',
-            bas : '1.1'
+            le : '1.74',
+            lp : '1.46',
+            bas : '1.2'
         };
     }
 
