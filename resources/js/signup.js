@@ -1,4 +1,7 @@
-const params = new Proxy(new URLSearchParams(window.top.location.search), {get: (searchParams, prop) => searchParams.get(prop)});
+let match = window.top.location.href.match(/\/content\/(\d+)\//);
+let ORG_UNIT_ID = match[1];
+const bs = new Brightspace(ORG_UNIT_ID);
+const params = new Proxy(new URLSearchParams(window.parent.location.search), {get: (searchParams, prop) => searchParams.get(prop)});
 let CFG = params.cfg;
 
 let GROUP_CATEGORY_ID = null;
@@ -11,6 +14,7 @@ let CLASSLIST = getClassList('bas');
 let COURSE;
 let EXPIRED = false;
 let REQUIRED_GROUP = false;
+let TIMEZONE;
  
 $(function(){init();});
 
@@ -19,7 +23,8 @@ async function init() {
     try {
         CFG = JSON.parse(atob(CFG));
         GROUP_CATEGORY_ID = CFG.gc;
-        TOPIC_ID = CFG.t;        
+        TOPIC_ID = CFG.t;
+        CFG.dr = ('dr' in CFG ? CFG.dr : 0);
     } catch(e) {
         console.log('Error parsing CFG: ' + e);
         return false;
@@ -42,8 +47,8 @@ async function init() {
         groups[i].Enrollments = groups[i].Enrollments.filter(userId => userId in CLASSLIST);
     }
     
-    let timeZone = orgInfo.TimeZone;
-    moment.tz.setDefault(timeZone);
+    TIMEZONE = orgInfo.TimeZone;
+    moment.tz.setDefault(TIMEZONE);
 
     for(item of myEnrollments.Items){
         if(item.OrgUnit.Type.Id == 3 && item.OrgUnit.Id == ORG_UNIT_ID){
@@ -53,10 +58,9 @@ async function init() {
     }
 
     TITLE = groupCategory.Name;
-    $('#schedule_title').html(TITLE);
-
+    
     if(groupCategory.SelfEnrollmentExpiryDate != null){
-        $('#expiry_date').html("Last day to sign up: " + moment.utc(groupCategory.SelfEnrollmentExpiryDate, 'YYYY-MM-DDTHH:mm:ss.fffZ').subtract(1, 'days').tz(timeZone).format('MMM Do, YYYY'));
+        $('#expiry_date').html("Last day to sign up: " + moment.utc(groupCategory.SelfEnrollmentExpiryDate, 'YYYY-MM-DDTHH:mm:ss.fffZ').subtract(1, 'days').tz(TIMEZONE).format('MMM Do, YYYY'));
         $('#expiry_date').show();
     }
 
@@ -88,10 +92,13 @@ async function init() {
         }
         $('#my_selection').show();
     } else {
-        if(CFG.rt !== undefined && associated_groups !== false){
+        //if(CFG.rt !== undefined && associated_groups !== false){
+        if(associated_groups !== false){
             findRequiredGroup(groups, associated_groups);
         }
     }
+
+    parent.document.getElementsByClassName('d2l-iframe')[0].style.height = document.body.scrollHeight + 'px';
 }
 
 async function displayGroupsInCategory(groups){
@@ -110,12 +117,13 @@ async function displayGroupsInCategory(groups){
         let data = group.Code.split('_');
         let endTime = moment.utc(data[1], 'YYYYMMDDHHmm').tz(TIMEZONE);
 
-        if(group.Enrollments.includes(USER.Identifier) && CFG.dr !== undefined && CFG.dr == 1 && moment() < endTime){
+        if(group.Enrollments.includes(USER.Identifier) && CFG.dr == 1 && endTime < moment()){
             //remove enrollment from group
-            group = deregisterFromGroup(group);
+            group = await deregisterFromGroup(group);
         }
         
-        if(group.Enrollments.length < MAX_STUDENTS && !group.Enrollments.includes(USER.Identifier)){
+
+        if(group.Enrollments.length < MAX_STUDENTS && !group.Enrollments.includes(USER.Identifier) && (CFG.dr == 0 || endTime > moment())){
 
             availableGroups++;
 
@@ -155,8 +163,9 @@ async function displayGroupsInCategory(groups){
                 student: USER.Identifier
             }
         }
+
     }
-    
+
     if(MY_TIME === false){
         $('.student_timeslot_actions').show();
     } else {
@@ -181,7 +190,7 @@ async function displayGroupsInCategory(groups){
 }
 
 function findRequiredGroup(groups, associated_groups){
-    if(CFG.rt == 1){
+    //if(CFG.rt == 1){
 
         // find the associated group user is regisrered in
         for(const ag of associated_groups){
@@ -204,7 +213,7 @@ function findRequiredGroup(groups, associated_groups){
                 }
             }
         }
-    }
+    //}
 }
 
 async function cancelMySelection(){
@@ -218,13 +227,20 @@ async function cancelMySelection(){
     await Promise.all([unenroll, sendEmail]);
     MY_TIME = false;
 
-    window.location.reload();
+    window.top.location.reload();
 }
 
 async function deregisterFromGroup(group){
     let unenroll = unenrollFromGroup(group.GroupId);
     // remove user id from group.Enrollemnts
     group.Enrollments = group.Enrollments.filter(userId => userId != USER.Identifier);
+
+    console.log(typeof group.Enrollments);
+    console.log(group.Enrollments);
+
+    if(group.Enrollments === undefined){
+        group.Enrollments = [];
+    }
 
     await unenroll;
     return group;
@@ -252,7 +268,7 @@ async function selectTimeSlot(group){
 
     let enroll = enrollInGroup(group.GroupId);
 
-    let host = window.top.location.host;
+    let host = window.location.host;
 
     let calendarSubscription = await bs.get('/d2l/le/calendar/(orgUnitId)/subscribe/subscribeDialogLaunch?subscriptionOptionId=-1');
     let feedToken = calendarSubscription.match(/feed\.ics\?token\=([a-zA-Z0-9]+)/)[1];
@@ -280,7 +296,7 @@ async function selectTimeSlot(group){
     let studentEmail = classList[USER.Identifier].Email;
     let email = sendEmail(studentEmail, subject, body);
     await Promise.all([enroll, email]);
-    window.location.reload();
+    window.top.location.reload();
 }
 
 function enrollInGroup(groupId){
@@ -304,7 +320,7 @@ async function notifyOfCancellation(){
     
     let studentEmail = classList[USER.Identifier].Email;
     let subject = 'Brightspace Scheduling: Your time slot was cancelled';
-    let topicUrl = 'https://' + window.top.location.host + '/d2l/le/content/' + ORG_UNIT_ID + '/viewContent/' + TOPIC_ID + '/View';
+    let topicUrl = 'https://' + window.location.host + '/d2l/le/content/' + ORG_UNIT_ID + '/viewContent/' + TOPIC_ID + '/View';
     
     body = body.replace(/\(courseName\)/g, COURSE.Name);
     body = body.replace(/\(scheduleTitle\)/g, TITLE);

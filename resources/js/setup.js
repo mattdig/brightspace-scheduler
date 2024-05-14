@@ -1,3 +1,6 @@
+let match = window.top.location.href.match(/\/navbars\/(\d+)\//);
+let ORG_UNIT_ID = match[1];
+const bs = new Brightspace(ORG_UNIT_ID);
 const params = new Proxy(new URLSearchParams(window.top.location.search), {get: (searchParams, prop) => searchParams.get(prop)});
 let CFG = params.cfg;
 let MODE = 'create';
@@ -7,6 +10,7 @@ if(CFG !== null){
 }
 let GROUP_CATEGORY_ID = (MODE == 'edit' ? CFG.gc : null);
 let TOPIC_ID = 0;
+let TOPIC;
 let SUBMITTING = false;
 let TIMEZONE;
 let CLASSLIST;
@@ -25,7 +29,12 @@ $(function(){init();});
 async function init(){
 
     let associatedGroups = false;
-    if(MODE == 'edit' && 'agc' in CFG){
+    if(MODE == 'edit'){
+
+        TOPIC_ID = CFG.t;
+
+        TOPIC = bs.get('/d2l/api/le/(version)/(orgUnitId)/content/topics/' + TOPIC_ID);
+        
         associatedGroups = getGroupsInCategory(CFG.agc);
     }
 
@@ -64,8 +73,6 @@ async function init(){
     if(MODE == 'edit'){
 
         CLASSLIST = getClassList();
-
-        TOPIC_ID = CFG.t;
 
         $('#form_title').html('Edit Signup Schedule');
 
@@ -116,10 +123,11 @@ async function init(){
 
             $('#associated_group_category').val(CFG.agc);
             $('#associated_group_category_name').html(associatedGroupCategory.Name);
-            $('#autofill_group_registration__buton').click(function(){
-                autofillGroupRegistration(associatedGroups);
+            $('#autofill_group_registration__buton').click(async function(){
+                $(this).prop('disabled', true);
+                await autofillGroupRegistration(associatedGroups);
+                $(this).prop('disabled', false);
             });
-            $('#autofill_group_registration').show();
         }
 
         // wait for the classlist to load
@@ -307,9 +315,12 @@ async function displayExistingTimeSlots(groupCategory){
         });
     });
 
-    if(!hasRegistrations){
-        $('#download_schedule').hide();
-    }
+    if(hasRegistrations){
+        $('#download_schedule').show();
+        if('agc' in CFG){
+            $('#autofill_group_registration').show();
+        }
+    } 
     
     $('#existing_timeslots').show();
     $('#timeslot_duration').val(duration);
@@ -907,7 +918,7 @@ async function createGroupAndEvent(timeSlot, group){
 
 function reloadAfterSave(refreshCFG){
     if(MODE == 'create' || refreshCFG){
-        window.top.location.href = '/d2l/le/content/' + ORG_UNIT_ID + '/viewContent/' + TOPIC_ID + '/View'; 
+        window.top.location.replace('/d2l/le/content/' + ORG_UNIT_ID + '/viewContent/' + TOPIC_ID + '/View');
     } else {
         window.top.location.reload();
     }
@@ -1084,7 +1095,6 @@ async function createTopic(doCreate = true){
 
     if($('#max_users').val() > 1 && $('#associated_group_category').val() != ''){
         configOptionsJSON.agc = parseInt($('#associated_group_category').val());
-        configOptionsJSON.rt = 1;
     }
 
     if($('#deregister_yes').is(':checked')){
@@ -1097,11 +1107,11 @@ async function createTopic(doCreate = true){
         return content;
     }
     
-    let topic = [
+    let topicObj = [
         {
             "IsHidden": false,
             "IsLocked": false,
-            "ShortTitle": null,
+            "ShortTitle": 'Hello',
             "Type": 1,
             "DueDate": null,
             "Url": orgUnitInfo.Path + "Scheduler.html",
@@ -1112,40 +1122,39 @@ async function createTopic(doCreate = true){
         },
         content
     ];
-
     
-    return bs.post('/d2l/api/le/(version)/(orgUnitId)/content/modules/' + targetModuleId + '/structure/?renameFileIfExists=true', topic);
+    return bs.post('/d2l/api/le/(version)/(orgUnitId)/content/modules/' + targetModuleId + '/structure/?renameFileIfExists=true', topicObj);
     
 }
 
-async function updateTopic(updateOptions = false){
+async function updateTopic(){
+
+    TOPIC = await TOPIC;
 
     let title = $('#title').val().trim();
 
-    let topic = await bs.get('/d2l/api/le/(version)/(orgUnitId)/content/topics/' + TOPIC_ID);
-
-    topic = {
+    topicObj = {
         "Title": title,
         "ShortTitle": "",
         "Type": 1,
         "TopicType": 1,
-        "Url": topic.Url,
-        "IsHidden": topic.IsHidden,
-        "IsLocked": topic.IsLocked,
+        "Url": TOPIC.Url,
+        "IsHidden": TOPIC.IsHidden,
+        "IsLocked": TOPIC.IsLocked,
         "MajorUpdateText": ""
     }
 
-    await bs.put('/d2l/api/le/(version)/(orgUnitId)/content/topics/' + TOPIC_ID, topic);
+    await bs.put('/d2l/api/le/(version)/(orgUnitId)/content/topics/' + TOPIC_ID, topicObj);
 
-    return topic;
+    return topicObj;
 
 }
 
-async function updateTopicFile(topic){
+async function updateTopicFile(){
 
     let content = await createTopic(false);
 
-    let filename = topic.Url.substring(topic.Url.lastIndexOf('/') + 1);
+    let filename = TOPIC.Url.substring(TOPIC.Url.lastIndexOf('/') + 1);
 
     let formdata  = 'Content-Disposition:form-data;name="file";filename="' + filename + '"\r\n';
         formdata += 'Content-Type:text/html; charset="UTF-8"\r\n\r\n';
@@ -1153,7 +1162,7 @@ async function updateTopicFile(topic){
 
     await bs.put("/d2l/api/le/(version)/(orgUnitId)/content/topics/" + TOPIC_ID + "/file", [formdata]);
 
-    await bs.delete('/d2l/api/lp/(version)/(orgUnitId)/managefiles/file?path=' + encodeURIComponent(topic.Url));
+    await bs.delete('/d2l/api/lp/(version)/(orgUnitId)/managefiles/file?path=' + encodeURIComponent(TOPIC.Url));
         
     return true;
 
@@ -1477,7 +1486,7 @@ async function deleteSchedule(){
     await deleteTopic();
     await deleteGroupCategory();
 
-    window.top.location.href = '/d2l/le/content/' + ORG_UNIT_ID + '/Home';
+    window.top.location.replace('/d2l/le/content/' + ORG_UNIT_ID + '/Home');
 }
 
 function downloadSchedule(){

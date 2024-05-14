@@ -62,7 +62,7 @@ tr:first-child th:last-child{
 #total_timeslots{font-size: 20px; font-weight: bold;}
 #expiry_date,#existing_timeslots,#signup_schedule__form,#edit_timeblocks,#edit_schedule,
 #add_new_timeblocks,#schedule_description,#module_selection,
-#autofill_group_registration,#associated_group_category__label{display: none;}
+#autofill_group_registration,#download_schedule,#associated_group_category__label{display: none;}
 #expiry_date{font-size: 22px; font-weight: bold;}
 #schedule_description{font-size:20px;}
 #existing_timeslots__table{width: 100%;font-size: 16px;margin-bottom: 20px;}
