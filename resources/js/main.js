@@ -1,5 +1,3 @@
-const bs = new Brightspace(ORG_UNIT_ID);
-
 async function whoAmI(){
     let user = await bs.get('/d2l/api/lp/(version)/users/whoami');
     user.Identifier = parseInt(user.Identifier);
@@ -178,6 +176,18 @@ function modalMessage(message, id = null, callback = null, title = null, okText 
 
 function modalConfirm(message, callback = null, title = null, okText = 'OK', cancelText = 'Cancel'){
     modalMessage(message, null, callback, title, okText, cancelText);
+}
+
+function download(filename, mime, text) {
+    
+    let blob = new Blob([text], { type: mime });
+    let a = window.document.createElement('a');
+    a.href = window.URL.createObjectURL(blob);
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    
 }
 
 function dynamicSortMultiple() {

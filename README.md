@@ -25,7 +25,7 @@ Get the new link's ID:
 
 Second Link:
 - Name: Scheduler Signup (only used by the scheduler, never shown in a navbar)
-- URL: https://{YOUR_BRIGHTSPACE_DOMAIN}/shared/Plugins/Scheduler/setup.html
+- URL: https://{YOUR_BRIGHTSPACE_DOMAIN}/shared/Plugins/Scheduler/signup.html
 - Behaviour: Same window
 - Availability: Share with child org units
 - Save
@@ -35,7 +35,7 @@ Get the new link's ID:
 - Look at the URL for "customlink/edit/{ID_NUMBER}"
 - This ID must be set as the value for signupLinkId in config.js
 
-Save the config.js file with the new link IDs, and upload it to Plugins/Scheduler/resources/js/
+Save the config.js file with the new link IDs. Add the numeric IDs for any Student, Teaching Assistant, and Instructor roles to the config.js file. Upload config.js to Plugins/Scheduler/resources/js/
 
 Add the first link, "Scheduler" to a navbar in a course (or all courses).
 
@@ -43,3 +43,6 @@ Access the course as an instructor to create a new schedule for the students.
 
 TODO:
 - Email enrollment updates to instructor(s)
+- Remove time selection restrictions (all times are available to select)
+- Add recurring events (eg. every Monday & Wednesday at 1 - 3 pm)
+- merge GROUPS and existingTimeSlots global vars in js/signup.js

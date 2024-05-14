@@ -9,10 +9,27 @@ class Brightspace{
         }
 
         this.versions = {
-            le : '1.70',
-            lp : '1.42',
-            bas : '1.1'
+            bas : 1.3,
+            bfp : 1.0,
+            ep : 2.5,
+            ext : 1.3,
+            le : 1.75,
+            link : 1.0,
+            lp : 1.47,
+            LR : 1.3,
+            lti : 1.3,
+            rp : 1.4
         };
+    }
+
+    async applyLatestApiVersions(){
+        let response = await bs.get('/d2l/api/versions/');
+        
+        for(const api of response){
+            if(api.ProductCode in this.versions){
+                this.versions[api.ProductCode] = api.LatestVersion;
+            }
+        }
     }
 
     get(url){
@@ -48,6 +65,7 @@ class Brightspace{
     async send(verb, url, data = false, type = 'json'){
 
         let dataString = '';
+        let contentTypes = [];
         let token = false;
 
         let boundary = '------' + Math.random().toString().substring(2);
@@ -60,27 +78,53 @@ class Brightspace{
             data.d2l_referrer = token.referrerToken;
             data.d2l_hitcode = token.hitCodePrefix + "100000001";
             dataString = new URLSearchParams(data).toString();
-        } else if (verb != 'get') {
+        } else if (verb == 'post' || verb == 'put') {
 
             if(typeof data == 'object' && data[0] === undefined){
                 dataString = JSON.stringify(data);
-            } else if(typeof data == 'array' || data[0] !== undefined){
+            } else if(data instanceof Array){
                 dataString = '';
                 data.forEach(function(item){
                     dataString += '--' + boundary + '\r\n';
                     if(typeof item == 'object'){
                         dataString += 'Content-Type: application/json\r\n\r\n' + 
                                       JSON.stringify(item) + '\r\n';
+                        if(!contentTypes.includes('application/json')){
+                            contentTypes.push('application/json');
+                        }
+
+                    } else if(typeof item == 'string' && item.substring(0,1) == '{'){
+                        dataString += 'Content-Type: application/json\r\n\r\n' + 
+                                      item + '\r\n';
+                        if(!contentTypes.includes('application/json')){
+                            contentTypes.push('application/json');
+                        }
+
+                    } else if (item.substring(0, 20) == 'Content-Disposition:') {
+                        dataString += item + '\r\n';
+                        if(!contentTypes.includes('form-data')){
+                            contentTypes.push('form-data');
+                        }
+
                     } else if (typeof item == 'string' && item.substring(0, 1) == '<'){
                         dataString += 'Content-Disposition: form-data; name=""; filename="file.htm"\r\nContent-Type: text/html\r\n\r\n' + 
                                       item + '\r\n';
+                        if(!contentTypes.includes('form-data')){
+                            contentTypes.push('form-data');
+                        }
+
                     } else {
                         dataString += 'Content-Disposition: form-data; name=""; filename="file.txt"\r\nContent-Type: text/plain\r\n\r\n' + 
                                       item + '\r\n';
+                        if(!contentTypes.includes('form-data')){
+                            contentTypes.push('form-data');
+                        }
                     }
                 });
                 dataString += '--' + boundary + '--';
 
+            } else {
+                dataString = data;
             }
         }
         
@@ -100,7 +144,7 @@ class Brightspace{
                 if(type == 'form'){
                     xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
                 } else if(dataString.substring(0,boundary.length + 2) == '--' + boundary){
-                    xhr.setRequestHeader("Content-Type", "multipart/mixed; boundary=" + boundary);
+                    xhr.setRequestHeader("Content-Type", "multipart/" + (contentTypes.length > 1 ? 'mixed' : 'form-data') + "; boundary=" + boundary);
                 } else {
                     xhr.setRequestHeader('Content-Type', 'application/json');
                 }
@@ -195,6 +239,10 @@ class Brightspace{
 
         return url;
     
+    }
+
+    onlyUnique(value, index, array) {
+        return array.indexOf(value) === index;
     }
         
 }
