@@ -25,6 +25,7 @@ async function init() {
         GROUP_CATEGORY_ID = CFG.gc;
         TOPIC_ID = CFG.t;
         CFG.dr = ('dr' in CFG ? CFG.dr : 0);
+        CFG.ei = ('ei' in CFG ? CFG.ei : 0);
     } catch(e) {
         console.log('Error parsing CFG: ' + e);
         return false;
@@ -55,10 +56,6 @@ async function init() {
             COURSE = item.OrgUnit;
             break;
         }
-    }
-
-    if(CFG.notifyInstructor === undefined){
-        CFG.notifyInstructor = false;
     }
 
     TITLE = groupCategory.Name;
@@ -194,30 +191,29 @@ async function displayGroupsInCategory(groups){
 }
 
 function findRequiredGroup(groups, associated_groups){
-    //if(CFG.rt == 1){
 
-        // find the associated group user is regisrered in
-        for(const ag of associated_groups){
-            if(ag.Enrollments.includes(USER.Identifier)){
+    // find the associated group user is regisrered in
+    for(const ag of associated_groups){
+        if(ag.Enrollments.includes(USER.Identifier)){
 
-                // find the timeslot group other members of the associated group are registered in
-                for(const group of groups){
-                    for(const student of ag.Enrollments){
-                        if(group.Enrollments.includes(student)){
+            // find the timeslot group other members of the associated group are registered in
+            for(const group of groups){
+                for(const student of ag.Enrollments){
+                    if(group.Enrollments.includes(student)){
 
-                            REQUIRED_GROUP = group;
+                        REQUIRED_GROUP = group;
 
-                            // register the uesr in the same timeslot
-                            modalMessage('One of your group members has already registered for a time slot:<br />' + group.Name + 
-                                '<br />You will be automatically registered for the same time slot.', null, function(){selectTimeSlot(group)});
+                        // register the uesr in the same timeslot
+                        modalMessage('One of your group members has already registered for a time slot:<br />' + group.Name + 
+                            '<br />You will be automatically registered for the same time slot.', null, function(){selectTimeSlot(group)});
 
-                            return false;
-                        }
+                        return false;
                     }
                 }
             }
         }
-    //}
+    }
+    
 }
 
 async function cancelMySelection(){
@@ -226,10 +222,27 @@ async function cancelMySelection(){
     }
 
     $('#cancel-selection').remove();
-    let unenroll = unenrollFromGroup(MY_TIME.groupId);
-    let sendEmail = notifyOfCancellation();
 
-    await Promise.all([unenroll, sendEmail]);
+    let classList = await getClassList();
+
+    let studentEmail = classList[USER.Identifier].Email;
+    
+    let unenroll = unenrollFromGroup(st);
+    let sendStudentEmail = notifyStudentOfCancellation(studentEmail);
+    let sendInstructorEmail = false;
+
+    if(CFG.ei == 1){
+        let instructorEmails = [];
+
+        for(const user of classList){
+            if(user.RoleId !== null && INSTRUCTOR_ROLE_IDS.includes(user.RoleId)){
+                instructorEmails.push(user.Email);
+            }
+        }
+        sendInstructorEmail = notifyInstructorOfCancellation(instructorEmails, studentEmail);
+    }
+
+    await Promise.all([unenroll, sendStudentEmail, sendInstructorEmail]);
     MY_TIME = false;
 
     window.top.location.reload();
@@ -279,8 +292,8 @@ async function selectTimeSlot(group){
 
     let subject = 'Brightspace Scheduling: Your time slot is confirmed';
 
-    result = await fetch(pluginPath + '/resources/html/emailstudentenrolled.tpl');
-    body = await result.text();
+    let result = await fetch(pluginPath + '/resources/html/emailstudentenrolled.tpl');
+    let body = await result.text();
 
     body = body.replace(/\(courseName\)/g, COURSE.Name);
     body = body.replace(/\(scheduleTitle\)/g, TITLE);
@@ -290,11 +303,57 @@ async function selectTimeSlot(group){
     body = body.replace(/\(calendarUrl\)/g, calendarUrl);
 
     classList = await classList;
-    
+
     let studentEmail = classList[USER.Identifier].Email;
-    let email = sendEmail(studentEmail, subject, body);
-    await Promise.all([enroll, email]);
+    let sendInstructorEmail = false;
+    
+    // email instructors
+    if(CFG.ei == 1){
+        let instructorEmails = [];
+        
+        for(const user of classList){
+            if(user.RoleId !== null && INSTRUCTOR_ROLE_IDS.includes(user.RoleId)){
+                instructorEmails.push(user.Email);
+            }
+        }
+
+        sendInstructorEmail = notifyInstructorOfRegistration(instructorEmails, studentEmail, group.Name);
+    }
+
+
+    let sendStudentEmail = sendEmail(studentEmail, subject, body);
+    await Promise.all([enroll, sendStudentEmail, sendInstructorEmail]);
     window.top.location.reload();
+}
+
+async function notifyInstructorOfRegistration(instructorEmails, studentEmail, timeSlot){
+
+    let calendarUrl = 'https://' + host + '/d2l/le/calendar/' + ORG_UNIT_ID;
+    let topicUrl = 'https://' + host + '/d2l/le/content/' + ORG_UNIT_ID + '/viewContent/' + TOPIC_ID + '/View';
+
+    let pluginPath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf("/"));
+
+    let subject = 'Brightspace Scheduling: New regisgration for ' + USER.FirstName + ' ' + USER.LastName;
+
+    let result = await fetch(pluginPath + '/resources/html/emailstudentenrolled.tpl');
+    let body = await result.text();
+
+    body = body.replace(/\(courseName\)/g, COURSE.Name);
+    body = body.replace(/\(studentName\)/g, USER.FirstName + ' ' + USER.LastName);
+    body = body.replace(/\(studentEmail\)/g, studentEmail);
+    body = body.replace(/\(scheduleTitle\)/g, TITLE);
+    body = body.replace(/\(timeSlot\)/g, MY_TIME.title);
+    body = body.replace(/\(topicUrl\)/g, topicUrl);
+    body = body.replace(/\(calendarUrl\)/g, calendarUrl);
+
+    let emails = [];
+
+    for(const email of instructorEmails){
+        emails.push(sendEmail(email, subject, body));
+    }
+
+    return Promise.all(emails);
+
 }
 
 function enrollInGroup(groupId){
@@ -307,27 +366,12 @@ function enrollInGroup(groupId){
     return bs.submit('/d2l/lms/group/user_available_group_list.d2lfile?ou=(orgUnitId)&d2l_rh=rpc&d2l_rt=call', data);
 }
 
-async function notifyOfCancellation(){
-    let classList = getClassList();
+async function notifyStudentOfCancellation(studentEmail){
     
     let pluginPath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf("/"));
     let result = await fetch(pluginPath + '/resources/html/emailstudentcancelled.tpl');
     let body = await result.text();
-
-    classList = await classList;
-    
-    let studentEmail = classList[USER.Identifier].Email;
-
-    if(CFG.notifyInstructor){
-        for(person of classList){
-            if(hasRole(person.ClasslistRoleDisplayName, INSTRUCTOR_ROLES)){
-                let instructorEmail = person.Email;
-                let email = sendEmail(instructorEmail, subject, body);
-                await email;
-            }
-        }
-    }
-        
+            
     let subject = 'Brightspace Scheduling: Your time slot was cancelled';
     let topicUrl = 'https://' + window.location.host + '/d2l/le/content/' + ORG_UNIT_ID + '/viewContent/' + TOPIC_ID + '/View';
     
@@ -336,6 +380,31 @@ async function notifyOfCancellation(){
     body = body.replace(/\(topicUrl\)/g, topicUrl);
     
     return sendEmail(studentEmail, subject, body);
+}
+
+async function notifyInstructorOfCancellation(instructorEmails, studentEmail){
+
+    let pluginPath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf("/"));
+    let result = await fetch(pluginPath + '/resources/html/emailinstructorcancelled.tpl');
+    let body = await result.text();
+    
+    let subject = 'Brightspace Scheduling: Cancellation for ' + USER.FirstName + ' ' + USER.LastName;
+    let topicUrl = 'https://' + window.location.host + '/d2l/le/content/' + ORG_UNIT_ID + '/viewContent/' + TOPIC_ID + '/View';
+    let calendarUrl = 'https://' + window.location.host + '/d2l/le/calendar/' + ORG_UNIT_ID;
+    
+    body = body.replace(/\(courseName\)/g, COURSE.Name);
+    body = body.replace(/\(studentName\)/g, USER.FirstName + ' ' + USER.LastName);
+    body = body.replace(/\(studentEmail\)/g, studentEmail);
+    body = body.replace(/\(scheduleTitle\)/g, TITLE);
+    body = body.replace(/\(timeSlot\)/g, MY_TIME.title);
+    body = body.replace(/\(topicUrl\)/g, topicUrl);
+    body = body.replace(/\(calendarUrl\)/g, calendarUrl);
+    
+    let emails = [];
+    for(const email of instructorEmails){
+        emails.push(sendEmail(email, subject, body));
+    }
+    return Promise.all(emails);
 }
 
 

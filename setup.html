@@ -74,9 +74,8 @@
                                 <h3 class="datetime_title"><span>Date & Time 1</span> <button type="button" class="btn btn-remove btn-red btn-sm" data-counter="1">Remove</button></h3>
                                 <h4>Type: </h4>
                                 <p class="vertical-align">
-                                    <input class="timeslottype timeslottype_single_input" id="timeslottype_single_1" type="radio" name="timeslottype_1" value="single" checked /><label class="timeslottype_single_label inline" for="timeslottype_single_1">Single</label>
-                                    <br>
-                                    <input class="timeslottype timeslottype_recurring_input" id="timeslottype_recurring_1" type="radio" name="timeslottype_1" value="recurring" /><label class="timeslottype_recurring_label inline" for="timeslottype_recurring_1">Recurring</label>
+                                    <input class="timeslottype timeslottype_single_input" id="timeslottype_single_1" type="radio" name="timeslottype_1" value="single" title="Single date" checked /><label class="timeslottype_single_label inline" for="timeslottype_single_1">Single</label>
+                                    <input class="timeslottype timeslottype_recurring_input" id="timeslottype_recurring_1" type="radio" name="timeslottype_1" value="recurring" title="Recurring date rage" /><label class="timeslottype_recurring_label inline" for="timeslottype_recurring_1">Recurring</label>
                                 </p>
                             </div>
                         </div>
@@ -145,9 +144,8 @@
                         <h2>Automatic Deregistration After Timeslot has Passed</h2>
                         <p>Select whether the student will be automatically deregistered after their timeslot selection has passed. This is useful for recurring events.</p>
                         <p class="vertical-align">
-                            <input type="radio" name="deregister" id="deregister_no" value="no" /><label for="deregister_no" class="inline">No</label>
-                            <br>
-                            <input type="radio" name="deregister" id="deregister_yes" value="yes" /><label for="deregister_yes" class="inline">Yes</label>
+                            <input type="radio" name="deregister" id="deregister_no" value="no" title="Do not automatically deregister students from past timeslots" /><label for="deregister_no" class="inline">No</label>
+                            <input type="radio" name="deregister" id="deregister_yes" value="yes" title="Automatically deregister students from past timeslots" /><label for="deregister_yes" class="inline">Yes</label>
                         </p>
                         <p>Note: Students can still only be in one timeslot at a time. You will not get a record of previous registrations.</p>
                     </div>
@@ -168,7 +166,15 @@
                         </label>
                     </div>
                 </div>
-
+                <div class="row" id="email_instructor__row">
+                    <div class="col-xs-12">
+                        <h2>Email instructor when a student signs up or cancels</h2>
+                        <p>Send an email to the instructor when a student signs up for a timeslot or cancels their selection</p>
+                        <p class="vertical-align">
+                            <input type="radio" name="email_instructor" id="email_instructo_no" value="no" title="Do not send notifications to the instructor" /><label for="email_instructo_no" class="inline">No</label>
+                            <input type="radio" name="email_instructor" id="email_instructo_yes" value="yes" title="Send notifications to the instructor" /><label for="email_instructo_yes" class="inline">Yes</label>
+                        </p>
+                    </div>
                 <div class="row" id="enddate__row">
                     <div class="col-xs-12">
                         <label for="schedule_enddate">
