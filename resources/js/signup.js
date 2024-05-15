@@ -227,24 +227,23 @@ async function cancelMySelection(){
 
     let studentEmail = classList[USER.Identifier].Email;
     
-    let unenroll = unenrollFromGroup(st);
+    let unenroll = unenrollFromGroup(MY_TIME.groupId);
     let sendStudentEmail = notifyStudentOfCancellation(studentEmail);
     let sendInstructorEmail = false;
 
     if(CFG.ei == 1){
         let instructorEmails = [];
 
-        for(const user of classList){
-            if(user.RoleId !== null && INSTRUCTOR_ROLE_IDS.includes(user.RoleId)){
-                instructorEmails.push(user.Email);
+        for(const userId in classList){
+            if(classList[userId].RoleId !== null && INSTRUCTOR_ROLE_IDS.includes(classList[userId].RoleId)){
+                instructorEmails.push(classList[userId].Email);
             }
         }
         sendInstructorEmail = notifyInstructorOfCancellation(instructorEmails, studentEmail);
     }
 
     await Promise.all([unenroll, sendStudentEmail, sendInstructorEmail]);
-    MY_TIME = false;
-
+    
     window.top.location.reload();
 }
 
@@ -307,14 +306,18 @@ async function selectTimeSlot(group){
     let studentEmail = classList[USER.Identifier].Email;
     let sendInstructorEmail = false;
     
+    console.log(classList);
+
     // email instructors
     if(CFG.ei == 1){
         let instructorEmails = [];
         
-        for(const user of classList){
-            if(user.RoleId !== null && INSTRUCTOR_ROLE_IDS.includes(user.RoleId)){
-                instructorEmails.push(user.Email);
+        for(const userId in classList){
+
+            if (classList[userId].RoleId !== null && INSTRUCTOR_ROLE_IDS.includes(classList[userId].RoleId)){
+                instructorEmails.push(classList[userId].Email);
             }
+
         }
 
         sendInstructorEmail = notifyInstructorOfRegistration(instructorEmails, studentEmail, group.Name);
@@ -328,21 +331,21 @@ async function selectTimeSlot(group){
 
 async function notifyInstructorOfRegistration(instructorEmails, studentEmail, timeSlot){
 
-    let calendarUrl = 'https://' + host + '/d2l/le/calendar/' + ORG_UNIT_ID;
-    let topicUrl = 'https://' + host + '/d2l/le/content/' + ORG_UNIT_ID + '/viewContent/' + TOPIC_ID + '/View';
+    let calendarUrl = 'https://' + window.location.host + '/d2l/le/calendar/' + ORG_UNIT_ID;
+    let topicUrl = 'https://' + window.location.host + '/d2l/le/content/' + ORG_UNIT_ID + '/viewContent/' + TOPIC_ID + '/View';
 
     let pluginPath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf("/"));
 
     let subject = 'Brightspace Scheduling: New regisgration for ' + USER.FirstName + ' ' + USER.LastName;
 
-    let result = await fetch(pluginPath + '/resources/html/emailstudentenrolled.tpl');
+    let result = await fetch(pluginPath + '/resources/html/emailinstructorenrolled.tpl');
     let body = await result.text();
 
     body = body.replace(/\(courseName\)/g, COURSE.Name);
     body = body.replace(/\(studentName\)/g, USER.FirstName + ' ' + USER.LastName);
     body = body.replace(/\(studentEmail\)/g, studentEmail);
     body = body.replace(/\(scheduleTitle\)/g, TITLE);
-    body = body.replace(/\(timeSlot\)/g, MY_TIME.title);
+    body = body.replace(/\(timeSlot\)/g, timeSlot);
     body = body.replace(/\(topicUrl\)/g, topicUrl);
     body = body.replace(/\(calendarUrl\)/g, calendarUrl);
 
@@ -396,7 +399,7 @@ async function notifyInstructorOfCancellation(instructorEmails, studentEmail){
     body = body.replace(/\(studentName\)/g, USER.FirstName + ' ' + USER.LastName);
     body = body.replace(/\(studentEmail\)/g, studentEmail);
     body = body.replace(/\(scheduleTitle\)/g, TITLE);
-    body = body.replace(/\(timeSlot\)/g, MY_TIME.title);
+    body = body.replace(/\(timeSlot\)/g, MY_TIME.name);
     body = body.replace(/\(topicUrl\)/g, topicUrl);
     body = body.replace(/\(calendarUrl\)/g, calendarUrl);
     

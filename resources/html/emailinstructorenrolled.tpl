@@ -1,5 +1,5 @@
 <h1>(courseName)</h1>
-<p>(studentName) &lt;(studentEmail)&gt; has registered <strong>(scheduleTitle)</strong>.</p>
+<p>(studentName) &lt;(studentEmail)&gt; has registered for <strong>(scheduleTitle)</strong>.</p>
 <p>They have selected the following time slot:</p>
 <h2>(timeSlot)</h2>
 <p><a href="(topicUrl)">Review or manage this schedule</a></p>

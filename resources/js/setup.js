@@ -92,7 +92,7 @@ async function init(){
         if('ei' in CFG && CFG.ei == 1){
             $('#email_instructor_yes').prop('checked', true);
         } else {
-            $('#email_instructor_no').prop('checked', true);
+            $('#email_instructor_no').prop('checked', true); 
         }
         
 
@@ -1109,7 +1109,7 @@ async function createTopic(doCreate = true){
         configOptionsJSON.dr = 1;
     }
 
-    if($('#email_instructor').is(':checked')){
+    if($('#email_instructor_yes').is(':checked')){
         configOptionsJSON.ei = 1;
     }
 
