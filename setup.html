@@ -139,17 +139,6 @@
                         </div>
                     </div>
                 </div>
-                <div class="row">
-                    <div class="col-xs-12">
-                        <h2>Automatic Deregistration After Timeslot has Passed</h2>
-                        <p>Select whether the student will be automatically deregistered after their timeslot selection has passed. This is useful for recurring events.</p>
-                        <p class="vertical-align">
-                            <input type="radio" name="deregister" id="deregister_no" value="no" title="Do not automatically deregister students from past timeslots" /><label for="deregister_no" class="inline">No</label>
-                            <input type="radio" name="deregister" id="deregister_yes" value="yes" title="Automatically deregister students from past timeslots" /><label for="deregister_yes" class="inline">Yes</label>
-                        </p>
-                        <p>Note: Students can still only be in one timeslot at a time. You will not get a record of previous registrations.</p>
-                    </div>
-                </div>
                 <div class="row" id="max_users__row">
                     <div class="col-xs-12">
                         <label for="max_users">
@@ -164,6 +153,17 @@
                                 <option value="">Unrestricted</option>
                             </select></p>
                         </label>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-xs-12">
+                        <h2>Automatic Deregistration After Each Timeslot has Passed</h2>
+                        <p>Select whether the student will be automatically deregistered from a timeslot after it has passed. This is useful for recurring events.</p>
+                        <p class="vertical-align">
+                            <input type="radio" name="deregister" id="deregister_no" value="no" title="Do not automatically deregister students from past timeslots" /><label for="deregister_no" class="inline">No</label>
+                            <input type="radio" name="deregister" id="deregister_yes" value="yes" title="Automatically deregister students from past timeslots" /><label for="deregister_yes" class="inline">Yes</label>
+                        </p>
+                        <p>Note: Students can still only be in one timeslot at a time. You will not get a record of previous registrations.</p>
                     </div>
                 </div>
                 <div class="row" id="email_instructor__row">

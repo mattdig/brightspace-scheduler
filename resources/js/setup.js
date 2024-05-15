@@ -87,6 +87,13 @@ async function init(){
         } else {
             $('#deregister_no').prop('checked', true);
         }
+
+
+        if('ei' in CFG && CFG.ei == 1){
+            $('#email_instructor_yes').prop('checked', true);
+        } else {
+            $('#email_instructor_no').prop('checked', true);
+        }
         
 
         if(groupCategory.SelfEnrollmentExpiryDate != null){
@@ -146,6 +153,7 @@ async function init(){
     } else {
         $('#form_title').html('Create New Signup Schedule');
         $('#deregister_no').prop('checked', true);
+        $('#email_instructor_no').prop('checked', true);
         await getModules();
         $('#module_selection').show();
         $('#edit_timeblocks').show();
@@ -1099,6 +1107,10 @@ async function createTopic(doCreate = true){
 
     if($('#deregister_yes').is(':checked')){
         configOptionsJSON.dr = 1;
+    }
+
+    if($('#email_instructor').is(':checked')){
+        configOptionsJSON.ei = 1;
     }
 
     content = content.replace(/\(configOptionsJSON\)/g, JSON.stringify(configOptionsJSON));
