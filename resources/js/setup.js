@@ -215,7 +215,7 @@ async function getExistingTimeSlots(){
         if(CFG.dr !== undefined && CFG.dr == 1){
             if(endTime < moment()){
                 for(const userId of GROUPS[i].Enrollments){
-                    promiseArray.push(unenrollFromGroup(timeSlot, userId, false));
+                    promiseArray.push(unenrollFromGroup(GROUPS[i].GroupId, userId, false));
                 }
                 GROUPS[i].Enrollments = [];
             }
@@ -1185,7 +1185,7 @@ async function deleteTimeSlot(timeSlot, sendNotifications = true){
     let promises = [];
     promises.push(deleteCalendarEvent(timeSlot.eventId));
     for(student of timeSlot.students){
-        promises.push(unenrollFromGroup(timeSlot, student, sendNotifications));
+        promises.push(unenrollFromGroup(timeSlot.groupId, student, sendNotifications));
     }
     await Promise.all(promises);
     let deleted = await deleteGroup(timeSlot.groupId);
@@ -1303,7 +1303,7 @@ async function removeStudentsFromGroup(groupId, checkedStudents){
     //remove the students from the group
     checkedStudents.each(function(){
         let studentId = this.value;
-        promises.push(unenrollFromGroup(timeSlot, studentId));
+        promises.push(unenrollFromGroup(groupId, studentId));
         $('#student_' + studentId).remove();
         timeSlot.students = timeSlot.students.filter(function(id) {
             return id != parseInt(studentId);
@@ -1411,7 +1411,7 @@ async function enrollStudentInGroup(groupId, userId){
 async function cancelTimeSlot(timeSlot){
     $('#timeslot_' + timeSlot.groupId + ' .timeslot-registration').html('&nbsp;-&nbsp;');
     $('#timeslot_' + timeSlot.groupId).find('.manage-timeslot').remove();
-    await unenrollFromGroup(timeSlot, timeSlot.students[0]);
+    await unenrollFromGroup(timeSlot.groupId, timeSlot.students[0]);
     timeSlot.students = [];
     
     reloadAfterSave();
