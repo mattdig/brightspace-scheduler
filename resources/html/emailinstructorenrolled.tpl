@@ -1,10 +1,9 @@
 <h1>(courseName)</h1>
-<p>Thank you for registering for <strong>(scheduleTitle)</strong>.</p>
-<p>You have selected the following time slot:</p>
+<p>(studentName) &lt;(studentEmail)&gt; has registered <strong>(scheduleTitle)</strong>.</p>
+<p>They have selected the following time slot:</p>
 <h2>(timeSlot)</h2>
-<p><a href="(topicUrl)">Review or manage your selection</a></p>
+<p><a href="(topicUrl)">Review or manage this schedule</a></p>
 <p><a href="(calendarUrl)">View your Brightspace calendar</a></p>
-(feedUrl)
 <p>If you have any questions or concerns please contact your course instructor.<p>
 <p>&nbsp;</p>
 <hr />
