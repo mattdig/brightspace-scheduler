@@ -404,7 +404,7 @@ function initializeDatetime(datetimeElem){
     $(datetimeElem).find('.starttime_input').on('change', function(){
         let object = $(datetimeElem).find('.endtime_input')
         let time = momentFromTime(object.val());
-        let startTime = momentFromTime($(this).val()).add(interval, 'minutes');
+        let startTime = momentFromTime('00:00');
         let endTime = momentFromTime('23:59');
         generateTimeOptions(object, time, startTime, endTime, interval);
         validateTimeFields(false);
@@ -414,7 +414,7 @@ function initializeDatetime(datetimeElem){
         let object = $(datetimeElem).find('.starttime_input')
         let time = momentFromTime(object.val());
         let startTime = momentFromTime('00:00');
-        let endTime = momentFromTime($(this).val());
+        let endTime = momentFromTime('23:59');
         generateTimeOptions(object, time, startTime, endTime, interval);
         validateTimeFields(false);
     });
