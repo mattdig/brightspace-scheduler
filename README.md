@@ -42,7 +42,4 @@ Add the first link, "Scheduler" to a navbar in a course (or all courses).
 Access the course as an instructor to create a new schedule for the students.
 
 TODO:
-- Email enrollment updates to instructor(s)
-- Remove time selection restrictions (all times are available to select)
-- Add recurring events (eg. every Monday & Wednesday at 1 - 3 pm)
-- merge GROUPS and existingTimeSlots global vars in js/signup.js
+- merge GROUPS and existingTimeSlots global vars in resources/js/setup.js
