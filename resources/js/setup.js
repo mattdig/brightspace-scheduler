@@ -1351,10 +1351,16 @@ async function autofillGroupRegistration(associatedGroups){
         studentsToEnroll = [];
         studentsAlreadyEnrolled = [];
         for(student of group.Enrollments){
-            if(groupEnrolledStudents[student]){
-                studentsAlreadyEnrolled.push(student);
-            } else {
-                studentsToEnroll.push(student);
+
+            // groups still contain unenrolled students
+            if(student in CLASSLIST){
+
+                if(groupEnrolledStudents[student]){
+                    studentsAlreadyEnrolled.push(student);
+                } else {
+                    studentsToEnroll.push(student);
+                }
+            
             }
         }
 
