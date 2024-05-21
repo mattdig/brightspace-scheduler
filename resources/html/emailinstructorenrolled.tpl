@@ -4,7 +4,6 @@
 <h2>(timeSlot)</h2>
 <p><a href="(topicUrl)">Review or manage this schedule</a></p>
 <p><a href="(calendarUrl)">View your Brightspace calendar</a></p>
-<p>If you have any questions or concerns please contact your course instructor.<p>
 <p>&nbsp;</p>
 <hr />
 <p>This is an automated message from Brightspace. Do not reply to it.</p>
