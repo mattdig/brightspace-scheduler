@@ -1,4 +1,4 @@
-let match = window.top.location.href.match(/\/content\/(\d+)\//);
+let match = window.top.location.href.match(/\/enhancedSequenceViewer\/(\d+)\?url=(\S+)activity%2F(\d+)/);
 let ORG_UNIT_ID = match[1];
 const bs = new Brightspace(ORG_UNIT_ID);
 const params = new Proxy(new URLSearchParams(window.parent.location.search), {get: (searchParams, prop) => searchParams.get(prop)});
