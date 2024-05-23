@@ -42,7 +42,7 @@ Add the first link, "Scheduler" to a navbar in a course (or all courses).
 Access the course as an instructor to create a new schedule for the students.
 
 # Display Email Addresses
-Change `d2l.Tools.Classlist.DisplayEmail` to on for the top level organization.
+Change `d2l.Tools.Classlist.DisplayEmail` to `on` for the top level organization.
 
 # TODO
 - Email enrollment updates to instructor(s)
