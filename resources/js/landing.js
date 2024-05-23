@@ -39,8 +39,15 @@ async function redirect(){
     config.t = TOPIC_ID;
     config = btoa(JSON.stringify(config));
 
-    let redirect = '/d2l/lp/navbars/' + ORG_UNIT_ID + '/customlinks/external/' + ((await student) ? signupLinkId : adminLinkId) + '?cfg=' + config;
-    window.top.location.replace(redirect);
+    student = await student;
+
+    let redirect = '/d2l/lp/navbars/' + ORG_UNIT_ID + '/customlinks/external/' + ((student) ? signupLinkId : adminLinkId) + '?cfg=' + config;
+    
+    if(student){
+        window.location.replace(redirect);
+    } else {
+        window.top.location.replace(redirect);
+    }
 }
 
 window.onload = function(event) {

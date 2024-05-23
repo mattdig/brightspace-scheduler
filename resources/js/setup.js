@@ -1,3 +1,6 @@
+let match = window.top.location.href.match(/\/navbars\/(\d+)\//);
+let ORG_UNIT_ID = match[1];
+const bs = new Brightspace(ORG_UNIT_ID);
 const params = new Proxy(new URLSearchParams(window.top.location.search), {get: (searchParams, prop) => searchParams.get(prop)});
 let CFG = params.cfg;
 let MODE = 'create';
@@ -7,6 +10,7 @@ if(CFG !== null){
 }
 let GROUP_CATEGORY_ID = (MODE == 'edit' ? CFG.gc : null);
 let TOPIC_ID = 0;
+let TOPIC;
 let SUBMITTING = false;
 let TIMEZONE;
 let CLASSLIST;
@@ -25,7 +29,12 @@ $(function(){init();});
 async function init(){
 
     let associatedGroups = false;
-    if(MODE == 'edit' && 'agc' in CFG){
+    if(MODE == 'edit'){
+
+        TOPIC_ID = CFG.t;
+
+        TOPIC = bs.get('/d2l/api/le/(version)/(orgUnitId)/content/topics/' + TOPIC_ID);
+        
         associatedGroups = getGroupsInCategory(CFG.agc);
     }
 
@@ -65,14 +74,27 @@ async function init(){
 
         CLASSLIST = getClassList();
 
-        TOPIC_ID = CFG.t;
-
         $('#form_title').html('Edit Signup Schedule');
 
         let groupCategory = await getGroupCategory();
         TITLE = groupCategory.Name;
         $('#title').val(TITLE);
         $('#schedule_title').html(groupCategory.Name);
+
+        
+        if('dr' in CFG && CFG.dr == 1){
+            $('#deregister_yes').prop('checked', true);
+        } else {
+            $('#deregister_no').prop('checked', true);
+        }
+
+
+        if('ei' in CFG && CFG.ei == 1){
+            $('#email_instructor_yes').prop('checked', true);
+        } else {
+            $('#email_instructor_no').prop('checked', true); 
+        }
+        
 
         if(groupCategory.SelfEnrollmentExpiryDate != null){
             $('#expiry_date').html("Last day to sign up: " + moment.utc(groupCategory.SelfEnrollmentExpiryDate, 'YYYY-MM-DDTHH:mm:ss.fffZ').subtract(1, 'days').tz(TIMEZONE).format('MMM Do, YYYY'));
@@ -108,10 +130,11 @@ async function init(){
 
             $('#associated_group_category').val(CFG.agc);
             $('#associated_group_category_name').html(associatedGroupCategory.Name);
-            $('#autofill_group_registration__buton').click(function(){
-                autofillGroupRegistration(associatedGroups);
+            $('#autofill_group_registration__buton').click(async function(){
+                $(this).prop('disabled', true);
+                await autofillGroupRegistration(associatedGroups);
+                $(this).prop('disabled', false);
             });
-            $('#autofill_group_registration').show();
         }
 
         // wait for the classlist to load
@@ -129,6 +152,8 @@ async function init(){
 
     } else {
         $('#form_title').html('Create New Signup Schedule');
+        $('#deregister_no').prop('checked', true);
+        $('#email_instructor_no').prop('checked', true);
         await getModules();
         $('#module_selection').show();
         $('#edit_timeblocks').show();
@@ -176,6 +201,8 @@ async function updateEventTitle(element){
 
 async function getExistingTimeSlots(){
     
+    let promiseArray = [];
+
     for(i in GROUPS){
         
         let data = GROUPS[i].Code.split('_');
@@ -185,9 +212,19 @@ async function getExistingTimeSlots(){
 
         let localDateTimeFormat = startTime.format('MMM[&nbsp;]Do[&nbsp;]YYYY, h:mm[&nbsp;]A') + '&nbsp;-&nbsp;' + endTime.format('h:mm[&nbsp;]A');
 
-        // Brightspace includes unenrolled students in the groups, so they need to be filtered out
-        GROUPS[i].Enrollments = GROUPS[i].Enrollments.filter(userId => userId in CLASSLIST);
+        if(CFG.dr !== undefined && CFG.dr == 1){
+            if(endTime < moment()){
+                for(const userId of GROUPS[i].Enrollments){
+                    promiseArray.push(unenrollFromGroup(GROUPS[i].GroupId, userId, false));
+                }
+                GROUPS[i].Enrollments = [];
+            }
+        }
         
+        // Brightspace includes unenrolled students in the groups, so they need to be filtered out
+        if(GROUPS[i].Enrollments.length > 0)
+            GROUPS[i].Enrollments = GROUPS[i].Enrollments.filter(userId => userId in CLASSLIST);
+
         let timeslot = {
             start: startTime,
             end: endTime,
@@ -199,6 +236,10 @@ async function getExistingTimeSlots(){
 
         existingTimeSlots.push(timeslot);
     };
+
+    if(promiseArray.length > 0){
+        await Promise.all(promiseArray);
+    }
 
     existingTimeSlots.sort(compareStarttime);
 }
@@ -282,8 +323,11 @@ async function displayExistingTimeSlots(groupCategory){
         });
     });
 
-    if(!hasRegistrations){
-        $('#download_schedule').hide();
+    if(hasRegistrations){
+        $('#download_schedule').show();
+        if('agc' in CFG){
+            $('#autofill_group_registration').show();
+        }
     }
     
     $('#existing_timeslots').show();
@@ -301,6 +345,8 @@ function addDatetime(){
         // set select values from last datetime (clone doesn't work?)
         newDateTime.find('.starttime_input').val(lastDatetime.find('.starttime_input').val());
         newDateTime.find('.endtime_input').val(lastDatetime.find('.endtime_input').val());
+
+        newDateTime.find('.day_of_week').prop('checked', false);
         
         newDateTime.find('.btn-remove').on('click', removeDatetime);
         newDateTime.insertAfter(lastDatetime);
@@ -342,13 +388,39 @@ function orderDatetimeElems(element = null, counter = null){
         elem.attr('id', 'datetime_' + index);
         elem.find('h3').find('span').text('Date & Time ' + index);
         elem.find('h3').find('button').data('counter', index);
-        elem.find('label.date_label').attr('for', 'date_' + index);
+        
+        elem.find('label.timeslottype_single_label').attr('for', 'timeslottype_single_' + index);
+        elem.find('input.timeslottype_single_input').attr('id', 'timeslottype_single_' + index).attr('name', 'timeslottype_' + index);
+
+        elem.find('label.timeslottype_recurring_label').attr('for', 'timeslottype_recurring_' + index);
+        elem.find('input.timeslottype_recurring_input').attr('id', 'timeslottype_recurring_' + index).attr('name', 'timeslottype_' + index);
+        
+        elem.find('label.startdate_label').attr('for', 'date_' + index);
+        elem.find('label.enddate_label').attr('for', 'enddate_' + index);
         elem.find('label.starttime_label').attr('for', 'starttime_' + index);
         elem.find('label.endtime_label').attr('for', 'endtime_' + index);
         
-        elem.find('input.date_input').attr('id', 'date_' + index).attr('name', 'date_' + index);
+        elem.find('input.startdate_input').attr('id', 'date_' + index).attr('name', 'date_' + index);
+        elem.find('input.enddate_input').attr('id', 'enddate_' + index).attr('name', 'enddate_' + index);
         elem.find('select.starttime_input').attr('id', 'starttime_' + index).attr('name', 'starttime_' + index);
         elem.find('select.endtime_input').attr('id', 'endtime_' + index).attr('name', 'endtime_' + index);
+
+        elem.find('label.monday_label').attr('for', 'monday_' + index);
+        elem.find('label.tuesday_label').attr('for', 'tuesday_' + index);
+        elem.find('label.wednesday_label').attr('for', 'wednesday_' + index);
+        elem.find('label.thursday_label').attr('for', 'thursday_' + index);
+        elem.find('label.friday_label').attr('for', 'friday_' + index);
+        elem.find('label.saturday_label').attr('for', 'saturday_' + index);
+        elem.find('label.sunday_label').attr('for', 'sunday_' + index);
+
+        elem.find('input.day_of_week__0').attr('id', 'sunday_' + index).attr('name', 'sunday_' + index);
+        elem.find('input.day_of_week__1').attr('id', 'monday_' + index).attr('name', 'monday_' + index);
+        elem.find('input.day_of_week__2').attr('id', 'tuesday_' + index).attr('name', 'tuesday_' + index);
+        elem.find('input.day_of_week__3').attr('id', 'wednesday_' + index).attr('name', 'wednesday_' + index);
+        elem.find('input.day_of_week__4').attr('id', 'thursday_' + index).attr('name', 'thursday_' + index);
+        elem.find('input.day_of_week__5').attr('id', 'friday_' + index).attr('name', 'friday_' + index);
+        elem.find('input.day_of_week__6').attr('id', 'saturday_' + index).attr('name', 'saturday_' + index);
+
     });
 
     return element;
@@ -356,15 +428,43 @@ function orderDatetimeElems(element = null, counter = null){
 
 function initializeDatetime(datetimeElem){
 
-    //let latestTime = globalLatestTime.clone();
-
     let latestTime = moment();
     let initializeTimes = true;
 
+    $(datetimeElem).find('.timeslottype').on('change', function(){
+        if($(this).val() == 'recurring' && $(this).is(':checked')){
+            $(datetimeElem).find('label.startdate_label p').text('Start Date');
+            $(datetimeElem).find('.day_checkboxes').show();
+            $(datetimeElem).find('.startdate').removeClass('col-sm-6').addClass('col-sm-3');
+            $(datetimeElem).find('.enddate').show();
+        } else {
+            $(datetimeElem).find('label.startdate_label p').text('Date');
+            $(datetimeElem).find('.day_checkboxes').hide();
+            $(datetimeElem).find('.startdate').removeClass('col-sm-3').addClass('col-sm-6');
+            $(datetimeElem).find('.enddate').hide();
+        }
+
+        validateTimeFields(false);
+    });
+
     if($('.datetime__div').length > 1){
+
         initializeTimes = false;
-        let lastDatetime = $('.datetime__div').last().prev();
-        latestTime = moment(lastDatetime.find('.date_input').val() + ' ' + lastDatetime.find('.starttime_input').val(), 'YYYY-MM-DD HH:mm').add(1, 'days');
+        
+        $('.datetime__div').each(function(){
+            let datetime;
+            if($(this).find('.timeslottype_recurring_input').is(':checked')){
+                datetime = moment($(this).find('.enddate_input').val() + ' ' + $(this).find('.starttime_input').val(), 'YYYY-MM-DD HH:mm');                
+            } else {
+                datetime = moment($(this).find('.startdate_input').val() + ' ' + $(this).find('.starttime_input').val(), 'YYYY-MM-DD HH:mm');
+            }
+
+            if(datetime.isAfter(latestTime)){
+                latestTime = datetime;
+            }
+        });
+        
+        latestTime.add(1, 'days');
     }
 
     let interval = 30;
@@ -380,48 +480,28 @@ function initializeDatetime(datetimeElem){
         defaultDate: moment(latestTime),
         minDate: moment().subtract(1, 'days'),
         maxDate: moment().add(1, 'years')
-    }).on('dp.hide', function(e){
+    }).on('dp.change', function(){
         validateTimeFields(false);
     });
-
-    
-    
 
     if(initializeTimes){
         latestTime = momentFromTime(latestTime.format('HH:mm'));
     
         let minTime = momentFromTime('00:00');
-        let maxTime = latestTime.clone().add(1, 'hours');
+        maxTime = momentFromTime('23:30');
 
         generateTimeOptions($(datetimeElem).find('.starttime_input'), latestTime, minTime, maxTime, interval);
 
-        minTime = latestTime.clone().add(30, 'minutes');
-        maxTime = momentFromTime('23:59');
-
-        generateTimeOptions($(datetimeElem).find('.endtime_input'), latestTime.clone().add(1, 'hours'), minTime, maxTime, interval);
+        generateTimeOptions($(datetimeElem).find('.endtime_input'), latestTime.add(1, 'hours'), minTime, maxTime.add(29, 'minutes'), interval);
     }
 
-    $(datetimeElem).find('.starttime_input').on('change', function(){
-        let object = $(datetimeElem).find('.endtime_input')
-        let time = momentFromTime(object.val());
-        let startTime = momentFromTime('00:00');
-        let endTime = momentFromTime('23:59');
-        generateTimeOptions(object, time, startTime, endTime, interval);
+    $(datetimeElem).find('.timeblock_datetime_input').on('change', function(){
         validateTimeFields(false);
     });
 
-    $(datetimeElem).find('.endtime_input').on('change', function(){
-        let object = $(datetimeElem).find('.starttime_input')
-        let time = momentFromTime(object.val());
-        let startTime = momentFromTime('00:00');
-        let endTime = momentFromTime('23:59');
-        generateTimeOptions(object, time, startTime, endTime, interval);
+    $(datetimeElem).find('.day_of_week').on('change', function(){
         validateTimeFields(false);
     });
-
-    // minTime = latestTime.clone().add(30, 'minutes');
-    // maxTime = moment([0, 0, 0, 23, 30, 0, 0]);
-
     
     validateTimeFields(false);
 
@@ -545,21 +625,79 @@ function validateTimeFields(withErrors){
 
     let datetimes = [];
     
-    let latestTime = moment();
-
-    //let selectedTab = $('.tab-pane.active').find('label').attr('for');
-    //let blockValue = parseInt($('#' + selectedTab).val());
-
     if($('#edit_timeblocks').is(':visible')){
         $('.datetime__div').each(function(){
-            let datetime = {};
-            let format = "YYYY-MM-DD HH:mm";
-            let date = $(this).find('.date_input').val() + " ";
-            datetime.id = $(this).attr('id');
-            datetime.start = moment(date + $(this).find('.starttime_input').val(), format);
-            datetime.end = moment(date + $(this).find('.endtime_input').val(), format);
-            datetimes.push(datetime);
+
+            let dateFormat = 'YYYY-MM-DD';
+            let timeFormat = 'HH:mm';
+            let format = dateFormat + ' ' + timeFormat;
+
+            let startdate = $(this).find('.startdate_input').val();
+            let enddate = $(this).find('.enddate_input').val();
+
+            let isRecurring = $(this).find('.timeslottype_recurring_input').is(':checked');
+
+            if(startdate == '' || enddate == ''){
+                if(withErrors){
+                    modalMessage('Please enter a start ' + (isRecurring ? 'and end ' : '') + 'date.', $(this).find('.date_input'));
+                }
+                return false;
+            }
+
+            if(isRecurring){
+
+                let startdateMoment = moment(startdate, dateFormat);
+                let enddateMoment = moment(enddate, dateFormat);
+
+                let dayDifference = enddateMoment.diff(startdateMoment, 'days');
+
+                if(startdateMoment.isAfter(enddateMoment)){
+                    if(withErrors){
+                        modalMessage('End date must be after start date.', $(this).find('.date_input'));
+                    }
+                    return false;
+                } else if (dayDifference > 365){
+                    if(withErrors){
+                        modalMessage('Date range must be less than 1 year.', $(this).find('.date_input'));
+                    }
+                    return false;
+                }
+
+                let date = startdate + ' ';
+                let starttime = $(this).find('.starttime_input').val();
+                let endtime = $(this).find('.endtime_input').val();
+
+                let startdatetime = moment(date + starttime, format);
+                let enddatetime = date + endtime;
+
+                for(i = 0; i <= dayDifference; i++){
+                                        
+                    // if the day of the week is selected
+                    if($(this).find('.day_of_week__' + startdatetime.day() + ':checked').length > 0){
+                        let datetime = {};
+                        datetime.id = $(this).attr('id');
+                        datetime.start = startdatetime.clone();
+                        datetime.end = moment(enddatetime, format).add(i, 'days');
+                        datetimes.push(datetime);
+                    }
+
+                    startdatetime.add(1, 'days');
+                }
+
+            } else {
+
+                let datetime = {};
+                let date = $(this).find('.startdate_input').val() + " ";
+
+                datetime.id = $(this).attr('id');
+                datetime.start = moment(date + $(this).find('.starttime_input').val(), format);
+                datetime.end = moment(date + $(this).find('.endtime_input').val(), format);
+                datetimes.push(datetime);
+
+            }
+
         });
+
     } else {
         return true;
     }
@@ -579,6 +717,7 @@ function validateTimeFields(withErrors){
             let spliceIndexes = [];
 
             for(const [j, datetime2] of datetimes.slice(i + 1).entries()){
+
                 if(datetime1.id != datetime2.id && (
                     datetime1.start.isAfter(datetime2.start) && datetime1.start.isBefore(datetime2.end) || 
                     datetime1.end.isAfter(datetime2.start) && datetime1.end.isBefore(datetime2.end) ||
@@ -621,9 +760,6 @@ function validateTimeFields(withErrors){
                 datetimes.splice(index, 1);
             });
             
-            if(datetime1.end.isAfter(latestTime)){
-                latestTime = datetime1.end.clone();
-            }
         }
     }
 
@@ -632,8 +768,6 @@ function validateTimeFields(withErrors){
         valid = false;
     }
     
-    //updateGlobalLatestTime(latestTime);
-
     return valid;
 
 }
@@ -708,6 +842,7 @@ async function submitForm(){
 
         let groupCategory;
         let newTopic;
+        let refreshCFG = false;
 
         if(MODE == 'create'){
             groupCategory = await createGroupCategory();
@@ -720,6 +855,12 @@ async function submitForm(){
                 updateGroupCategory(),
                 updateTopic()
             ]);
+
+            if($('#deregister_yes').is(':checked') && !('dr' in CFG) || CFG.dr == 0 ||
+                $('#deregister_no').is(':checked') && 'dr' in CFG && CFG.dr == 1){
+                await updateTopicFile(result[1]);
+                refreshCFG = true;
+            }
         }
 
 
@@ -753,7 +894,8 @@ async function submitForm(){
             await Promise.all(promiseArray);
         }
 
-        reloadAfterSave();
+        
+        reloadAfterSave(refreshCFG);
 
     }
 
@@ -782,9 +924,9 @@ async function createGroupAndEvent(timeSlot, group){
     
 }
 
-function reloadAfterSave(){
-    if(MODE == 'create'){
-        window.top.location.href = '/d2l/le/content/' + ORG_UNIT_ID + '/viewContent/' + TOPIC_ID + '/View'; 
+function reloadAfterSave(refreshCFG){
+    if(MODE == 'create' || refreshCFG){
+        window.top.location.replace('/d2l/le/content/' + ORG_UNIT_ID + '/viewContent/' + TOPIC_ID + '/View');
     } else {
         window.top.location.reload();
     }
@@ -944,7 +1086,7 @@ async function updateCalendarEvent(timeSlot){
 }
 
 
-async function createTopic(){
+async function createTopic(doCreate = true){
 
     let title = $('#title').val().trim();
 
@@ -961,16 +1103,27 @@ async function createTopic(){
 
     if($('#max_users').val() > 1 && $('#associated_group_category').val() != ''){
         configOptionsJSON.agc = parseInt($('#associated_group_category').val());
-        configOptionsJSON.rt = 1;
+    }
+
+    if($('#deregister_yes').is(':checked')){
+        configOptionsJSON.dr = 1;
+    }
+
+    if($('#email_instructor_yes').is(':checked')){
+        configOptionsJSON.ei = 1;
     }
 
     content = content.replace(/\(configOptionsJSON\)/g, JSON.stringify(configOptionsJSON));
+
+    if(!doCreate){
+        return content;
+    }
     
-    let topic = [
+    let topicObj = [
         {
             "IsHidden": false,
             "IsLocked": false,
-            "ShortTitle": null,
+            "ShortTitle": 'Hello',
             "Type": 1,
             "DueDate": null,
             "Url": orgUnitInfo.Path + "Scheduler.html",
@@ -981,29 +1134,49 @@ async function createTopic(){
         },
         content
     ];
-
-    return bs.post('/d2l/api/le/(version)/(orgUnitId)/content/modules/' + targetModuleId + '/structure/?renameFileIfExists=true', topic);
-
+    
+    return bs.post('/d2l/api/le/(version)/(orgUnitId)/content/modules/' + targetModuleId + '/structure/?renameFileIfExists=true', topicObj);
+    
 }
 
 async function updateTopic(){
 
+    TOPIC = await TOPIC;
+
     let title = $('#title').val().trim();
 
-    let topic = await bs.get('/d2l/api/le/(version)/(orgUnitId)/content/topics/' + TOPIC_ID);
-
-    topic = {
+    topicObj = {
         "Title": title,
         "ShortTitle": "",
         "Type": 1,
         "TopicType": 1,
-        "Url": topic.Url,
-        "IsHidden": false,
-        "IsLocked": false,
-        "MajorUpdateText": ""        
+        "Url": TOPIC.Url,
+        "IsHidden": TOPIC.IsHidden,
+        "IsLocked": TOPIC.IsLocked,
+        "MajorUpdateText": ""
     }
 
-    return bs.put('/d2l/api/le/(version)/(orgUnitId)/content/topics/' + TOPIC_ID, topic);
+    await bs.put('/d2l/api/le/(version)/(orgUnitId)/content/topics/' + TOPIC_ID, topicObj);
+
+    return topicObj;
+
+}
+
+async function updateTopicFile(){
+
+    let content = await createTopic(false);
+
+    let filename = TOPIC.Url.substring(TOPIC.Url.lastIndexOf('/') + 1);
+
+    let formdata  = 'Content-Disposition:form-data;name="file";filename="' + filename + '"\r\n';
+        formdata += 'Content-Type:text/html; charset="UTF-8"\r\n\r\n';
+        formdata += content + '\r\n';
+
+    await bs.put("/d2l/api/le/(version)/(orgUnitId)/content/topics/" + TOPIC_ID + "/file", [formdata]);
+
+    await bs.delete('/d2l/api/lp/(version)/(orgUnitId)/managefiles/file?path=' + encodeURIComponent(TOPIC.Url));
+        
+    return true;
 
 }
 
@@ -1012,7 +1185,7 @@ async function deleteTimeSlot(timeSlot, sendNotifications = true){
     let promises = [];
     promises.push(deleteCalendarEvent(timeSlot.eventId));
     for(student of timeSlot.students){
-        promises.push(unenrollFromGroup(timeSlot, student, sendNotifications));
+        promises.push(unenrollFromGroup(timeSlot.groupId, student, sendNotifications));
     }
     await Promise.all(promises);
     let deleted = await deleteGroup(timeSlot.groupId);
@@ -1130,7 +1303,7 @@ async function removeStudentsFromGroup(groupId, checkedStudents){
     //remove the students from the group
     checkedStudents.each(function(){
         let studentId = this.value;
-        promises.push(unenrollFromGroup(timeSlot, studentId));
+        promises.push(unenrollFromGroup(groupId, studentId));
         $('#student_' + studentId).remove();
         timeSlot.students = timeSlot.students.filter(function(id) {
             return id != parseInt(studentId);
@@ -1178,10 +1351,16 @@ async function autofillGroupRegistration(associatedGroups){
         studentsToEnroll = [];
         studentsAlreadyEnrolled = [];
         for(student of group.Enrollments){
-            if(groupEnrolledStudents[student]){
-                studentsAlreadyEnrolled.push(student);
-            } else {
-                studentsToEnroll.push(student);
+
+            // groups still contain unenrolled students
+            if(student in CLASSLIST){
+
+                if(groupEnrolledStudents[student]){
+                    studentsAlreadyEnrolled.push(student);
+                } else {
+                    studentsToEnroll.push(student);
+                }
+            
             }
         }
 
@@ -1238,7 +1417,7 @@ async function enrollStudentInGroup(groupId, userId){
 async function cancelTimeSlot(timeSlot){
     $('#timeslot_' + timeSlot.groupId + ' .timeslot-registration').html('&nbsp;-&nbsp;');
     $('#timeslot_' + timeSlot.groupId).find('.manage-timeslot').remove();
-    await unenrollFromGroup(timeSlot, timeSlot.students[0]);
+    await unenrollFromGroup(timeSlot.groupId, timeSlot.students[0]);
     timeSlot.students = [];
     
     reloadAfterSave();
@@ -1261,19 +1440,24 @@ async function notifyOfCancellation(userId){
     let email = sendEmail(studentEmail, subject, body);
 }
 
-async function unenrollFromGroup(timeSlot, userId, sendNotifications = true){
-    let url = '/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + GROUP_CATEGORY_ID + '/groups/' + timeSlot.groupId + '/enrollments/' + userId;
+function unenrollFromGroup(groupId, userId, sendNotifications = true){
+    let url = '/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + GROUP_CATEGORY_ID + '/groups/' + groupId + '/enrollments/' + userId;
     if(sendNotifications){
         notifyOfCancellation(userId);
     }
 
     //remove the student from group.Enrollment in GROUPS
-    let group = GROUPS.find(function(g) {
-        return g.GroupId == timeSlot.groupId;
-    });
-    group.Enrollments = group.Enrollments.filter(function(id) {
-        return id != userId;
-    });
+    if(sendNotifications){
+        let group = GROUPS.find(function(g) {
+            return g.GroupId == groupId;
+        });
+
+        if(group != undefined){
+            group.Enrollments = group.Enrollments.filter(function(id) {
+                return id != userId;
+            });
+        }
+    }
 
     return bs.delete(url);
 }
@@ -1320,7 +1504,7 @@ async function deleteSchedule(){
     await deleteTopic();
     await deleteGroupCategory();
 
-    window.top.location.href = '/d2l/le/content/' + ORG_UNIT_ID + '/Home';
+    window.top.location.replace('/d2l/le/content/' + ORG_UNIT_ID + '/Home');
 }
 
 function downloadSchedule(){

@@ -4,9 +4,13 @@
 *{font-size:16px; font-family: Lato, 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;}
 /*styles*/
 .container-fluid{padding:0px 30px 20px 30px; max-width: 1230px;}
-input[type=text],label{width: 100%;}
-input[type=checkbox], input[type=radio]{width: 25px; height: 25px;}
-h3,h4{font-weight: bold;}
+input[type=text],label,textarea{width: 100%;}
+input[type=checkbox], input[type=radio]{width: 25px; height: 25px; margin:0px;}
+label{margin-bottom:0px;}
+label.inline{width:auto; padding:0px 0px 0px 10px; margin-right:10px;}
+.flex-parent{display: flex; flex-wrap: wrap;}
+.vertical-align{display: flex; align-items: center; flex-direction: row; padding:5px 0px;}
+h3,h4{font-weight: bold; font-size: 16px;}
 .d2l-table {
     border-collapse:separate;
     border:1px solid #bbb;
@@ -55,12 +59,15 @@ tr:first-child th:last-child{
 .nav-tabs{font-weight: bold;}
 .tab-pane{padding: 10px 10px 0px 10px; margin-bottom: 1px solid #ccc;}
 .error{background-color: #ffbbbb;}
+#total_timeslots{font-size: 20px; font-weight: bold;}
 #expiry_date,#existing_timeslots,#signup_schedule__form,#edit_timeblocks,#edit_schedule,
 #add_new_timeblocks,#schedule_description,#module_selection,
-#autofill_group_registration,#associated_group_category__label{display: none;}
+#autofill_group_registration,#download_schedule,#associated_group_category__label{display: none;}
 #expiry_date{font-size: 22px; font-weight: bold;}
 #schedule_description{font-size:20px;}
 #existing_timeslots__table{width: 100%;font-size: 16px;margin-bottom: 20px;}
+.enddate{display: none;}
+.day_checkboxes{display: none;}
 .timeslot_actions .btn{display:block; margin: 0px auto 6px auto;}
 .student_timeslot_actions{display:none;}
 .datetime_title{margin-bottom: 5px;}
