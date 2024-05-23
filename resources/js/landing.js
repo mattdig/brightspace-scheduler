@@ -1,7 +1,17 @@
 let url = window.top.location.href;
-let match = url.match(/\/content\/(\d+)\/viewContent\/(\d+)\//);
-let ORG_UNIT_ID = match[1];
-let TOPIC_ID = match[2];
+let match_instructor = url.match(/\/lessons\/(\d+)\/topics\/(\d+)/);
+let match_student = url.match(/\/enhancedSequenceViewer\/(\d+)\?url=(\S+)activity%2F(\d+)/)
+
+let ORG_UNIT_ID = 0;
+let TOPIC_ID = 0;
+
+if (match_instructor != null) {
+    ORG_UNIT_ID = match_instructor[1];
+    TOPIC_ID = match_instructor[2];
+} else if (match_student != null) {
+    ORG_UNIT_ID = match_student[1];
+    TOPIC_ID = match_student[3];
+}
 
 const bs = new Brightspace(ORG_UNIT_ID);
 
