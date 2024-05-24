@@ -41,6 +41,9 @@ Add the first link, "Scheduler" to a navbar in a course (or all courses).
 
 Access the course as an instructor to create a new schedule for the students.
 
+# Display Email Addresses
+Change `d2l.Tools.Classlist.DisplayEmail` to `on` for the top level organization.
+
 TODO:
 - merge GROUPS and existingTimeSlots global vars in resources/js/setup.js
 - make it work with the New Content Experience
