@@ -1,4 +1,4 @@
-let match = window.top.location.href.match(/\/(?:enhancedSequenceViewer|content|lessons|navbars)\/(\d+))/);
+let match = window.top.location.href.match(/\/(?:enhancedSequenceViewer|content|lessons)\/(\d+)/);
 let ORG_UNIT_ID = match[1];
 const bs = new Brightspace(ORG_UNIT_ID);
 const params = new Proxy(new URLSearchParams(window.parent.location.search), {get: (searchParams, prop) => searchParams.get(prop)});
@@ -244,7 +244,7 @@ async function cancelMySelection(){
 
     await Promise.all([unenroll, sendStudentEmail, sendInstructorEmail]);
     
-    window.top.location.reload();
+    window.location.reload();
 }
 
 async function deregisterFromGroup(group){
@@ -306,8 +306,6 @@ async function selectTimeSlot(group){
     let studentEmail = classList[USER.Identifier].Email;
     let sendInstructorEmail = false;
     
-    console.log(classList);
-
     // email instructors
     if(CFG.ei == 1){
         let instructorEmails = [];
@@ -326,7 +324,7 @@ async function selectTimeSlot(group){
 
     let sendStudentEmail = sendEmail(studentEmail, subject, body);
     await Promise.all([enroll, sendStudentEmail, sendInstructorEmail]);
-    window.top.location.reload();
+    window.location.reload();
 }
 
 async function notifyInstructorOfRegistration(instructorEmails, studentEmail, timeSlot){
