@@ -46,8 +46,14 @@ async function getClassList(product = 'le'){
     let classList = [];
     let url = (product == 'le') ? '/d2l/api/le/(version)/(orgUnitId)/classlist/' : '/d2l/api/bas/(version)/orgunits/(orgUnitId)/classlist/';
     let response = await bs.get(url);
+    
     if(response.Objects !== undefined){
         response = response.Objects;
+    }
+    
+    // return empty array if the classlist is empty or user doesn't have permission
+    if(response instanceof Array && response.length == 0 || classList.constructor == Object && typeof(response.Error) !== 'undefined'){
+        return [];
     }
 
     for(student of response){

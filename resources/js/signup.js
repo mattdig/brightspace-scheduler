@@ -16,6 +16,8 @@ let EXPIRED = false;
 let REQUIRED_GROUP = false;
 let TIMEZONE;
  
+let HAS_BAS_ACCESS = false;
+
 $(function(){init();});
 
 async function init() {
@@ -43,9 +45,16 @@ async function init() {
     let groups = promises[5];
     associated_groups = promises[6];
 
-    // run through the groups and remove unenrolled students
-    for(i in groups){
-        groups[i].Enrollments = groups[i].Enrollments.filter(userId => userId in CLASSLIST);
+    if(CLASSLIST.length > 0){
+        HAS_BAS_ACCESS = true;
+    }
+
+    // largest downside of no classlist access: can't filter for unenrolled students still taking up group slots
+    if(HAS_BAS_ACCESS){
+        // run through the groups and remove unenrolled students
+        for(i in groups){
+            groups[i].Enrollments = groups[i].Enrollments.filter(userId => userId in CLASSLIST);
+        }
     }
     
     TIMEZONE = orgInfo.TimeZone;
@@ -109,10 +118,6 @@ async function displayGroupsInCategory(groups){
 
     $('#existing_timeslots__table').html(html);
 
-    const results = await Promise.all([CLASSLIST, USER]);
-    CLASSLIST = results[0];
-    USER = results[1];
-
     for(let group of groups){
 
         let data = group.Code.split('_');
@@ -131,7 +136,7 @@ async function displayGroupsInCategory(groups){
             html = '<tr class="timeslot" id="timeslot_' + group.GroupId + '">';
             if(MAX_STUDENTS > 1){
                 html += '<td class="timeslot_datetime">' + group.Enrollments.length + '/' + MAX_STUDENTS + ' students';
-                if(group.Enrollments.length > 0){
+                if(HAS_BAS_ACCESS && group.Enrollments.length > 0){
                     html += '<br><small>';
                     for(let student of group.Enrollments){
                         html += CLASSLIST[student].DisplayName + '<br>';
@@ -218,28 +223,41 @@ function findRequiredGroup(groups, associated_groups){
 
 async function cancelMySelection(){
     if(MY_TIME === false){
+        window.top.location.reload();
         return false;
     }
 
     $('#cancel-selection').remove();
 
+    let hasClassListAccess = false;
+
     let classList = await getClassList();
 
-    let studentEmail = classList[USER.Identifier].Email;
+    if(classList.length > 0){
+        hasClassListAccess = true;
+    }
+
     
     let unenroll = unenrollFromGroup(MY_TIME.groupId);
-    let sendStudentEmail = notifyStudentOfCancellation(studentEmail);
+    
+    let sendStudentEmail = false;
     let sendInstructorEmail = false;
 
-    if(CFG.ei == 1){
-        let instructorEmails = [];
+    if(hasClassListAccess){
+        let studentEmail = classList[USER.Identifier].Email;
+        sendStudentEmail = notifyStudentOfCancellation(studentEmail);
+    
 
-        for(const userId in classList){
-            if(classList[userId].RoleId !== null && INSTRUCTOR_ROLE_IDS.includes(classList[userId].RoleId)){
-                instructorEmails.push(classList[userId].Email);
+        if(CFG.ei == 1){
+            let instructorEmails = [];
+
+            for(const userId in classList){
+                if(classList[userId].RoleId !== null && INSTRUCTOR_ROLE_IDS.includes(classList[userId].RoleId)){
+                    instructorEmails.push(classList[userId].Email);
+                }
             }
+            sendInstructorEmail = notifyInstructorOfCancellation(instructorEmails, studentEmail);
         }
-        sendInstructorEmail = notifyInstructorOfCancellation(instructorEmails, studentEmail);
     }
 
     await Promise.all([unenroll, sendStudentEmail, sendInstructorEmail]);
@@ -261,7 +279,11 @@ async function selectTimeSlot(group){
         return false;
     }
 
+    let hasClassListAccess = false;
+
     let classList = getClassList();
+
+    
 
     let data = {
         "d2l_rf": "IsGroupFull",
@@ -278,53 +300,61 @@ async function selectTimeSlot(group){
 
     let enroll = enrollInGroup(group.GroupId);
 
-    let host = window.location.host;
+    await classList;
 
-    let calendarSubscription = await bs.get('/d2l/le/calendar/(orgUnitId)/subscribe/subscribeDialogLaunch?subscriptionOptionId=-1');
-    let feedToken = calendarSubscription.match(/feed\.ics\?token\=([a-zA-Z0-9]+)/)[1];
-    let feedUrl = '<p>You can add your Brightspace calendar to your favourite calendar app with this URL:</p>' +
-                  '<p><a href="webcal://' + host + '/d2l/le/calendar/feed/user/feed.ics?token=' + feedToken + '">webcal://' + host + '/d2l/le/calendar/feed/user/feed.ics?token=' + feedToken + '</a></p>';
-    let calendarUrl = 'https://' + host + '/d2l/le/calendar/' + ORG_UNIT_ID;
-    let topicUrl = 'https://' + host + '/d2l/le/content/' + ORG_UNIT_ID + '/viewContent/' + TOPIC_ID + '/View';
-
-    let pluginPath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf("/"));
-
-    let subject = 'Brightspace Scheduling: Your time slot is confirmed';
-
-    let result = await fetch(pluginPath + '/resources/html/emailstudentenrolled.tpl');
-    let body = await result.text();
-
-    body = body.replace(/\(courseName\)/g, COURSE.Name);
-    body = body.replace(/\(scheduleTitle\)/g, TITLE);
-    body = body.replace(/\(timeSlot\)/g, group.Name);
-    body = body.replace(/\(feedUrl\)/g, feedUrl);
-    body = body.replace(/\(topicUrl\)/g, topicUrl);
-    body = body.replace(/\(calendarUrl\)/g, calendarUrl);
-
-    classList = await classList;
-
-    let studentEmail = classList[USER.Identifier].Email;
-    let sendInstructorEmail = false;
-    
-    console.log(classList);
-
-    // email instructors
-    if(CFG.ei == 1){
-        let instructorEmails = [];
-        
-        for(const userId in classList){
-
-            if (classList[userId].RoleId !== null && INSTRUCTOR_ROLE_IDS.includes(classList[userId].RoleId)){
-                instructorEmails.push(classList[userId].Email);
-            }
-
-        }
-
-        sendInstructorEmail = notifyInstructorOfRegistration(instructorEmails, studentEmail, group.Name);
+    if(classList.length > 0){
+        hasClassListAccess = true;
     }
 
+    let sendStudentEmail = false;
+    let sendInstructorEmail = false;
 
-    let sendStudentEmail = sendEmail(studentEmail, subject, body);
+    if(hasClassListAccess){
+
+        let host = window.location.host;
+
+        let calendarSubscription = await bs.get('/d2l/le/calendar/(orgUnitId)/subscribe/subscribeDialogLaunch?subscriptionOptionId=-1');
+        let feedToken = calendarSubscription.match(/feed\.ics\?token\=([a-zA-Z0-9]+)/)[1];
+        let feedUrl = '<p>You can add your Brightspace calendar to your favourite calendar app with this URL:</p>' +
+                    '<p><a href="webcal://' + host + '/d2l/le/calendar/feed/user/feed.ics?token=' + feedToken + '">webcal://' + host + '/d2l/le/calendar/feed/user/feed.ics?token=' + feedToken + '</a></p>';
+        let calendarUrl = 'https://' + host + '/d2l/le/calendar/' + ORG_UNIT_ID;
+        let topicUrl = 'https://' + host + '/d2l/le/content/' + ORG_UNIT_ID + '/viewContent/' + TOPIC_ID + '/View';
+
+        let pluginPath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf("/"));
+
+        let subject = 'Brightspace Scheduling: Your time slot is confirmed';
+
+        let result = await fetch(pluginPath + '/resources/html/emailstudentenrolled.tpl');
+        let body = await result.text();
+
+        body = body.replace(/\(courseName\)/g, COURSE.Name);
+        body = body.replace(/\(scheduleTitle\)/g, TITLE);
+        body = body.replace(/\(timeSlot\)/g, group.Name);
+        body = body.replace(/\(feedUrl\)/g, feedUrl);
+        body = body.replace(/\(topicUrl\)/g, topicUrl);
+        body = body.replace(/\(calendarUrl\)/g, calendarUrl);
+
+        let studentEmail = classList[USER.Identifier].Email;
+        
+        // email instructors
+        if(CFG.ei == 1){
+            let instructorEmails = [];
+            
+            for(const userId in classList){
+
+                if (classList[userId].RoleId !== null && INSTRUCTOR_ROLE_IDS.includes(classList[userId].RoleId)){
+                    instructorEmails.push(classList[userId].Email);
+                }
+
+            }
+
+            sendInstructorEmail = notifyInstructorOfRegistration(instructorEmails, studentEmail, group.Name);
+        }
+
+
+        sendStudentEmail = sendEmail(studentEmail, subject, body);
+    }
+
     await Promise.all([enroll, sendStudentEmail, sendInstructorEmail]);
     window.top.location.reload();
 }
