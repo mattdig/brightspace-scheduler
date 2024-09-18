@@ -212,6 +212,10 @@ class Brightspace{
                 xhr.send();
             }
 
+            if(xhr.status >= 400){
+                reject({Error: xhr.status});
+            }
+
         });
        
     }

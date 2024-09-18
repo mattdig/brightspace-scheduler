@@ -16,7 +16,7 @@ let EXPIRED = false;
 let REQUIRED_GROUP = false;
 let TIMEZONE;
  
-let HAS_BAS_ACCESS = false;
+let HAS_CLASSLIST_ACCESS = false;
 
 $(function(){init();});
 
@@ -29,7 +29,6 @@ async function init() {
         CFG.dr = ('dr' in CFG ? CFG.dr : 0);
         CFG.ei = ('ei' in CFG ? CFG.ei : 0);
     } catch(e) {
-        console.log('Error parsing CFG: ' + e);
         return false;
     }
 
@@ -45,14 +44,16 @@ async function init() {
     let groups = promises[5];
     associated_groups = promises[6];
 
-    if(CLASSLIST.length > 0){
-        HAS_BAS_ACCESS = true;
+    if(CLASSLIST.length > 0 && typeof(CLASSLIST[USER.Identifier]) != 'undefined' && CLASSLIST[USER.Identifier].DisplayName != 'Anonymous User'){
+        HAS_CLASSLIST_ACCESS = true;
     }
 
     // largest downside of no classlist access: can't filter for unenrolled students still taking up group slots
-    if(HAS_BAS_ACCESS){
+    if(HAS_CLASSLIST_ACCESS){
+        
         // run through the groups and remove unenrolled students
         for(i in groups){
+
             groups[i].Enrollments = groups[i].Enrollments.filter(userId => userId in CLASSLIST);
         }
     }
@@ -114,29 +115,43 @@ async function init() {
 async function displayGroupsInCategory(groups){
     
     let availableGroups = 0;
-    let html = '<tr>' + (MAX_STUDENTS > 1 ? '<th>Enrollment</th>' : '') + '<th>Date & Time</th>' + (EXPIRED ? '' : '<th class="student_timeslot_actions">Actions</th>') + '</tr>';
+    let html = '<tr>' + (MAX_STUDENTS > 1 && HAS_CLASSLIST_ACCESS ? '<th>Enrollment</th>' : '') + '<th>Date & Time</th>' + (EXPIRED ? '' : '<th class="student_timeslot_actions">Actions</th>') + '</tr>';
 
     $('#existing_timeslots__table').html(html);
 
     for(let group of groups){
 
-        let data = group.Code.split('_');
-        let endTime = moment.utc(data[1], 'YYYYMMDDHHmm').tz(TIMEZONE);
+        let groupCode = group.Code.split('_');
+        let endTime = moment.utc(groupCode[1], 'YYYYMMDDHHmm').tz(TIMEZONE);
 
         if(group.Enrollments.includes(USER.Identifier) && CFG.dr == 1 && endTime < moment()){
             //remove enrollment from group
             group = await deregisterFromGroup(group);
         }
-        
 
-        if(group.Enrollments.length < MAX_STUDENTS && !group.Enrollments.includes(USER.Identifier) && (CFG.dr == 0 || endTime > moment())){
+        let data = {
+            "d2l_rf": "IsGroupFull",
+            "params": "{\"param1\":" + group.GroupId + "}",
+            "d2l_action": "rpc"
+        };
+
+        let isFull = await bs.submit('/d2l/lms/group/user_available_group_list.d2lfile?ou=(orgUnitId)&d2l_rh=rpc&d2l_rt=call',data);
+        
+        if(isFull.Result === true){
+            isFull = true;
+        } else {
+            isFull = false;
+        }
+
+        if(!isFull && !group.Enrollments.includes(USER.Identifier) && (CFG.dr == 0 || endTime > moment())){
 
             availableGroups++;
 
             html = '<tr class="timeslot" id="timeslot_' + group.GroupId + '">';
-            if(MAX_STUDENTS > 1){
+            if(MAX_STUDENTS > 1 && HAS_CLASSLIST_ACCESS){
+
                 html += '<td class="timeslot_datetime">' + group.Enrollments.length + '/' + MAX_STUDENTS + ' students';
-                if(HAS_BAS_ACCESS && group.Enrollments.length > 0){
+                if(group.Enrollments.length > 0){
                     html += '<br><small>';
                     for(let student of group.Enrollments){
                         html += CLASSLIST[student].DisplayName + '<br>';
@@ -162,6 +177,7 @@ async function displayGroupsInCategory(groups){
                     }
                 );
             });
+            
         } else if (group.Enrollments.includes(USER.Identifier)){
             MY_TIME = {
                 name: group.Name,
@@ -275,7 +291,8 @@ async function deregisterFromGroup(group){
 }
 
 async function selectTimeSlot(group){
-    if(MY_TIME !== false || EXPIRED || group.Enrollments.length >= MAX_STUDENTS || (REQUIRED_GROUP !== false && group.GroupId != REQUIRED_GROUP.GroupId)){
+
+    if(MY_TIME !== false || EXPIRED || group.Enrollments.length >= MAX_STUDENTS && HAS_CLASSLIST_ACCESS || (REQUIRED_GROUP !== false && group.GroupId != REQUIRED_GROUP.GroupId)){
         return false;
     }
 
@@ -290,7 +307,8 @@ async function selectTimeSlot(group){
         "params": "{\"param1\":" + group.GroupId + "}",
         "d2l_action": "rpc"
     };
-    let isFull = await bs.submit('/d2l/lms/group/user_available_group_list.d2lfile?ou=(orgUnitId)&d2l_rh=rpc&d2l_rt=call',data);
+
+    let isFull = await bs.submit('/d2l/lms/group/user_available_group_list.d2lfile?ou=(orgUnitId)&d2l_rh=rpc&d2l_rt=call', data)
     
     if(isFull.Result === true){
         modalMessage('This time slot is full. Please select another time slot.<br />Reload the page to see the updated list of available time slots.');
