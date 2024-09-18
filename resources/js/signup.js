@@ -277,7 +277,7 @@ async function cancelMySelection(){
         }
     }
 
-    await Promise.all([unenroll, sendStudentEmail, sendInstructorEmail]);
+    let promises = await Promise.all([unenroll, sendStudentEmail, sendInstructorEmail]);
     
     window.top.location.reload();
 }
@@ -287,7 +287,7 @@ async function deregisterFromGroup(group){
     // remove user id from group.Enrollemnts
     group.Enrollments = group.Enrollments.filter(userId => userId != USER.Identifier);
 
-    await unenroll;
+    unenroll = await unenroll;
     return group;
 }
 
@@ -374,8 +374,9 @@ async function selectTimeSlot(group){
         sendStudentEmail = sendEmail(studentEmail, subject, body);
     }
 
-    await Promise.all([enroll, sendStudentEmail, sendInstructorEmail]);
-    //window.top.location.reload();
+    let promises = await Promise.all([enroll, sendStudentEmail, sendInstructorEmail]);
+    
+    window.top.location.reload();
 }
 
 async function notifyInstructorOfRegistration(instructorEmails, studentEmail, timeSlot){
