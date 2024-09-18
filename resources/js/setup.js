@@ -856,8 +856,12 @@ async function submitForm(){
                 updateTopic()
             ]);
 
-            if($('#deregister_yes').is(':checked') && !('dr' in CFG) || CFG.dr == 0 ||
-                $('#deregister_no').is(':checked') && 'dr' in CFG && CFG.dr == 1){
+            if(
+                $('#deregister_yes').is(':checked') && (!('dr' in CFG) || CFG.dr == 0) ||
+                $('#deregister_no').is(':checked') && 'dr' in CFG && CFG.dr == 1 ||
+                $('#email_instructor_yes').is(':checked') && (!('ei' in CFG) || CFG.ei == 0) ||
+                $('#email_instructor_no').is(':checked') && 'ei' in CFG && CFG.ei == 1
+            ){
                 await updateTopicFile(result[1]);
                 refreshCFG = true;
             }
