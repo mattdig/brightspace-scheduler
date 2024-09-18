@@ -28,6 +28,7 @@ async function init() {
         TOPIC_ID = CFG.t;
         CFG.dr = ('dr' in CFG ? CFG.dr : 0);
         CFG.ei = ('ei' in CFG ? CFG.ei : 0);
+
     } catch(e) {
         return false;
     }
@@ -318,7 +319,7 @@ async function selectTimeSlot(group){
 
     let enroll = enrollInGroup(group.GroupId);
 
-    await classList;
+    classList = await classList;
 
     if(classList.length > 0){
         hasClassListAccess = true;
@@ -374,7 +375,7 @@ async function selectTimeSlot(group){
     }
 
     await Promise.all([enroll, sendStudentEmail, sendInstructorEmail]);
-    window.top.location.reload();
+    //window.top.location.reload();
 }
 
 async function notifyInstructorOfRegistration(instructorEmails, studentEmail, timeSlot){
