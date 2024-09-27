@@ -203,7 +203,7 @@ async function getExistingTimeSlots(){
     
     let promiseArray = [];
 
-    for(i in GROUPS){
+    for(const i in GROUPS){
         
         let data = GROUPS[i].Code.split('_');
 
@@ -211,6 +211,8 @@ async function getExistingTimeSlots(){
         let endTime = moment.utc(data[1], 'YYYYMMDDHHmm').tz(TIMEZONE);
 
         let localDateTimeFormat = startTime.format('MMM[&nbsp;]Do[&nbsp;]YYYY, h:mm[&nbsp;]A') + '&nbsp;-&nbsp;' + endTime.format('h:mm[&nbsp;]A');
+
+        let groupMembership = [];
 
         if(CFG.dr !== undefined && CFG.dr == 1){
             if(endTime < moment()){
@@ -221,9 +223,25 @@ async function getExistingTimeSlots(){
             }
         }
         
-        // Brightspace includes unenrolled students in the groups, so they need to be filtered out
-        if(GROUPS[i].Enrollments.length > 0)
-            GROUPS[i].Enrollments = GROUPS[i].Enrollments.filter(userId => userId in CLASSLIST);
+        
+        // get group enrollment from the Groups page because it's more reliable than the API
+        if(GROUPS[i].Enrollments.length > 0){
+            GROUPS[i].Enrollments = [];
+
+            groupMembers = await getGroupMembership(GROUPS[i].GroupId);
+
+            for(let user of groupMembers){
+                user = user[0];
+
+                user.UserId = parseInt(user.UserId);
+                GROUPS[i].Enrollments.push(user.UserId);
+
+                if(!(user.UserId in CLASSLIST)){
+                    user['Identifier'] = user.UserId;
+                    CLASSLIST[user.UserId] = user;
+                }
+            }
+        }
 
         let timeslot = {
             start: startTime,
@@ -258,7 +276,7 @@ async function displayExistingTimeSlots(groupCategory){
 
     let hasRegistrations = false;
 
-    existingTimeSlots.forEach(timeSlot => {
+    for(const timeSlot of existingTimeSlots){
         
         if(!hasRegistrations && timeSlot.students.length > 0){
             hasRegistrations = true;
@@ -271,7 +289,7 @@ async function displayExistingTimeSlots(groupCategory){
         }
             
         if(timeSlot.students.length > 0){
-            for(let studentId of timeSlot.students){
+            for(const studentId of timeSlot.students){
                 students += '<span id="student_' + studentId + '">' + CLASSLIST[studentId].DisplayName + ' (' + CLASSLIST[studentId].OrgDefinedId + ')<br /></span>';
             }
 
@@ -321,7 +339,7 @@ async function displayExistingTimeSlots(groupCategory){
                 function(){deleteTimeSlot(timeSlot)}
             );
         });
-    });
+    }
 
     if(hasRegistrations){
         $('#download_schedule').show();
@@ -670,7 +688,7 @@ function validateTimeFields(withErrors){
                 let startdatetime = moment(date + starttime, format);
                 let enddatetime = date + endtime;
 
-                for(i = 0; i <= dayDifference; i++){
+                for(let i = 0; i <= dayDifference; i++){
                                         
                     // if the day of the week is selected
                     if($(this).find('.day_of_week__' + startdatetime.day() + ':checked').length > 0){
@@ -1188,7 +1206,7 @@ async function deleteTimeSlot(timeSlot, sendNotifications = true){
     $('#timeslot_' + timeSlot.groupId).remove();
     let promises = [];
     promises.push(deleteCalendarEvent(timeSlot.eventId));
-    for(student of timeSlot.students){
+    for(const student of timeSlot.students){
         promises.push(unenrollFromGroup(timeSlot.groupId, student, sendNotifications));
     }
     await Promise.all(promises);
@@ -1224,7 +1242,7 @@ async function manageEnrollment(action, groupId){
             if(STUDENT_ROLE_IDS.includes(student.RoleId)){
                 isStudent = true;
 
-                for(g of GROUPS){
+                for(const g of GROUPS){
                     if(g.Enrollments.length > 0 && g.Enrollments.includes(student.Identifier)){
                         inGroup = true;
                         break;
@@ -1239,7 +1257,7 @@ async function manageEnrollment(action, groupId){
     } else {
         let group = await getGroup(groupId);
 
-        for(student of group.Enrollments){
+        for(const student of group.Enrollments){
             if(CLASSLIST[student] != undefined)
                 studentList.push(CLASSLIST[student]);
         }
@@ -1251,7 +1269,7 @@ async function manageEnrollment(action, groupId){
 
     studentList.sort(dynamicSort("DisplayName"));
 
-    for(student of studentList){
+    for(const student of studentList){
         studentTable += '<tr><td onclick="clickSubInput(event)"><input type="checkbox" class="select_row" id="select_student_'+student.Identifier+'" value="' + student.Identifier + '"></td><td><label for="select_student_'+student.Identifier+'">' + student.DisplayName + '</label></td></tr>';
     }
     studentTable += '</tbody></table></div>';
@@ -1295,6 +1313,34 @@ function selectedStudentNames(checkedStudents){
     return names;
 }
 
+
+async function getGroupMembership(groupId){
+    let url = '/d2l/lms/group/group_member_list.d2l?ou=' + ORG_UNIT_ID + '&groupId=' + groupId + '&d2l_body_type=2';
+
+    let response = await fetch(url);
+    let html = await response.text();
+
+    let users = [];
+
+    let parser = new DOMParser();
+    let doc = parser.parseFromString(html, 'text/html');
+    let studentTable = $('table.d2l-table', doc);
+
+    if(studentTable.length == 0){
+        return users;
+    }
+
+    let students = $('td', studentTable[0]);
+    for(const student of students){
+        let studentData = student.innerText.split(',');
+        let OrgDefinedId = studentData[3].trim();
+
+        users.push(bs.get('/d2l/api/lp/(version)/users/?orgDefinedId=' + OrgDefinedId));
+    }
+
+    return Promise.all(users);
+}
+
 async function removeStudentsFromGroup(groupId, checkedStudents){
 
     //find the timeslot
@@ -1330,7 +1376,7 @@ async function addStudentsToGroup(groupId, checkedStudents){
 
     promises = [];
 
-    for(student of checkedStudents){
+    for(const student of checkedStudents){
         promises.push(enrollStudentInGroup(groupId, student.value));
     }
 
@@ -1344,17 +1390,17 @@ async function autofillGroupRegistration(associatedGroups){
     let promises = [];
     let groupEnrolledStudents = [];
     
-    for(group of GROUPS){
-        for(student of group.Enrollments){
+    for(const group of GROUPS){
+        for(const student of group.Enrollments){
             groupEnrolledStudents[student] = group.GroupId;
         }
     };
 
-    for(group of associatedGroups){
+    for(const group of associatedGroups){
 
         studentsToEnroll = [];
         studentsAlreadyEnrolled = [];
-        for(student of group.Enrollments){
+        for(const student of group.Enrollments){
 
             // groups still contain unenrolled students
             if(student in CLASSLIST){
@@ -1369,7 +1415,7 @@ async function autofillGroupRegistration(associatedGroups){
         }
 
         if(studentsToEnroll.length > 0 && studentsAlreadyEnrolled.length > 0){
-            for(student of studentsToEnroll){
+            for(const student of studentsToEnroll){
                 promises.push(enrollStudentInGroup(groupEnrolledStudents[studentsAlreadyEnrolled[0]], student));
             }
         }
@@ -1516,8 +1562,8 @@ function downloadSchedule(){
     let filename = 'schedule-grades.csv';
     let lines = ['Last Name,First Name,Email,Time Slot,OrgDefinedId,"' + TITLE + ' Points Grade",End-of-Line Indicator'];
 
-    for(group of GROUPS){
-        for(student of group.Enrollments){
+    for(const group of GROUPS){
+        for(const student of group.Enrollments){
             let line = [];
             line.push(CLASSLIST[student].LastName, CLASSLIST[student].FirstName, CLASSLIST[student].Email, '"' + group.Name + '"', CLASSLIST[student].OrgDefinedId, '','#');
             lines.push(line.join(','));
