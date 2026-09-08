@@ -10,7 +10,7 @@ let TITLE;
 let MY_TIME = false;
 let USER = whoAmI();
 let MAX_STUDENTS = 1;
-let CLASSLIST = getClassList('bas');
+let CLASSLIST = getClassList('le');
 let COURSE;
 let EXPIRED = false;
 let REQUIRED_GROUP = false;
