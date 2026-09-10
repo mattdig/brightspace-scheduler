@@ -18,6 +18,7 @@ let TITLE;
 let ORG_INFO = bs.get('/d2l/api/lp/(version)/organization/info');
 let COURSE = bs.get('/d2l/api/lp/(version)/courses/' + ORG_UNIT_ID);
 let GROUPS = (MODE == 'edit' ? getGroupsInCategory() : null);
+let GROUP_CATEGORY = (MODE == 'edit' ? getGroupCategory() : null);
 let USER = whoAmI();
 
 let timeBlocks = [];
@@ -41,7 +42,8 @@ async function init(){
     const promises = await Promise.all([
         ORG_INFO,
         COURSE,
-        GROUPS, 
+        GROUPS,
+        GROUP_CATEGORY,
         bs.get('/d2l/api/lp/(version)/' + ORG_UNIT_ID + '/groupcategories/'), 
         associatedGroups,
         USER
@@ -50,9 +52,10 @@ async function init(){
     ORG_INFO = promises[0];
     COURSE = promises[1];
     GROUPS = promises[2];
-    let otherGroupCategories = promises[3];
-    associatedGroups = promises[4];
-    USER = promises[5];
+    GROUP_CATEGORY = promises[3];
+    let otherGroupCategories = promises[4];
+    associatedGroups = promises[5];
+    USER = promises[6];
 
     let isTA = false;
     let myEnrollment = await bs.get('/d2l/api/lp/(version)/enrollments/orgUnits/' + ORG_UNIT_ID + '/users/' + USER.Identifier);
@@ -76,10 +79,9 @@ async function init(){
 
         $('#form_title').html('Edit Signup Schedule');
 
-        let groupCategory = await getGroupCategory();
-        TITLE = groupCategory.Name;
+        TITLE = GROUP_CATEGORY.Name;
         $('#title').val(TITLE);
-        $('#schedule_title').html(groupCategory.Name);
+        $('#schedule_title').html(GROUP_CATEGORY.Name);
 
         
         if('dr' in CFG && CFG.dr == 1){
@@ -96,8 +98,8 @@ async function init(){
         }
         
 
-        if(groupCategory.SelfEnrollmentExpiryDate != null){
-            $('#expiry_date').html("Last day to sign up: " + moment.utc(groupCategory.SelfEnrollmentExpiryDate, 'YYYY-MM-DDTHH:mm:ss.fffZ').subtract(1, 'days').tz(TIMEZONE).format('MMM Do, YYYY'));
+        if(GROUP_CATEGORY.SelfEnrollmentExpiryDate != null){
+            $('#expiry_date').html("Last day to sign up: " + moment.utc(GROUP_CATEGORY.SelfEnrollmentExpiryDate, 'YYYY-MM-DDTHH:mm:ss.fffZ').subtract(1, 'days').tz(TIMEZONE).format('MMM Do, YYYY'));
             $('#expiry_date').show();
         }
 
@@ -109,13 +111,13 @@ async function init(){
             $('#delete_schedule').remove();
         }
 
-        if(groupCategory.Description.Text != ''){
-            $('#schedule_description').html(groupCategory.Description.Text.replace('\n','<br />'));
-            $('#description').val(groupCategory.Description.Text);
+        if(GROUP_CATEGORY.Description.Text != ''){
+            $('#schedule_description').html(GROUP_CATEGORY.Description.Text.replace('\n','<br />'));
+            $('#description').val(GROUP_CATEGORY.Description.Text);
             $('#schedule_description').show();
         }
 
-        if(groupCategory.MaxUsersPerGroup > 1){
+        if(GROUP_CATEGORY.MaxUsersPerGroup > 1){
             $('#associated_group_category__label').show();
         }
 
@@ -144,7 +146,7 @@ async function init(){
         let calendarEvent = await bs.get('/d2l/api/le/(version)/(orgUnitId)/calendar/event/' + existingTimeSlots[0].eventId);
         $('#event_title').val(calendarEvent.Title);
         
-        await displayExistingTimeSlots(groupCategory);
+        await displayExistingTimeSlots(GROUP_CATEGORY);
 
         $('#add_new_timeblocks').show();
 
@@ -244,7 +246,7 @@ async function getExistingTimeSlots(){
     existingTimeSlots.sort(compareStarttime);
 }
 
-async function displayExistingTimeSlots(groupCategory){
+async function displayExistingTimeSlots(){
 
     if(existingTimeSlots.length == 0){
         return false;
@@ -266,8 +268,8 @@ async function displayExistingTimeSlots(groupCategory){
 
         let students = '';
 
-        if(groupCategory.MaxUsersPerGroup > 0){
-            students = '<span class="timeslot-student-count">' + timeSlot.students.length + '</span>/' + groupCategory.MaxUsersPerGroup + '<br />';
+        if(GROUP_CATEGORY.MaxUsersPerGroup > 0){
+            students = '<span class="timeslot-student-count">' + timeSlot.students.length + '</span>/' + GROUP_CATEGORY.MaxUsersPerGroup + '<br />';
         }
             
         if(timeSlot.students.length > 0){
@@ -275,7 +277,7 @@ async function displayExistingTimeSlots(groupCategory){
                 students += '<span id="student_' + studentId + '">' + CLASSLIST[studentId].DisplayName + ' (' + CLASSLIST[studentId].OrgDefinedId + ')<br /></span>';
             }
 
-        } else if(groupCategory.MaxUsersPerGroup == 1) {
+        } else if(GROUP_CATEGORY.MaxUsersPerGroup == 1) {
             students = '&nbsp;-&nbsp;';
         }
 
@@ -291,7 +293,7 @@ async function displayExistingTimeSlots(groupCategory){
         html += '<button class="btn btn-secondary btn-sm enrollStudents" data-id="' + timeSlot.groupId + '">Add Registrations</button>';
         
         if(timeSlot.students.length > 0){
-            if(groupCategory.MaxUsersPerGroup > 1)
+            if(GROUP_CATEGORY.MaxUsersPerGroup > 1)
                 html += '<button class="btn btn-secondary btn-sm unenrollStudents" data-id="' + timeSlot.groupId + '">Cancel Registrations</button>';
             else
                 html += '<button class="btn btn-secondary btn-sm unenrollStudents" data-id="' + timeSlot.groupId + '">Cancel Registration</button>';
@@ -957,12 +959,13 @@ function createGroupCategory(){
         "Name": title,
         "Description": {"Content": description, "Type":"Text"},
         "EnrollmentStyle": "PeoplePerNumberOfGroupsSelfEnrollment",
-        "EnrollmentQuantity": null,
+//      "EnrollmentQuantity": null,  // Removed as of LP API v1.53
         "AutoEnroll": false,
         "RandomizeEnrollments": false,
         "NumberOfGroups": newTimeSlots.length,
         "MaxUsersPerGroup": maxUsers,
         "AllocateAfterExpiry": false,
+        "SelfEnrollmentStartDate": null, // || startDateUTC // Added with LP API v1.53
         "SelfEnrollmentExpiryDate": endDateUTC, // || null
         "GroupPrefix": null,
         "RestrictedByOrgUnitId": null,
@@ -979,13 +982,9 @@ async function updateGroupCategory(){
     let description = $('#description').val().trim();
     //let maxUsers = parseInt($('#max_users').val());
 
-    // DEADLINE NOT SUPPORTED BY API
-    // MaxUsersPerGroup not supported by API
-    // TODO: SWITCH TO SUBMITTING FORM DATA
     // let format = "YYYY-MM-DD HH:mm";
     // let deadlineDate = $('#deadline_date').val();
     // let deadlineTime = $('#deadline_time').val();
-    
     // let deadlineUTCDateTime = convertToUTCDateTimeString(moment(deadlineDate + " " + deadlineTime, format));
 
     let category = {
@@ -993,9 +992,13 @@ async function updateGroupCategory(){
         "Description": {"Content": description, "Type":"Text"},
         "AutoEnroll": false,
         "RandomizeEnrollments": false,
-        // "MaxUsersPerGroup": maxUsers,
-        // "SelfEnrollmentExpiryDate": null, //deadlineUTCDateTime, //<string:UTCDateTime>( yyyy-MM-ddTHH:mm:ss.fffZ )|null,
-        // "RestrictedByOrgUnitId": null,
+        "MaxUsersPerGroup": GROUP_CATEGORY.MaxUsersPerGroup,
+        "AutoEnroll": false,
+        "RandomizeEnrollments": false,
+        "AllocateAfterExpiry": false, // Added with LP API v1.53
+        "SelfEnrollmentStartDate": GROUP_CATEGORY.SelfEnrollmentStartDate, // Added with LP API v1.53
+        "SelfEnrollmentExpiryDate": GROUP_CATEGORY.SelfEnrollmentExpiryDate, // Added with LP API v1.53
+        "GroupPrefix": null, // Added with LP API v1.53
         "DescriptionsVisibleToEnrolees": true
     };
     
