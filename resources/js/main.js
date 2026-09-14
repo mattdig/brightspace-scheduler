@@ -98,6 +98,7 @@ async function sendEmail(address, subject, body){
         "DraftMessageId": 0,
         "ParentMessageId": 0,
         "ParentMessageStatus": 0,
+        "EventId": "",
         "Subject": subject,
         "BodyHtml$id": "BodyHtml",
         "BodyHtml$htmlOrgUnitId": ORG_UNIT_ID,
@@ -108,7 +109,8 @@ async function sendEmail(address, subject, body){
         "Attachments$files$Id": "",
         "Attachments$files$FileSize": "",
         "isXhr": true,
-        "requestId": 18
+        "requestId": 18,
+        "d2l_referrer": ""
     };
 
     return bs.submit(url, formData);

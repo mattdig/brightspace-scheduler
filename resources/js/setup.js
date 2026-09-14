@@ -103,9 +103,6 @@ async function init(){
             $('#expiry_date').show();
         }
 
-        $('#max_users__row').remove();
-        $('#enddate__row').remove();
-
         // tas can't delete the schedule, this can be removed if you want
         if(isTA){
             $('#delete_schedule').remove();
@@ -116,6 +113,8 @@ async function init(){
             $('#description').val(GROUP_CATEGORY.Description.Text);
             $('#schedule_description').show();
         }
+
+        $('#max_users').val(GROUP_CATEGORY.MaxUsersPerGroup);
 
         if(GROUP_CATEGORY.MaxUsersPerGroup > 1){
             $('#associated_group_category__label').show();
@@ -150,6 +149,31 @@ async function init(){
 
         $('#add_new_timeblocks').show();
 
+
+        let startDateTime = GROUP_CATEGORY.SelfEnrollmentStartDate != "" ? moment.utc(GROUP_CATEGORY.SelfEnrollmentStartDate, 'YYYY-MM-DDTHH:mm:ss.fffZ').tz(TIMEZONE).format('YYYY-MM-DD') : '';
+        let endDateTime = GROUP_CATEGORY.SelfEnrollmentExpiryDate != "" ? moment.utc(GROUP_CATEGORY.SelfEnrollmentExpiryDate, 'YYYY-MM-DDTHH:mm:ss.fffZ').subtract(1, 'days').tz(TIMEZONE).format('YYYY-MM-DD') : '';
+
+        let minDate = moment().subtract(1, 'days'); 
+        if(startDateTime != ""){
+            let startDateMoment = moment.utc(GROUP_CATEGORY.SelfEnrollmentStartDate, 'YYYY-MM-DDTHH:mm:ss.fffZ').tz(TIMEZONE).subtract(1, 'days');
+            if(startDateMoment.isBefore(minDate)){
+                minDate = startDateMoment;
+            }
+        }
+                
+        $('#schedule_startdate').val(startDateTime).datetimepicker({
+            format: 'YYYY-MM-DD',
+            minDate: minDate,
+            maxDate: moment().add(1, 'years')
+
+        });
+
+        $('#schedule_enddate').val(endDateTime).datetimepicker({
+            format: 'YYYY-MM-DD',
+            minDate: minDate,
+            maxDate: moment().add(1, 'years')
+        });
+
         $('#edit_schedule').show();
 
     } else {
@@ -160,11 +184,18 @@ async function init(){
         $('#module_selection').show();
         $('#edit_timeblocks').show();
         
+        $('#schedule_startdate').val('').datetimepicker({
+            format: 'YYYY-MM-DD',
+            minDate: moment().subtract(1, 'days'),
+            maxDate: moment().add(1, 'years')
+        });
+
         $('#schedule_enddate').val('').datetimepicker({
             format: 'YYYY-MM-DD',
             minDate: moment().subtract(1, 'days'),
             maxDate: moment().add(1, 'years')
         });
+
     
         $('#signup_schedule__form').show();
     }
@@ -944,13 +975,21 @@ function createGroupCategory(){
     let description = $('#description').val().trim();
     let maxUsers = parseInt($('#max_users').val().trim());
     
+    let startDateString = $('#schedule_startdate').val().trim();
+    let startDateUTC = null;
+    // if string matches date format
+    if(startDateString.match(/^\d{4}-\d{2}-\d{2}$/)){
+        let startDateMoment = moment(startDateString + ' 00:00', 'YYYY-MM-DD HH:mm');
+        startDateUTC = convertToUTCDateTimeString(startDateMoment);
+    }
+
     let endDateString = $('#schedule_enddate').val().trim();
     let endDateUTC = null;
     // if string matches date format
     if(endDateString.match(/^\d{4}-\d{2}-\d{2}$/)){
         let endDateMoment = moment(endDateString + ' 00:00', 'YYYY-MM-DD HH:mm').add(1, 'days');
 
-        if(endDateMoment.isAfter(moment())){
+        if(endDateMoment.isAfter(moment()) && (startDateUTC == null || endDateMoment.isAfter(moment(startDateUTC)))){
             endDateUTC = convertToUTCDateTimeString(endDateMoment);
         }
     }
@@ -959,13 +998,13 @@ function createGroupCategory(){
         "Name": title,
         "Description": {"Content": description, "Type":"Text"},
         "EnrollmentStyle": "PeoplePerNumberOfGroupsSelfEnrollment",
-//      "EnrollmentQuantity": null,  // Removed as of LP API v1.53
+//      "EnrollmentQuantity": null,
         "AutoEnroll": false,
         "RandomizeEnrollments": false,
         "NumberOfGroups": newTimeSlots.length,
         "MaxUsersPerGroup": maxUsers,
         "AllocateAfterExpiry": false,
-        "SelfEnrollmentStartDate": null, // || startDateUTC // Added with LP API v1.53
+        "SelfEnrollmentStartDate": startDateUTC, // || null
         "SelfEnrollmentExpiryDate": endDateUTC, // || null
         "GroupPrefix": null,
         "RestrictedByOrgUnitId": null,
@@ -980,25 +1019,41 @@ async function updateGroupCategory(){
 
     let title = $('#title').val().trim();
     let description = $('#description').val().trim();
-    //let maxUsers = parseInt($('#max_users').val());
+    let maxUsers = parseInt($('#max_users').val().trim());
 
-    // let format = "YYYY-MM-DD HH:mm";
-    // let deadlineDate = $('#deadline_date').val();
-    // let deadlineTime = $('#deadline_time').val();
-    // let deadlineUTCDateTime = convertToUTCDateTimeString(moment(deadlineDate + " " + deadlineTime, format));
+    let startDateString = $('#schedule_startdate').val().trim();
+    let startDateUTC = null;
+    // if string matches date format
+    if(startDateString.match(/^\d{4}-\d{2}-\d{2}$/)){
+        let startDateMoment = moment(startDateString + ' 00:00', 'YYYY-MM-DD HH:mm');
+
+        startDateUTC = convertToUTCDateTimeString(startDateMoment);
+    }
+
+    let endDateString = $('#schedule_enddate').val().trim();
+    let endDateUTC = null;
+    // if string matches date format
+    if(endDateString.match(/^\d{4}-\d{2}-\d{2}$/)){
+        let endDateMoment = moment(endDateString + ' 00:00', 'YYYY-MM-DD HH:mm').add(1, 'days');
+
+        if(startDateUTC == null || endDateMoment.isAfter(moment(startDateUTC))){
+            endDateUTC = convertToUTCDateTimeString(endDateMoment);
+        }
+
+    }
 
     let category = {
         "Name": title,
         "Description": {"Content": description, "Type":"Text"},
         "AutoEnroll": false,
         "RandomizeEnrollments": false,
-        "MaxUsersPerGroup": GROUP_CATEGORY.MaxUsersPerGroup,
+        "MaxUsersPerGroup": maxUsers,
         "AutoEnroll": false,
         "RandomizeEnrollments": false,
-        "AllocateAfterExpiry": false, // Added with LP API v1.53
-        "SelfEnrollmentStartDate": GROUP_CATEGORY.SelfEnrollmentStartDate, // Added with LP API v1.53
-        "SelfEnrollmentExpiryDate": GROUP_CATEGORY.SelfEnrollmentExpiryDate, // Added with LP API v1.53
-        "GroupPrefix": null, // Added with LP API v1.53
+        "AllocateAfterExpiry": false,
+        "SelfEnrollmentStartDate": startDateUTC,
+        "SelfEnrollmentExpiryDate": endDateUTC,
+        "GroupPrefix": null,
         "DescriptionsVisibleToEnrolees": true
     };
     
