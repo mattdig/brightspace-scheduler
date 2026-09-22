@@ -9,13 +9,13 @@ class Brightspace{
         }
 
         this.versions = {
-            bas : 1.3,
+            bas : 1.6,
             bfp : 1.0,
             ep : 2.5,
             ext : 1.3,
-            le : 1.75,
+            le : 1.97,
             link : 1.0,
-            lp : 1.47,
+            lp : 1.63,
             LR : 1.3,
             lti : 1.3,
             rp : 1.4
@@ -210,6 +210,10 @@ class Brightspace{
                 xhr.send(dataString);
             } else {
                 xhr.send();
+            }
+
+            if(xhr.status >= 400){
+                reject({Error: xhr.status});
             }
 
         });

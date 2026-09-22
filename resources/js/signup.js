@@ -10,12 +10,14 @@ let TITLE;
 let MY_TIME = false;
 let USER = whoAmI();
 let MAX_STUDENTS = 1;
-let CLASSLIST = getClassList('bas');
+let CLASSLIST = getClassList('le');
 let COURSE;
 let EXPIRED = false;
 let REQUIRED_GROUP = false;
 let TIMEZONE;
  
+let HAS_CLASSLIST_ACCESS = false;
+
 $(function(){init();});
 
 async function init() {
@@ -26,8 +28,8 @@ async function init() {
         TOPIC_ID = CFG.t;
         CFG.dr = ('dr' in CFG ? CFG.dr : 0);
         CFG.ei = ('ei' in CFG ? CFG.ei : 0);
+
     } catch(e) {
-        console.log('Error parsing CFG: ' + e);
         return false;
     }
 
@@ -43,9 +45,18 @@ async function init() {
     let groups = promises[5];
     associated_groups = promises[6];
 
-    // run through the groups and remove unenrolled students
-    for(i in groups){
-        groups[i].Enrollments = groups[i].Enrollments.filter(userId => userId in CLASSLIST);
+    if(CLASSLIST.length > 0 && typeof(CLASSLIST[USER.Identifier]) != 'undefined' && CLASSLIST[USER.Identifier].DisplayName != 'Anonymous User'){
+        HAS_CLASSLIST_ACCESS = true;
+    }
+
+    // largest downside of no classlist access: can't filter for unenrolled students still taking up group slots
+    if(HAS_CLASSLIST_ACCESS){
+        
+        // run through the groups and remove unenrolled students
+        for(i in groups){
+
+            groups[i].Enrollments = groups[i].Enrollments.filter(userId => userId in CLASSLIST);
+        }
     }
     
     TIMEZONE = orgInfo.TimeZone;
@@ -105,31 +116,41 @@ async function init() {
 async function displayGroupsInCategory(groups){
     
     let availableGroups = 0;
-    let html = '<tr>' + (MAX_STUDENTS > 1 ? '<th>Enrollment</th>' : '') + '<th>Date & Time</th>' + (EXPIRED ? '' : '<th class="student_timeslot_actions">Actions</th>') + '</tr>';
+    let html = '<tr>' + (MAX_STUDENTS > 1 && HAS_CLASSLIST_ACCESS ? '<th>Enrollment</th>' : '') + '<th>Date & Time</th>' + (EXPIRED ? '' : '<th class="student_timeslot_actions">Actions</th>') + '</tr>';
 
     $('#existing_timeslots__table').html(html);
 
-    const results = await Promise.all([CLASSLIST, USER]);
-    CLASSLIST = results[0];
-    USER = results[1];
-
     for(let group of groups){
 
-        let data = group.Code.split('_');
-        let endTime = moment.utc(data[1], 'YYYYMMDDHHmm').tz(TIMEZONE);
+        let groupCode = group.Code.split('_');
+        let endTime = moment.utc(groupCode[1], 'YYYYMMDDHHmm').tz(TIMEZONE);
 
         if(group.Enrollments.includes(USER.Identifier) && CFG.dr == 1 && endTime < moment()){
             //remove enrollment from group
             group = await deregisterFromGroup(group);
         }
-        
 
-        if(group.Enrollments.length < MAX_STUDENTS && !group.Enrollments.includes(USER.Identifier) && (CFG.dr == 0 || endTime > moment())){
+        let data = {
+            "d2l_rf": "IsGroupFull",
+            "params": "{\"param1\":" + group.GroupId + "}",
+            "d2l_action": "rpc"
+        };
+
+        let isFull = await bs.submit('/d2l/lms/group/user_available_group_list.d2lfile?ou=(orgUnitId)&d2l_rh=rpc&d2l_rt=call',data);
+        
+        if(isFull.Result === true){
+            isFull = true;
+        } else {
+            isFull = false;
+        }
+
+        if(!isFull && !group.Enrollments.includes(USER.Identifier) && (CFG.dr == 0 || endTime > moment())){
 
             availableGroups++;
 
             html = '<tr class="timeslot" id="timeslot_' + group.GroupId + '">';
-            if(MAX_STUDENTS > 1){
+            if(MAX_STUDENTS > 1 && HAS_CLASSLIST_ACCESS){
+
                 html += '<td class="timeslot_datetime">' + group.Enrollments.length + '/' + MAX_STUDENTS + ' students';
                 if(group.Enrollments.length > 0){
                     html += '<br><small>';
@@ -157,6 +178,7 @@ async function displayGroupsInCategory(groups){
                     }
                 );
             });
+            
         } else if (group.Enrollments.includes(USER.Identifier)){
             MY_TIME = {
                 name: group.Name,
@@ -218,31 +240,44 @@ function findRequiredGroup(groups, associated_groups){
 
 async function cancelMySelection(){
     if(MY_TIME === false){
+        window.top.location.reload();
         return false;
     }
 
     $('#cancel-selection').remove();
 
+    let hasClassListAccess = false;
+
     let classList = await getClassList();
 
-    let studentEmail = classList[USER.Identifier].Email;
-    
-    let unenroll = unenrollFromGroup(MY_TIME.groupId);
-    let sendStudentEmail = notifyStudentOfCancellation(studentEmail);
-    let sendInstructorEmail = false;
-
-    if(CFG.ei == 1){
-        let instructorEmails = [];
-
-        for(const userId in classList){
-            if(classList[userId].RoleId !== null && INSTRUCTOR_ROLE_IDS.includes(classList[userId].RoleId)){
-                instructorEmails.push(classList[userId].Email);
-            }
-        }
-        sendInstructorEmail = notifyInstructorOfCancellation(instructorEmails, studentEmail);
+    if(classList.length > 0){
+        hasClassListAccess = true;
     }
 
-    await Promise.all([unenroll, sendStudentEmail, sendInstructorEmail]);
+    
+    let unenroll = unenrollFromGroup(MY_TIME.groupId);
+    
+    let sendStudentEmail = false;
+    let sendInstructorEmail = false;
+
+    if(hasClassListAccess){
+        let studentEmail = classList[USER.Identifier].Email;
+        sendStudentEmail = notifyStudentOfCancellation(studentEmail);
+    
+
+        if(CFG.ei == 1){
+            let instructorEmails = [];
+
+            for(const userId in classList){
+                if(classList[userId].RoleId !== null && INSTRUCTOR_ROLE_IDS.includes(classList[userId].RoleId)){
+                    instructorEmails.push(classList[userId].Email);
+                }
+            }
+            sendInstructorEmail = notifyInstructorOfCancellation(instructorEmails, studentEmail);
+        }
+    }
+
+    let promises = await Promise.all([unenroll, sendStudentEmail, sendInstructorEmail]);
     
     window.location.reload();
 }
@@ -252,23 +287,29 @@ async function deregisterFromGroup(group){
     // remove user id from group.Enrollemnts
     group.Enrollments = group.Enrollments.filter(userId => userId != USER.Identifier);
 
-    await unenroll;
+    unenroll = await unenroll;
     return group;
 }
 
 async function selectTimeSlot(group){
-    if(MY_TIME !== false || EXPIRED || group.Enrollments.length >= MAX_STUDENTS || (REQUIRED_GROUP !== false && group.GroupId != REQUIRED_GROUP.GroupId)){
+
+    if(MY_TIME !== false || EXPIRED || group.Enrollments.length >= MAX_STUDENTS && HAS_CLASSLIST_ACCESS || (REQUIRED_GROUP !== false && group.GroupId != REQUIRED_GROUP.GroupId)){
         return false;
     }
 
+    let hasClassListAccess = false;
+
     let classList = getClassList();
+
+    
 
     let data = {
         "d2l_rf": "IsGroupFull",
         "params": "{\"param1\":" + group.GroupId + "}",
         "d2l_action": "rpc"
     };
-    let isFull = await bs.submit('/d2l/lms/group/user_available_group_list.d2lfile?ou=(orgUnitId)&d2l_rh=rpc&d2l_rt=call',data);
+
+    let isFull = await bs.submit('/d2l/lms/group/user_available_group_list.d2lfile?ou=(orgUnitId)&d2l_rh=rpc&d2l_rt=call', data)
     
     if(isFull.Result === true){
         modalMessage('This time slot is full. Please select another time slot.<br />Reload the page to see the updated list of available time slots.');
@@ -278,53 +319,64 @@ async function selectTimeSlot(group){
 
     let enroll = enrollInGroup(group.GroupId);
 
-    let host = window.location.host;
-
-    let calendarSubscription = await bs.get('/d2l/le/calendar/(orgUnitId)/subscribe/subscribeDialogLaunch?subscriptionOptionId=-1');
-    let feedToken = calendarSubscription.match(/feed\.ics\?token\=([a-zA-Z0-9]+)/)[1];
-    let feedUrl = '<p>You can add your Brightspace calendar to your favourite calendar app with this URL:</p>' +
-                  '<p><a href="webcal://' + host + '/d2l/le/calendar/feed/user/feed.ics?token=' + feedToken + '">webcal://' + host + '/d2l/le/calendar/feed/user/feed.ics?token=' + feedToken + '</a></p>';
-    let calendarUrl = 'https://' + host + '/d2l/le/calendar/' + ORG_UNIT_ID;
-    let topicUrl = 'https://' + host + '/d2l/le/content/' + ORG_UNIT_ID + '/viewContent/' + TOPIC_ID + '/View';
-
-    let pluginPath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf("/"));
-
-    let subject = 'Brightspace Scheduling: Your time slot is confirmed';
-
-    let result = await fetch(pluginPath + '/resources/html/emailstudentenrolled.tpl');
-    let body = await result.text();
-
-    body = body.replace(/\(courseName\)/g, COURSE.Name);
-    body = body.replace(/\(scheduleTitle\)/g, TITLE);
-    body = body.replace(/\(timeSlot\)/g, group.Name);
-    body = body.replace(/\(feedUrl\)/g, feedUrl);
-    body = body.replace(/\(topicUrl\)/g, topicUrl);
-    body = body.replace(/\(calendarUrl\)/g, calendarUrl);
-
     classList = await classList;
 
-    let studentEmail = classList[USER.Identifier].Email;
-    let sendInstructorEmail = false;
-    
-    // email instructors
-    if(CFG.ei == 1){
-        let instructorEmails = [];
-        
-        for(const userId in classList){
-
-            if (classList[userId].RoleId !== null && INSTRUCTOR_ROLE_IDS.includes(classList[userId].RoleId)){
-                instructorEmails.push(classList[userId].Email);
-            }
-
-        }
-
-        sendInstructorEmail = notifyInstructorOfRegistration(instructorEmails, studentEmail, group.Name);
+    if(classList.length > 0){
+        hasClassListAccess = true;
     }
 
+    let sendStudentEmail = false;
+    let sendInstructorEmail = false;
 
-    let sendStudentEmail = sendEmail(studentEmail, subject, body);
-    await Promise.all([enroll, sendStudentEmail, sendInstructorEmail]);
-    window.location.reload();
+    if(hasClassListAccess){
+
+        let host = window.location.host;
+
+        let calendarSubscription = await bs.get('/d2l/le/calendar/(orgUnitId)/subscribe/subscribeDialogLaunch?subscriptionOptionId=-1');
+        let feedToken = calendarSubscription.match(/feed\.ics\?token\=([a-zA-Z0-9]+)/)[1];
+        let feedUrl = '<p>You can add your Brightspace calendar to your favourite calendar app with this URL:</p>' +
+                    '<p><a href="webcal://' + host + '/d2l/le/calendar/feed/user/feed.ics?token=' + feedToken + '">webcal://' + host + '/d2l/le/calendar/feed/user/feed.ics?token=' + feedToken + '</a></p>';
+        let calendarUrl = 'https://' + host + '/d2l/le/calendar/' + ORG_UNIT_ID;
+        let topicUrl = 'https://' + host + '/d2l/le/content/' + ORG_UNIT_ID + '/viewContent/' + TOPIC_ID + '/View';
+
+        let pluginPath = window.location.pathname.substring(0, window.location.pathname.lastIndexOf("/"));
+
+        let subject = 'Brightspace Scheduling: Your time slot is confirmed';
+
+        let result = await fetch(pluginPath + '/resources/html/emailstudentenrolled.tpl');
+        let body = await result.text();
+
+        body = body.replace(/\(courseName\)/g, COURSE.Name);
+        body = body.replace(/\(scheduleTitle\)/g, TITLE);
+        body = body.replace(/\(timeSlot\)/g, group.Name);
+        body = body.replace(/\(feedUrl\)/g, feedUrl);
+        body = body.replace(/\(topicUrl\)/g, topicUrl);
+        body = body.replace(/\(calendarUrl\)/g, calendarUrl);
+
+        let studentEmail = classList[USER.Identifier].Email;
+        
+        // email instructors
+        if(CFG.ei == 1){
+            let instructorEmails = [];
+            
+            for(const userId in classList){
+
+                if (classList[userId].RoleId !== null && INSTRUCTOR_ROLE_IDS.includes(classList[userId].RoleId)){
+                    instructorEmails.push(classList[userId].Email);
+                }
+
+            }
+
+            sendInstructorEmail = notifyInstructorOfRegistration(instructorEmails, studentEmail, group.Name);
+        }
+
+
+        sendStudentEmail = sendEmail(studentEmail, subject, body);
+    }
+
+    let promises = await Promise.all([enroll, sendStudentEmail, sendInstructorEmail]);
+    
+    window.top.location.reload();
 }
 
 async function notifyInstructorOfRegistration(instructorEmails, studentEmail, timeSlot){
