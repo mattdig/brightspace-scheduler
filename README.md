@@ -46,4 +46,3 @@ Change `d2l.Tools.Classlist.DisplayEmail` to `on` for the top level organization
 
 TODO:
 - merge GROUPS and existingTimeSlots global vars in resources/js/setup.js
-- make it work with the New Content Experience
