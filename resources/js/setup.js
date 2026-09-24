@@ -245,6 +245,7 @@ async function getExistingTimeSlots(){
 
         let localDateTimeFormat = startTime.format('MMM[&nbsp;]Do[&nbsp;]YYYY, h:mm[&nbsp;]A') + '&nbsp;-&nbsp;' + endTime.format('h:mm[&nbsp;]A');
 
+        // deregister users from past time slots
         if(CFG.dr !== undefined && CFG.dr == 1){
             if(endTime < moment()){
                 for(const userId of GROUPS[i].Enrollments){
@@ -258,23 +259,18 @@ async function getExistingTimeSlots(){
         if(GROUPS[i].Enrollments.length > 0)
             GROUPS[i].Enrollments = GROUPS[i].Enrollments.filter(userId => userId in CLASSLIST);
 
-        let timeslot = {
-            start: startTime,
-            end: endTime,
-            name: localDateTimeFormat,
-            groupId: GROUPS[i].GroupId,
-            eventId: data[2],
-            students: GROUPS[i].Enrollments
-        };
+        GROUPS[i].start = startTime;
+        GROUPS[i].end = endTime;
+        GROUPS[i].Name = localDateTimeFormat;
+        GROUPS[i].eventId = data[2];
 
-        existingTimeSlots.push(timeslot);
     };
 
     if(promiseArray.length > 0){
         await Promise.all(promiseArray);
     }
 
-    existingTimeSlots.sort(compareStarttime);
+    GROUPS.sort(compareStarttime);
 }
 
 async function displayExistingTimeSlots(){
