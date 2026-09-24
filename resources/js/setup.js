@@ -314,7 +314,7 @@ async function displayExistingTimeSlots(){
 
         html = '<tr class="timeslot" id="timeslot_' + timeSlot.GroupId + '">';
         html += '<td class="timeslot-registration">' + students + '</td>';
-        html += '<td class="timeslot_datetime">' + timeSlot.name + '</td>';
+        html += '<td class="timeslot_datetime">' + timeSlot.Name + '</td>';
         html += '<td class="timeslot_actions">';
 
         html += '<button class="btn btn-secondary btn-sm enrollStudents" data-id="' + timeSlot.GroupId + '">Add Registrations</button>';
@@ -918,7 +918,7 @@ async function submitForm(){
 
             for(const [index,timeSlot] of newTimeSlots.entries()){
 
-                let group = MODE == 'create' ? groupsInCategory[index] : false;
+                let group = (MODE == 'create' ? groupsInCategory[index] : false);
                 
                 promiseArray.push(createGroupAndEvent(timeSlot, group));
 
@@ -1011,7 +1011,7 @@ function createGroupCategory(){
     
 }
 
-async function updateGroupCategory(){
+function updateGroupCategory(){
 
     let title = $('#title').val().trim();
     let description = $('#description').val().trim();
@@ -1069,7 +1069,7 @@ function createGroup(timeSlot){
     
 }
 
-async function updateGroup(timeSlot){
+function updateGroup(timeSlot){
     
     let group = {
         "Name": timeSlot.Start.format('MMM Do YYYY, h:mm A') + '-' + timeSlot.End.format('h:mm A'),
@@ -1113,7 +1113,7 @@ function createCalendarEvent(timeSlot){
    
 }
 
-async function updateCalendarEvent(timeSlot){
+function updateCalendarEvent(timeSlot){
     let event_title = $('#event_title').val().trim();
     if(event_title == ''){
         event_title = $('#title').val().trim();
