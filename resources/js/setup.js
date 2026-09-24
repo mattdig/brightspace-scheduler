@@ -22,7 +22,6 @@ let GROUP_CATEGORY = (MODE == 'edit' ? getGroupCategory() : null);
 let USER = whoAmI();
 
 let timeBlocks = [];
-let existingTimeSlots = [];
 let newTimeSlots = [];
 
 $(function(){init();});
@@ -141,8 +140,9 @@ async function init(){
         // wait for the classlist to load
         CLASSLIST = await CLASSLIST;
 
-        await getExistingTimeSlots();
-        let calendarEvent = await bs.get('/d2l/api/le/(version)/(orgUnitId)/calendar/event/' + existingTimeSlots[0].eventId);
+        // add calendar event IDs, start & end times to GROUPS
+        await expandGroupData();
+        let calendarEvent = await bs.get('/d2l/api/le/(version)/(orgUnitId)/calendar/event/' + GROUPS[0].EventId);
         $('#event_title').val(calendarEvent.Title);
         
         await displayExistingTimeSlots(GROUP_CATEGORY);
@@ -232,7 +232,7 @@ async function updateEventTitle(element){
     }
 }
 
-async function getExistingTimeSlots(){
+async function expandGroupData(){
     
     let promiseArray = [];
 
@@ -259,10 +259,10 @@ async function getExistingTimeSlots(){
         if(GROUPS[i].Enrollments.length > 0)
             GROUPS[i].Enrollments = GROUPS[i].Enrollments.filter(userId => userId in CLASSLIST);
 
-        GROUPS[i].start = startTime;
-        GROUPS[i].end = endTime;
+        GROUPS[i].Start = startTime;
+        GROUPS[i].End = endTime;
         GROUPS[i].Name = localDateTimeFormat;
-        GROUPS[i].eventId = data[2];
+        GROUPS[i].EventId = data[2];
 
     };
 
@@ -275,7 +275,7 @@ async function getExistingTimeSlots(){
 
 async function displayExistingTimeSlots(){
 
-    if(existingTimeSlots.length == 0){
+    if(GROUPS.length == 0){
         return false;
     }
 
@@ -287,20 +287,20 @@ async function displayExistingTimeSlots(){
 
     let hasRegistrations = false;
 
-    existingTimeSlots.forEach(timeSlot => {
+    GROUPS.forEach(timeSlot => {
         
-        if(!hasRegistrations && timeSlot.students.length > 0){
+        if(!hasRegistrations && timeSlot.Enrollments.length > 0){
             hasRegistrations = true;
         }
 
         let students = '';
 
         if(GROUP_CATEGORY.MaxUsersPerGroup > 0){
-            students = '<span class="timeslot-student-count">' + timeSlot.students.length + '</span>/' + GROUP_CATEGORY.MaxUsersPerGroup + '<br />';
+            students = '<span class="timeslot-student-count">' + timeSlot.Enrollments.length + '</span>/' + GROUP_CATEGORY.MaxUsersPerGroup + '<br />';
         }
             
-        if(timeSlot.students.length > 0){
-            for(let studentId of timeSlot.students){
+        if(timeSlot.Enrollments.length > 0){
+            for(let studentId of timeSlot.Enrollments){
                 students += '<span id="student_' + studentId + '">' + CLASSLIST[studentId].DisplayName + ' (' + CLASSLIST[studentId].OrgDefinedId + ')<br /></span>';
             }
 
@@ -309,34 +309,34 @@ async function displayExistingTimeSlots(){
         }
 
         if(duration == 0){
-            duration = timeSlot.end.diff(timeSlot.start, 'minutes');
+            duration = timeSlot.End.diff(timeSlot.Start, 'minutes');
         }
 
-        html = '<tr class="timeslot" id="timeslot_' + timeSlot.groupId + '">';
+        html = '<tr class="timeslot" id="timeslot_' + timeSlot.GroupId + '">';
         html += '<td class="timeslot-registration">' + students + '</td>';
         html += '<td class="timeslot_datetime">' + timeSlot.name + '</td>';
         html += '<td class="timeslot_actions">';
 
-        html += '<button class="btn btn-secondary btn-sm enrollStudents" data-id="' + timeSlot.groupId + '">Add Registrations</button>';
+        html += '<button class="btn btn-secondary btn-sm enrollStudents" data-id="' + timeSlot.GroupId + '">Add Registrations</button>';
         
-        if(timeSlot.students.length > 0){
+        if(timeSlot.Enrollments.length > 0){
             if(GROUP_CATEGORY.MaxUsersPerGroup > 1)
-                html += '<button class="btn btn-secondary btn-sm unenrollStudents" data-id="' + timeSlot.groupId + '">Cancel Registrations</button>';
+                html += '<button class="btn btn-secondary btn-sm unenrollStudents" data-id="' + timeSlot.GroupId + '">Cancel Registrations</button>';
             else
-                html += '<button class="btn btn-secondary btn-sm unenrollStudents" data-id="' + timeSlot.groupId + '">Cancel Registration</button>';
+                html += '<button class="btn btn-secondary btn-sm unenrollStudents" data-id="' + timeSlot.GroupId + '">Cancel Registration</button>';
         }
-        html += '<button class="btn btn-red btn-sm delete-timeslot" data-id="' + timeSlot.groupId + '">Delete Time Slot</button></td>';
+        html += '<button class="btn btn-red btn-sm delete-timeslot" data-id="' + timeSlot.GroupId + '">Delete Time Slot</button></td>';
         html += '</td>';
         html += '</tr>';
 
         $('#existing_timeslots__table').append(html);
         
-        $('#existing_timeslots__table #timeslot_' + timeSlot.groupId).find('.enrollStudents').on('click', function(){manageEnrollment('add', timeSlot.groupId)});
+        $('#existing_timeslots__table #timeslot_' + timeSlot.GroupId).find('.enrollStudents').on('click', function(){manageEnrollment('add', timeSlot.GroupId)});
 
-        if(timeSlot.students.length > 1)
-            $('#existing_timeslots__table #timeslot_' + timeSlot.groupId).find('.unenrollStudents').on('click', function(){manageEnrollment('remove', timeSlot.groupId)});
+        if(timeSlot.Enrollments.length > 1)
+            $('#existing_timeslots__table #timeslot_' + timeSlot.GroupId).find('.unenrollStudents').on('click', function(){manageEnrollment('remove', timeSlot.GroupId)});
         else
-            $('#existing_timeslots__table #timeslot_' + timeSlot.groupId).find('.unenrollStudents').on('click', function(){
+            $('#existing_timeslots__table #timeslot_' + timeSlot.GroupId).find('.unenrollStudents').on('click', function(){
                 modalConfirm(
                     'Are you sure you cancel this registration?<br />The student will be removed and they will be able to select a different time.',
                     function(){cancelTimeSlot(timeSlot);}
@@ -344,7 +344,7 @@ async function displayExistingTimeSlots(){
             });
         
         
-        $('#existing_timeslots__table #timeslot_' + timeSlot.groupId).find('.delete-timeslot').on('click', function(){
+        $('#existing_timeslots__table #timeslot_' + timeSlot.GroupId).find('.delete-timeslot').on('click', function(){
             modalConfirm(
                 'Are you sure you want to delete this time slot?<br />It will remove all registrations and associated events for this time.',
                 function(){deleteTimeSlot(timeSlot)}
@@ -585,16 +585,16 @@ function updateTotalTimeSlots(){
     }
 
     timeBlocks.forEach(block => {
-        totalTime += block.end.diff(block.start, 'minutes');
+        totalTime += block.End.diff(block.Start, 'minutes');
 
-        let timeSlotsInBlock = parseInt(Math.floor(block.end.diff(block.start, 'minutes') / timeSlotDuration));
+        let timeSlotsInBlock = parseInt(Math.floor(block.End.diff(block.Start, 'minutes') / timeSlotDuration));
 
         for(let i = 0; i < timeSlotsInBlock; i++){
             let newTimeSlot = {
-                groupId: null,
-                eventId: null,
-                start: block.start.clone().add(i * timeSlotDuration, 'minutes'),
-                end: block.start.clone().add((i + 1) * timeSlotDuration, 'minutes'),
+                GroupId: null,
+                EventId: null,
+                Start: block.Start.clone().add(i * timeSlotDuration, 'minutes'),
+                End: block.Start.clone().add((i + 1) * timeSlotDuration, 'minutes'),
             };
             newTimeSlots.push(newTimeSlot);
         }
@@ -705,8 +705,8 @@ function validateTimeFields(withErrors){
                     if($(this).find('.day_of_week__' + startdatetime.day() + ':checked').length > 0){
                         let datetime = {};
                         datetime.id = $(this).attr('id');
-                        datetime.start = startdatetime.clone();
-                        datetime.end = moment(enddatetime, format).add(i, 'days');
+                        datetime.Start = startdatetime.clone();
+                        datetime.End = moment(enddatetime, format).add(i, 'days');
                         datetimes.push(datetime);
                     }
 
@@ -719,8 +719,8 @@ function validateTimeFields(withErrors){
                 let date = $(this).find('.startdate_input').val() + " ";
 
                 datetime.id = $(this).attr('id');
-                datetime.start = moment(date + $(this).find('.starttime_input').val(), format);
-                datetime.end = moment(date + $(this).find('.endtime_input').val(), format);
+                datetime.Start = moment(date + $(this).find('.starttime_input').val(), format);
+                datetime.End = moment(date + $(this).find('.endtime_input').val(), format);
                 datetimes.push(datetime);
 
             }
@@ -734,7 +734,7 @@ function validateTimeFields(withErrors){
     datetimes.sort(compareStarttime);
     
     for(const [i, datetime1] of datetimes.entries()){
-        if(datetime1.start.isAfter(datetime1.end) || datetime1.start.isSame(datetime1.end)){
+        if(datetime1.Start.isAfter(datetime1.End) || datetime1.Start.isSame(datetime1.End)){
 
             if(withErrors){
                 modalMessage('Start time must be before end time.', $('#' + datetime1.id).find('select'));
@@ -748,11 +748,11 @@ function validateTimeFields(withErrors){
             for(const [j, datetime2] of datetimes.slice(i + 1).entries()){
 
                 if(datetime1.id != datetime2.id && (
-                    datetime1.start.isAfter(datetime2.start) && datetime1.start.isBefore(datetime2.end) || 
-                    datetime1.end.isAfter(datetime2.start) && datetime1.end.isBefore(datetime2.end) ||
-                    datetime2.start.isAfter(datetime1.start) && datetime2.start.isBefore(datetime1.end) || 
-                    datetime2.end.isAfter(datetime1.start) && datetime2.end.isBefore(datetime1.end) ||
-                    datetime1.start.isSame(datetime2.start) || datetime1.end.isSame(datetime2.end))){
+                    datetime1.Start.isAfter(datetime2.Start) && datetime1.Start.isBefore(datetime2.End) || 
+                    datetime1.End.isAfter(datetime2.Start) && datetime1.End.isBefore(datetime2.End) ||
+                    datetime2.Start.isAfter(datetime1.Start) && datetime2.Start.isBefore(datetime1.End) || 
+                    datetime2.End.isAfter(datetime1.Start) && datetime2.End.isBefore(datetime1.End) ||
+                    datetime1.Start.isSame(datetime2.Start) || datetime1.End.isSame(datetime2.End))){
                     
                     if(withErrors){
                         modalMessage('Time ranges must not overlap.', $('#' + datetime2.id).find('.timeblock_datetime_input'));
@@ -760,20 +760,20 @@ function validateTimeFields(withErrors){
                     }
                     valid = false;
                 } else {
-                    if(datetime1.end.isSame(datetime2.start)){
-                        datetime1.end = datetime2.end.clone();
+                    if(datetime1.End.isSame(datetime2.Start)){
+                        datetime1.End = datetime2.End.clone();
                         spliceIndexes.push(i + j + 1);
                     }
                 }
             }
 
-            for(const [j, datetime2] of existingTimeSlots.entries()){
+            for(const [j, datetime2] of GROUPS.entries()){
                 
-                if( datetime1.start.isAfter(datetime2.start) && datetime1.start.isBefore(datetime2.end) || 
-                    datetime1.end.isAfter(datetime2.start) && datetime1.end.isBefore(datetime2.end) ||
-                    datetime2.start.isAfter(datetime1.start) && datetime2.start.isBefore(datetime1.end) || 
-                    datetime2.end.isAfter(datetime1.start) && datetime2.end.isBefore(datetime1.end) ||
-                    datetime1.start.isSame(datetime2.start) || datetime1.end.isSame(datetime2.end)){
+                if( datetime1.Start.isAfter(datetime2.Start) && datetime1.Start.isBefore(datetime2.End) || 
+                    datetime1.End.isAfter(datetime2.Start) && datetime1.End.isBefore(datetime2.End) ||
+                    datetime2.Start.isAfter(datetime1.Start) && datetime2.Start.isBefore(datetime1.End) || 
+                    datetime2.End.isAfter(datetime1.Start) && datetime2.End.isBefore(datetime1.End) ||
+                    datetime1.Start.isSame(datetime2.Start) || datetime1.End.isSame(datetime2.End)){
                     
                     if(withErrors){
                         modalMessage('New time ranges must not overlap with existing time slots.', $('#' + datetime1.id).find('.timeblock_datetime_input'));
@@ -802,9 +802,9 @@ function validateTimeFields(withErrors){
 }
 
 function compareStarttime(a, b){
-    if(a.start.isBefore(b.start)){
+    if(a.Start.isBefore(b.Start)){
         return -1;
-    } else if(a.start.isAfter(b.start)){
+    } else if(a.Start.isAfter(b.Start)){
         return 1;
     } else {
         return 0;
@@ -907,7 +907,7 @@ async function submitForm(){
 
                 promiseArray = [];
 
-                for (timeSlot of existingTimeSlots){
+                for (timeSlot of GROUPS){
                     promiseArray.push(updateCalendarEvent(timeSlot));
                 }
 
@@ -947,11 +947,11 @@ async function createGroupAndEvent(timeSlot, group){
         group = await createGroup(timeSlot);
     }
 
-    timeSlot.groupId = group.GroupId;
+    timeSlot.GroupId = group.GroupId;
     
     let newEvent = await createCalendarEvent(timeSlot);
     
-    timeSlot.eventId = newEvent.CalendarEventId;
+    timeSlot.EventId = newEvent.CalendarEventId;
     
     return await updateGroup(timeSlot);
     
@@ -1060,7 +1060,7 @@ async function updateGroupCategory(){
 function createGroup(timeSlot){
     
     let group = {
-        "Name": timeSlot.start.format('MMM Do YYYY, h:mm A') + '-' + timeSlot.end.format('h:mm A'),
+        "Name": timeSlot.Start.format('MMM Do YYYY, h:mm A') + '-' + timeSlot.End.format('h:mm A'),
         "Code": "",
         "Description": { "Content": "", "Type": "Text" },
     }
@@ -1072,12 +1072,12 @@ function createGroup(timeSlot){
 async function updateGroup(timeSlot){
     
     let group = {
-        "Name": timeSlot.start.format('MMM Do YYYY, h:mm A') + '-' + timeSlot.end.format('h:mm A'),
-        "Code": convertToUTCDateTimeString(timeSlot.start, true) + '_' + convertToUTCDateTimeString(timeSlot.end, true) + '_' + timeSlot.eventId,
+        "Name": timeSlot.Start.format('MMM Do YYYY, h:mm A') + '-' + timeSlot.End.format('h:mm A'),
+        "Code": convertToUTCDateTimeString(timeSlot.Start, true) + '_' + convertToUTCDateTimeString(timeSlot.End, true) + '_' + timeSlot.EventId,
         "Description": { "Content": "", "Type": "Text" }
     };
 
-    return bs.put('/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + GROUP_CATEGORY_ID + '/groups/' + timeSlot.groupId, group);
+    return bs.put('/d2l/api/lp/(version)/(orgUnitId)/groupcategories/' + GROUP_CATEGORY_ID + '/groups/' + timeSlot.GroupId, group);
     
 }
 
@@ -1091,11 +1091,11 @@ function createCalendarEvent(timeSlot){
     let event = {
         "Title": event_title,
         "Description": "",
-        "StartDateTime": convertToUTCDateTimeString(timeSlot.start),
-        "EndDateTime": convertToUTCDateTimeString(timeSlot.end),
+        "StartDateTime": convertToUTCDateTimeString(timeSlot.Start),
+        "EndDateTime": convertToUTCDateTimeString(timeSlot.End),
         "StartDay": null,
         "EndDay": null,
-        "GroupId": timeSlot.groupId,
+        "GroupId": timeSlot.GroupId,
         "RecurrenceInfo": null,
         "LocationId": null,
         "LocationName": "",
@@ -1122,11 +1122,11 @@ async function updateCalendarEvent(timeSlot){
     let event = {
         "Title": event_title,
         "Description": "",
-        "StartDateTime": convertToUTCDateTimeString(timeSlot.start),
-        "EndDateTime": convertToUTCDateTimeString(timeSlot.end),
+        "StartDateTime": convertToUTCDateTimeString(timeSlot.Start),
+        "EndDateTime": convertToUTCDateTimeString(timeSlot.End),
         "StartDay": null,
         "EndDay": null,
-        "GroupId": timeSlot.groupId,
+        "GroupId": timeSlot.GroupId,
         "RecurrenceInfo": null,
         "LocationId": null,
         "LocationName": "",
@@ -1140,7 +1140,7 @@ async function updateCalendarEvent(timeSlot){
         }
     };
 
-    return bs.put('/d2l/api/le/(version)/(orgUnitId)/calendar/event/' + timeSlot.eventId, event);
+    return bs.put('/d2l/api/le/(version)/(orgUnitId)/calendar/event/' + timeSlot.EventId, event);
 }
 
 
@@ -1239,18 +1239,18 @@ async function updateTopicFile(){
 }
 
 async function deleteTimeSlot(timeSlot, sendNotifications = true){
-    $('#timeslot_' + timeSlot.groupId).remove();
+    $('#timeslot_' + timeSlot.GroupId).remove();
     let promises = [];
-    promises.push(deleteCalendarEvent(timeSlot.eventId));
-    for(student of timeSlot.students){
-        promises.push(unenrollFromGroup(timeSlot.groupId, student, sendNotifications));
+    promises.push(deleteCalendarEvent(timeSlot.EventId));
+    for(student of timeSlot.Enrollments){
+        promises.push(unenrollFromGroup(timeSlot.GroupId, student, sendNotifications));
     }
     await Promise.all(promises);
-    let deleted = await deleteGroup(timeSlot.groupId);
+    let deleted = await deleteGroup(timeSlot.GroupId);
 
-    // remove timeSlot from existingTimeSlots
-    existingTimeSlots = existingTimeSlots.filter(function(ets) {
-        return ets.groupId !== timeSlot.groupId;
+    // remove timeSlot from GROUPS
+    GROUPS = GROUPS.filter(function(ets) {
+        return ets.GroupId !== timeSlot.GroupId;
     });
 
     if(sendNotifications){
@@ -1352,8 +1352,8 @@ function selectedStudentNames(checkedStudents){
 async function removeStudentsFromGroup(groupId, checkedStudents){
 
     //find the timeslot
-    let timeSlot = existingTimeSlots.find(function(ets) {
-        return ets.groupId == groupId;
+    let timeSlot = GROUPS.find(function(ets) {
+        return ets.GroupId == groupId;
     });
 
     let promises = [];
@@ -1363,16 +1363,16 @@ async function removeStudentsFromGroup(groupId, checkedStudents){
         let studentId = this.value;
         promises.push(unenrollFromGroup(groupId, studentId));
         $('#student_' + studentId).remove();
-        timeSlot.students = timeSlot.students.filter(function(id) {
+        timeSlot.Enrollments = timeSlot.Enrollments.filter(function(id) {
             return id != parseInt(studentId);
         });
     });
 
-    if(timeSlot.students.length == 0){
+    if(timeSlot.Enrollments.length == 0){
         $('#timeslot_' + groupId).find('.manage-timeslot').hide();
     }
 
-    $('#timeslot_' + groupId).find('.timeslot-student-count').html(timeSlot.students.length);
+    $('#timeslot_' + groupId).find('.timeslot-student-count').html(timeSlot.Enrollments.length);
 
     await Promise.all(promises);
 
@@ -1473,10 +1473,10 @@ async function enrollStudentInGroup(groupId, userId){
 }
 
 async function cancelTimeSlot(timeSlot){
-    $('#timeslot_' + timeSlot.groupId + ' .timeslot-registration').html('&nbsp;-&nbsp;');
-    $('#timeslot_' + timeSlot.groupId).find('.manage-timeslot').remove();
-    await unenrollFromGroup(timeSlot.groupId, timeSlot.students[0]);
-    timeSlot.students = [];
+    $('#timeslot_' + timeSlot.GroupId + ' .timeslot-registration').html('&nbsp;-&nbsp;');
+    $('#timeslot_' + timeSlot.GroupId).find('.manage-timeslot').remove();
+    await unenrollFromGroup(timeSlot.GroupId, timeSlot.Enrollments[0]);
+    timeSlot.Enrollments = [];
     
     reloadAfterSave();
 }
@@ -1554,8 +1554,8 @@ function confirmDeleteSchedule(){
 async function deleteSchedule(){
     let deleteArray = [];
 
-    for(let i = 0; i < existingTimeSlots.length; i++){
-        deleteArray.push(deleteTimeSlot(existingTimeSlots[i], false));
+    for(let i = 0; i < GROUPS.length; i++){
+        deleteArray.push(deleteTimeSlot(GROUPS[i], false));
     }
 
     await Promise.all(deleteArray);
