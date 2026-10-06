@@ -585,8 +585,8 @@ function updateTotalTimeSlots(){
     timeSlotDuration = parseInt($('#timeslot_duration').val());
     breakDuration = parseInt($('#break_duration').val());
 
-    if(breakDuration < 0 || breakDuration > 720){
-        $('#total_timeslots').text('Please enter a break duration between 0 and 720.');
+    if(breakDuration < 0 || breakDuration > 300){
+        $('#total_timeslots').text('Please enter a break duration between 0 and 300.');
         return false;
     }
 
