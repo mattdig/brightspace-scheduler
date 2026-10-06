@@ -17,7 +17,7 @@ let CLASSLIST;
 let TITLE;
 let ORG_INFO = bs.get('/d2l/api/lp/(version)/organization/info');
 let COURSE = bs.get('/d2l/api/lp/(version)/courses/' + ORG_UNIT_ID);
-let GROUPS = (MODE == 'edit' ? getGroupsInCategory() : null);
+let GROUPS = (MODE == 'edit' ? getGroupsInCategory() : []);
 let GROUP_CATEGORY = (MODE == 'edit' ? getGroupCategory() : null);
 let USER = whoAmI();
 
@@ -205,6 +205,10 @@ async function init(){
     firstDateTime.find('.btn-remove').on('click', removeDatetime);
 
     $('#timeslot_duration').on('change', function(){
+        updateTotalTimeSlots();
+    });
+
+    $('#break_duration').on('change', function(){
         updateTotalTimeSlots();
     });
 
@@ -576,8 +580,10 @@ function updateTotalTimeSlots(){
     let totalTimeSlots = 0;
     let timeSlotDuration = 0;
     let totalTime = 0;
+    let breakDuration = 0;
 
     timeSlotDuration = parseInt($('#timeslot_duration').val());
+    breakDuration = parseInt($('#break_duration').val());
 
     if(timeSlotDuration < 5){
         $('#total_timeslots').text('Please enter a time slot duration of at least 5 minutes.');
@@ -587,14 +593,14 @@ function updateTotalTimeSlots(){
     timeBlocks.forEach(block => {
         totalTime += block.End.diff(block.Start, 'minutes');
 
-        let timeSlotsInBlock = parseInt(Math.floor(block.End.diff(block.Start, 'minutes') / timeSlotDuration));
+        let timeSlotsInBlock = parseInt(Math.floor((block.End.diff(block.Start, 'minutes') + breakDuration) / (timeSlotDuration + breakDuration))); 
 
         for(let i = 0; i < timeSlotsInBlock; i++){
             let newTimeSlot = {
                 GroupId: null,
                 EventId: null,
-                Start: block.Start.clone().add(i * timeSlotDuration, 'minutes'),
-                End: block.Start.clone().add((i + 1) * timeSlotDuration, 'minutes'),
+                Start: block.Start.clone().add(i * timeSlotDuration + i * breakDuration, 'minutes'),
+                End: block.Start.clone().add((i + 1) * timeSlotDuration + i * breakDuration, 'minutes'),
             };
             newTimeSlots.push(newTimeSlot);
         }

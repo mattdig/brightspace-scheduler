@@ -2,6 +2,8 @@
 
 # Installation:
 
+This plugin assumes students have access to Class Lists. If they do not, the Sheduler will still work but some functionality is lost.
+
 Before uploading the files to Brightspace, find the resources/js/example-config.js file. Rename this file to config.js. The values for adminLinkId and signupLinkId will need to be filled in later, and this file will need to be uploaded on its own.
 
 Upload all files to the Brightspace "Public Files" area. For this example we're using "Plugins/Scheduler" as the location. This is path will be needed later.
@@ -43,6 +45,3 @@ Access the course as an instructor to create a new schedule for the students.
 
 # Display Email Addresses
 Change `d2l.Tools.Classlist.DisplayEmail` to `on` for the top level organization.
-
-TODO:
-- merge GROUPS and existingTimeSlots global vars in resources/js/setup.js
