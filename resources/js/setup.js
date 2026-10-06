@@ -877,12 +877,12 @@ function validateAllFields(){
     }
 
     if(MODE == 'create' && endDateMoment.isBefore(moment())){
-        modalMessage('Signup end-date must be after the current date.');
+        modalMessage('Signup end-date must be after the current date.', $('#schedule_enddate'));
         return false;
     }
     
     if(startDateMoment != null && endDateMoment.isBefore(startDateMoment)){
-        modalMessage('Signup end-date must be after the start-date.');
+        modalMessage('Signup end-date must be after the start-date.', $('#schedule_enddate'));
         return false;
     }
     
