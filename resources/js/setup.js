@@ -649,26 +649,6 @@ function updateTotalTimeSlots(){
 }
 
 
-
-function updateGlobalLatestTime(newTime){
-    
-    let now = moment();
-
-    if(globalLatestTime == null || newTime.isAfter(globalLatestTime)){
-        globalLatestTime = newTime.clone();
-    }
-
-    if(globalLatestTime.hours() > 22){
-        globalLatestTime.add(1, 'days').hours(8).minutes(0);
-    }
-
-    if(globalLatestTime.isBefore(now)){
-        globalLatestTime = now.clone();
-    }
-    
-}
-
-
 function validateTimeFields(withErrors){
 
     globalLatestTime = null;
@@ -875,12 +855,37 @@ function validateAllFields(){
         return false;
     }
     
-    // not supported by api
-    // let deadlineDate = moment($('#deadline_date').val() + ' ' + $('#deadline_time').val(), 'YYYY-MM-DD HH:mm');
-    // if(deadlineDate.isBefore(moment())){
-    //     modalMessage('Deadline must be after today.', [$('#deadline_date') , $('#deadline_time')]);
-    //     return false;
-    // }
+
+    let startDateString = $('#schedule_startdate').val().trim();
+    let endDateString = $('#schedule_enddate').val().trim();
+    let startDateMoment = null;
+    let endDateMoment = null;
+    
+    if(startDateString.match(/^\d{4}-\d{2}-\d{2}$/)){
+        startDateMoment = moment(startDateString + ' 00:00', 'YYYY-MM-DD HH:mm');
+    } else if(startDateString !== ''){
+        modalMessage('Start date must be in the format YYYY-MM-DD.');
+        return false;
+    }
+
+    // if string matches date format
+    if(endDateString.match(/^\d{4}-\d{2}-\d{2}$/)){
+        endDateMoment = moment(endDateString + ' 00:00', 'YYYY-MM-DD HH:mm').add(1, 'days');
+    } else if(endDateString !== ''){
+        modalMessage('End date must be in the format YYYY-MM-DD.');
+        return false;
+    }
+
+    if(MODE == 'create' && endDateMoment.isBefore(moment())){
+        modalMessage('Signup end-date must be after the current date.');
+        return false;
+    }
+    
+    if(startDateMoment != null && endDateMoment.isBefore(startDateMoment)){
+        modalMessage('Signup end-date must be after the start-date.');
+        return false;
+    }
+    
 
     let valid = validateTimeFields(true);
 
@@ -1029,17 +1034,13 @@ function createGroupCategory(){
     // if string matches date format
     if(endDateString.match(/^\d{4}-\d{2}-\d{2}$/)){
         let endDateMoment = moment(endDateString + ' 00:00', 'YYYY-MM-DD HH:mm').add(1, 'days');
-
-        if(endDateMoment.isAfter(moment()) && (startDateUTC == null || endDateMoment.isAfter(moment(startDateUTC)))){
-            endDateUTC = convertToUTCDateTimeString(endDateMoment);
-        }
+        endDateUTC = convertToUTCDateTimeString(endDateMoment);
     }
 
     let category = {
         "Name": title,
         "Description": {"Content": description, "Type":"Text"},
         "EnrollmentStyle": "PeoplePerNumberOfGroupsSelfEnrollment",
-//      "EnrollmentQuantity": null,
         "AutoEnroll": false,
         "RandomizeEnrollments": false,
         "NumberOfGroups": newTimeSlots.length,
@@ -1067,7 +1068,6 @@ function updateGroupCategory(){
     // if string matches date format
     if(startDateString.match(/^\d{4}-\d{2}-\d{2}$/)){
         let startDateMoment = moment(startDateString + ' 00:00', 'YYYY-MM-DD HH:mm');
-
         startDateUTC = convertToUTCDateTimeString(startDateMoment);
     }
 
@@ -1076,11 +1076,7 @@ function updateGroupCategory(){
     // if string matches date format
     if(endDateString.match(/^\d{4}-\d{2}-\d{2}$/)){
         let endDateMoment = moment(endDateString + ' 00:00', 'YYYY-MM-DD HH:mm').add(1, 'days');
-
-        if(startDateUTC == null || endDateMoment.isAfter(moment(startDateUTC))){
-            endDateUTC = convertToUTCDateTimeString(endDateMoment);
-        }
-
+        endDateUTC = convertToUTCDateTimeString(endDateMoment);
     }
 
     let category = {
