@@ -461,7 +461,21 @@ function orderDatetimeElems(element = null, counter = null){
 
 function initializeDatetime(datetimeElem){
 
-    let latestTime = moment();
+    let latestTime = GROUPS[GROUPS.length - 1].End;
+    
+    // if the latest time is before the current time, set it to the current time
+    if(latestTime.isBefore(moment())){
+        latestTime = moment();
+    }
+
+    // round up to nearest 30 minutes
+    latestTime = moment(Math.ceil(latestTime.valueOf() / (30 * 60 * 1000)) * (30 * 60 * 1000));
+    // if latestTime is after 11:30pm go to next day 
+    if(latestTime.hours() === 23 && latestTime.minutes() >= 30){
+        latestTime.add(1, 'days');
+        latestTime.hours(8).minutes(30);
+    }
+
     let initializeTimes = true;
 
     $(datetimeElem).find('.timeslottype').on('change', function(){
@@ -487,9 +501,9 @@ function initializeDatetime(datetimeElem){
         $('.datetime__div').each(function(){
             let datetime;
             if($(this).find('.timeslottype_recurring_input').is(':checked')){
-                datetime = moment($(this).find('.enddate_input').val() + ' ' + $(this).find('.starttime_input').val(), 'YYYY-MM-DD HH:mm');                
+                datetime = moment($(this).find('.enddate_input').val() + ' ' + $(this).find('.endtime_input').val(), 'YYYY-MM-DD HH:mm');
             } else {
-                datetime = moment($(this).find('.startdate_input').val() + ' ' + $(this).find('.starttime_input').val(), 'YYYY-MM-DD HH:mm');
+                datetime = moment($(this).find('.startdate_input').val() + ' ' + $(this).find('.endtime_input').val(), 'YYYY-MM-DD HH:mm');
             }
 
             if(datetime.isAfter(latestTime)){
@@ -745,66 +759,86 @@ function validateTimeFields(withErrors){
     datetimes.sort(compareStarttime);
     
     for(const [i, datetime1] of datetimes.entries()){
+        inlineMessage($('#' + datetime1.id).find('.status_message'), false, $('#' + datetime1.id).find('.timeblock_datetime_input'));
+
         if(datetime1.Start.isAfter(datetime1.End) || datetime1.Start.isSame(datetime1.End)){
 
             if(withErrors){
                 modalMessage('Start time must be before end time.', $('#' + datetime1.id).find('select'));
+            } else {
+                inlineMessage($('#' + datetime1.id).find('.status_message'), 
+                    'Start time must be before end time.', 
+                    $('#' + datetime1.id).find('select'));
             }
             return false;
-        
-        } else {
-
-            let spliceIndexes = [];
-
-            for(const [j, datetime2] of datetimes.slice(i + 1).entries()){
-
-                if(datetime1.id != datetime2.id && (
-                    datetime1.Start.isAfter(datetime2.Start) && datetime1.Start.isBefore(datetime2.End) || 
-                    datetime1.End.isAfter(datetime2.Start) && datetime1.End.isBefore(datetime2.End) ||
-                    datetime2.Start.isAfter(datetime1.Start) && datetime2.Start.isBefore(datetime1.End) || 
-                    datetime2.End.isAfter(datetime1.Start) && datetime2.End.isBefore(datetime1.End) ||
-                    datetime1.Start.isSame(datetime2.Start) || datetime1.End.isSame(datetime2.End))){
-                    
-                    if(withErrors){
-                        modalMessage('Time ranges must not overlap.', $('#' + datetime2.id).find('.timeblock_datetime_input'));
-                        return false;
-                    }
-                    valid = false;
-                } else {
-                    if(datetime1.End.isSame(datetime2.Start)){
-                        datetime1.End = datetime2.End.clone();
-                        spliceIndexes.push(i + j + 1);
-                    }
-                }
-            }
-
-            for(const [j, datetime2] of GROUPS.entries()){
-                
-                if( datetime1.Start.isAfter(datetime2.Start) && datetime1.Start.isBefore(datetime2.End) || 
-                    datetime1.End.isAfter(datetime2.Start) && datetime1.End.isBefore(datetime2.End) ||
-                    datetime2.Start.isAfter(datetime1.Start) && datetime2.Start.isBefore(datetime1.End) || 
-                    datetime2.End.isAfter(datetime1.Start) && datetime2.End.isBefore(datetime1.End) ||
-                    datetime1.Start.isSame(datetime2.Start) || datetime1.End.isSame(datetime2.End)){
-                    
-                    if(withErrors){
-                        modalMessage('New time ranges must not overlap with existing time slots.', $('#' + datetime1.id).find('.timeblock_datetime_input'));
-                        return false;
-                    }
-                    valid = false;
-                }
-            }
-
-            timeBlocks.push(datetime1);
-
-            spliceIndexes.forEach(function(index){
-                datetimes.splice(index, 1);
-            });
-            
         }
     }
 
-    if(!updateTotalTimeSlots() && $('#edit_timeblocks').is(':visible') && withErrors){
-        modalMessage('No new time slots will be created. Please adjust your time ranges, duration, or break.');
+    for(const [i, datetime1] of datetimes.entries()){
+        
+        let spliceIndexes = [];
+
+        for(const [j, datetime2] of datetimes.slice(i + 1).entries()){
+
+            if(datetime1.id != datetime2.id && (
+                datetime1.Start.isAfter(datetime2.Start) && datetime1.Start.isBefore(datetime2.End) || 
+                datetime1.End.isAfter(datetime2.Start) && datetime1.End.isBefore(datetime2.End) ||
+                datetime2.Start.isAfter(datetime1.Start) && datetime2.Start.isBefore(datetime1.End) || 
+                datetime2.End.isAfter(datetime1.Start) && datetime2.End.isBefore(datetime1.End) ||
+                datetime1.Start.isSame(datetime2.Start) || datetime1.End.isSame(datetime2.End))){
+                
+                if(withErrors){
+                    modalMessage('Time ranges must not overlap.', $('#' + datetime2.id).find('.timeblock_datetime_input'));
+                } else {
+                    inlineMessage($('#' + datetime2.id).find('.status_message'), 
+                        'Time ranges must not overlap.', 
+                        $('#' + datetime2.id).find('.timeblock_datetime_input'));
+                }
+                return false;
+            } else {
+                if(datetime1.End.isSame(datetime2.Start)){
+                    datetime1.End = datetime2.End.clone();
+                    spliceIndexes.push(i + j + 1);
+                }
+            }
+        }
+
+        for(const [j, datetime2] of GROUPS.entries()){
+            
+            if( datetime1.Start.isAfter(datetime2.Start) && datetime1.Start.isBefore(datetime2.End) || 
+                datetime1.End.isAfter(datetime2.Start) && datetime1.End.isBefore(datetime2.End) ||
+                datetime2.Start.isAfter(datetime1.Start) && datetime2.Start.isBefore(datetime1.End) || 
+                datetime2.End.isAfter(datetime1.Start) && datetime2.End.isBefore(datetime1.End) ||
+                datetime1.Start.isSame(datetime2.Start) || datetime1.End.isSame(datetime2.End)){
+                
+                if(withErrors){
+                    modalMessage('New time ranges must not overlap with existing time slots.', $('#' + datetime1.id).find('.timeblock_datetime_input'));
+                } else {
+                    inlineMessage($('#' + datetime1.id).find('.status_message'), 
+                        'New time ranges must not overlap with existing time slots.', 
+                        $('#' + datetime1.id).find('.timeblock_datetime_input'));
+                }
+                return false;
+            }
+        }
+
+        timeBlocks.push(datetime1);
+
+        spliceIndexes.forEach(function(index){
+            datetimes.splice(index, 1);
+        });
+         
+    }
+
+    if(!updateTotalTimeSlots() && $('#edit_timeblocks').is(':visible')){
+        if(withErrors){
+            modalMessage('No new time slots will be created. Please adjust your time ranges, duration, or break.');
+        } else {
+            inlineMessage($('#total_time'), 
+                'No new time slots will be created. Please adjust your time ranges, duration, or break.', 
+                false);
+        }
+
         valid = false;
     }
     
@@ -1618,5 +1652,24 @@ function convertToUTCDateTimeString(date, safe = false){
     }
 
     return utcDate.format(format) + (safe ? '' : 'Z');
+
+}
+
+function inlineMessage(container, message, id){
+
+    container.html(message);
+
+    if(id !== null){
+        if(typeof(id) == 'string')
+            if(typeof(message) == 'string')
+                $('#' + id).addClass('error');
+            else
+                $('#' + id).removeClass('error');
+        else
+            if(typeof(message) == 'string')
+                $(id).addClass('error');
+            else
+                $(id).removeClass('error');
+    }
 
 }
