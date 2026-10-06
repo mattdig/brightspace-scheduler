@@ -585,8 +585,13 @@ function updateTotalTimeSlots(){
     timeSlotDuration = parseInt($('#timeslot_duration').val());
     breakDuration = parseInt($('#break_duration').val());
 
-    if(timeSlotDuration < 5){
-        $('#total_timeslots').text('Please enter a time slot duration of at least 5 minutes.');
+    if(breakDuration < 0 || breakDuration > 720){
+        $('#total_timeslots').text('Please enter a break duration between 0 and 720.');
+        return false;
+    }
+
+    if(timeSlotDuration < 5 || timeSlotDuration > 720){
+        $('#total_timeslots').text('Please enter a time slot duration between 5 and 720 minutes.');
         return false;
     }
 
@@ -799,7 +804,7 @@ function validateTimeFields(withErrors){
     }
 
     if(!updateTotalTimeSlots() && $('#edit_timeblocks').is(':visible') && withErrors){
-        modalMessage('No new time slots will be created. Please adjust your time ranges or duration.');
+        modalMessage('No new time slots will be created. Please adjust your time ranges, duration, or break.');
         valid = false;
     }
     
@@ -845,7 +850,7 @@ function validateAllFields(){
 
     let valid = validateTimeFields(true);
 
-    if(valid && MODE == 'create'){
+    if(valid){
         valid = parseInt($('#max_users').val()) > 0 && parseInt($('#max_users').val()) <= 1000;
         if(!valid){
             modalMessage('Max users per timeslot must be between 1 and 1000.', $('#max_users'));
