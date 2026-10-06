@@ -133,12 +133,12 @@
                             <label for="timeslot_duration">
                                 <h2>Set the duration of each timeslot</h2>
                                 <p>The length of each timeslot in minutes</p>
-                                <p><input type="text" name="timeslot_duration" id="timeslot_duration" class="form-control" value="30" /></p>
+                                <p><input type="number" name="timeslot_duration" id="timeslot_duration" class="form-control" value="30" min="1" max="720" /></p>
                             </label>
                             <label for="break_duration">
                                 <h2>Set a break between timeslots</h2>
                                 <p>The length of the break in minutes</p>
-                                <p><input type="text" name="break_duration" id="break_duration" class="form-control" value="0" /></p>
+                                <p><input type="number" name="break_duration" id="break_duration" class="form-control" value="0" min="0" max="300"/></p>
                             </label>
                             <h3 id="total_timeslots">This will create 2 timeslots of 30 minutes each.</h3>
                         </div>
@@ -149,7 +149,7 @@
                         <label for="max_users">
                             <h2>Set the number of students per timeslot (group size)</h2>
                             <p>Maximum number of students per timeslot</p>
-                            <p><input type="number" name="max_users" id="max_users" class="form-control" value="1" /></p>
+                            <p><input type="number" name="max_users" id="max_users" class="form-control" value="1" min="1" max="1000" /></p>
                         </label>
                         <label for="associated_group_category" id="associated_group_category__label">
                             <h2>Join timeslot groups to existing groups (optional)</h2>
