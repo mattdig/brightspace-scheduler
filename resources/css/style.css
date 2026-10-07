@@ -72,6 +72,7 @@ tr:first-child th:last-child{
 .student_timeslot_actions{display:none;}
 .datetime_title{margin-bottom: 5px;}
 .timeslot_unit{width:100%; max-width: 363px;}
+.timeblock_status_message{font-size: 16px; font-weight:bold;color: #d0021b;}
 #add_new_timeblocks{margin-top:20px;}
 #my_selection{display:none;}
 .modal-header{border:none;}

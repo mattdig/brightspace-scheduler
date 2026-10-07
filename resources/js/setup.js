@@ -205,11 +205,11 @@ async function init(){
     firstDateTime.find('.btn-remove').on('click', removeDatetime);
 
     $('#timeslot_duration').on('change', function(){
-        updateTotalTimeSlots();
+        validateTimeFields(false);
     });
 
     $('#break_duration').on('change', function(){
-        updateTotalTimeSlots();
+        validateTimeFields(false);
     });
 
     $('#max_users').on('change', function(){
@@ -378,11 +378,12 @@ function addDatetime(){
         // set select values from last datetime (clone doesn't work?)
         newDateTime.find('.starttime_input').val(lastDatetime.find('.starttime_input').val());
         newDateTime.find('.endtime_input').val(lastDatetime.find('.endtime_input').val());
-
         newDateTime.find('.day_of_week').prop('checked', false);
-        
         newDateTime.find('.btn-remove').on('click', removeDatetime);
+        newDateTime.find('.timeblock_status_message').text('');
+        
         newDateTime.insertAfter(lastDatetime);
+
         initializeDatetime($('.datetime__div').last());   // initialize the new datetime
     } else {
         $('#edit_timeblocks').show();
@@ -592,22 +593,10 @@ function updateTotalTimeSlots(){
     
     newTimeSlots = [];
     let totalTimeSlots = 0;
-    let timeSlotDuration = 0;
     let totalTime = 0;
-    let breakDuration = 0;
-
-    timeSlotDuration = parseInt($('#timeslot_duration').val());
-    breakDuration = parseInt($('#break_duration').val());
-
-    if(breakDuration < 0 || breakDuration > 300){
-        $('#total_timeslots').text('Please enter a break duration between 0 and 300.');
-        return false;
-    }
-
-    if(timeSlotDuration < 5 || timeSlotDuration > 720){
-        $('#total_timeslots').text('Please enter a time slot duration between 5 and 720 minutes.');
-        return false;
-    }
+    
+    let timeSlotDuration = parseInt($('#timeslot_duration').val());
+    let breakDuration = parseInt($('#break_duration').val());
 
     timeBlocks.forEach(block => {
         totalTime += block.End.diff(block.Start, 'minutes');
@@ -642,7 +631,6 @@ function updateTotalTimeSlots(){
         $('#total_timeslots').text('This will create ' + totalTimeSlots + ' time slots of ' + timeSlotDuration + ' minutes each.');
         return true;
     } else {
-        $('#total_timeslots').text('No new timeslots will be created.');
         return false;
     }
 
@@ -651,15 +639,31 @@ function updateTotalTimeSlots(){
 
 function validateTimeFields(withErrors){
 
-    globalLatestTime = null;
-
     let valid = true;
     newTimeSlots = [];
     timeBlocks = [];
 
     let datetimes = [];
+
+    if(!withErrors){
+        $(':input').removeClass('error');
+    }
     
     if($('#edit_timeblocks').is(':visible')){
+
+        let timeSlotDuration = parseInt($('#timeslot_duration').val());
+        let breakDuration = parseInt($('#break_duration').val());
+
+        if(timeSlotDuration < 5 || timeSlotDuration > 720){
+            inlineMessage($('#total_timeslots'),'Please enter a time slot duration between 5 and 720 minutes.', $('#timeslot_duration'));
+            valid = false;
+        }
+
+        if(breakDuration < 0 || breakDuration > 300){
+            inlineMessage($('#total_timeslots'),'Please enter a break duration between 0 and 300.', $('#break_duration'));
+            valid = false;
+        }
+
         $('.datetime__div').each(function(){
 
             let dateFormat = 'YYYY-MM-DD';
@@ -810,7 +814,7 @@ function validateTimeFields(withErrors){
          
     }
 
-    if(!updateTotalTimeSlots() && $('#edit_timeblocks').is(':visible')){
+    if((!valid || !updateTotalTimeSlots()) && $('#edit_timeblocks').is(':visible')){
         if(withErrors){
             modalMessage('No new time slots will be created. Please adjust your time ranges, duration, or break.');
         } else {
@@ -864,7 +868,7 @@ function validateAllFields(){
     if(startDateString.match(/^\d{4}-\d{2}-\d{2}$/)){
         startDateMoment = moment(startDateString + ' 00:00', 'YYYY-MM-DD HH:mm');
     } else if(startDateString !== ''){
-        modalMessage('Start date must be in the format YYYY-MM-DD.');
+        modalMessage('Signup start-date must be in the format YYYY-MM-DD.');
         return false;
     }
 
@@ -872,7 +876,7 @@ function validateAllFields(){
     if(endDateString.match(/^\d{4}-\d{2}-\d{2}$/)){
         endDateMoment = moment(endDateString + ' 00:00', 'YYYY-MM-DD HH:mm').add(1, 'days');
     } else if(endDateString !== ''){
-        modalMessage('End date must be in the format YYYY-MM-DD.');
+        modalMessage('Signup end-date must be in the format YYYY-MM-DD.');
         return false;
     }
 
