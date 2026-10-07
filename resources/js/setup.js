@@ -388,7 +388,9 @@ function addDatetime(){
     } else {
         $('#edit_timeblocks').show();
         validateTimeFields();
+        document.getElementById($('.datetime__div').last().attr('id')).scrollIntoView();
     }
+
 }
 
 function removeDatetime(element){
@@ -654,13 +656,13 @@ function validateTimeFields(withErrors){
         let timeSlotDuration = parseInt($('#timeslot_duration').val());
         let breakDuration = parseInt($('#break_duration').val());
 
-        if(timeSlotDuration < 5 || timeSlotDuration > 720){
-            inlineMessage($('#total_timeslots'),'Please enter a time slot duration between 5 and 720 minutes.', $('#timeslot_duration'));
+        if(breakDuration < 0 || breakDuration > 300){
+            inlineMessage($('#total_timeslots'),'Please enter a break duration between 0 and 300.', $('#break_duration'), 'timeslot_settings_row');
             valid = false;
         }
 
-        if(breakDuration < 0 || breakDuration > 300){
-            inlineMessage($('#total_timeslots'),'Please enter a break duration between 0 and 300.', $('#break_duration'));
+        if(timeSlotDuration < 5 || timeSlotDuration > 720){
+            inlineMessage($('#total_timeslots'),'Please enter a time slot duration between 5 and 720 minutes.', $('#timeslot_duration'), 'timeslot_settings_row');
             valid = false;
         }
 
@@ -681,7 +683,7 @@ function validateTimeFields(withErrors){
                 }
                 inlineMessage($(this).find('.timeblock_status_message'), 
                     'Please enter a start ' + (isRecurring ? 'and end ' : '') + 'date.', 
-                    $(this).find('.date_input'));
+                    $(this).find('.date_input'), this.id);
                 return false;
             }
 
@@ -698,7 +700,7 @@ function validateTimeFields(withErrors){
                     }
                     inlineMessage($(this).find('.timeblock_status_message'), 
                         'End date must be after start date.', 
-                        $(this).find('.date_input'));
+                        $(this).find('.date_input'), this.id);
                     return false;
                 } else if (dayDifference > 365){
                     if(withErrors){
@@ -706,7 +708,7 @@ function validateTimeFields(withErrors){
                     }
                     inlineMessage($(this).find('.timeblock_status_message'), 
                         'Date range must be less than 1 year.', 
-                        $(this).find('.date_input'));
+                        $(this).find('.date_input'), this.id);
                     return false;
                 }
 
@@ -761,7 +763,7 @@ function validateTimeFields(withErrors){
             }
             inlineMessage($('#' + datetime1.id).find('.timeblock_status_message'), 
                 'Start time must be before end time.', 
-                $('#' + datetime1.id).find('select'));
+                $('#' + datetime1.id).find('select'), datetime1.id);
             
             return false;
         }
@@ -785,7 +787,7 @@ function validateTimeFields(withErrors){
                 }
                 inlineMessage($('#' + datetime2.id).find('.timeblock_status_message'), 
                     'Time ranges must not overlap.', 
-                    $('#' + datetime2.id).find('.timeblock_datetime_input'));
+                    $('#' + datetime2.id).find('.timeblock_datetime_input'), datetime2.id);
                 
                 return false;
             } else {
@@ -809,7 +811,7 @@ function validateTimeFields(withErrors){
                 }
                 inlineMessage($('#' + datetime1.id).find('.timeblock_status_message'), 
                     'New time ranges must not overlap with existing time slots.', 
-                    $('#' + datetime1.id).find('.timeblock_datetime_input'));
+                    $('#' + datetime1.id).find('.timeblock_datetime_input'), datetime1.id);
                 return false;
             }
         }
@@ -828,7 +830,7 @@ function validateTimeFields(withErrors){
         }
         inlineMessage($('#total_time'), 
             'No new time slots will be created. Please adjust your time ranges, duration, or break.', 
-            false);
+            false, 'timeslot_settings_row');
         
 
         valid = false;
@@ -1663,21 +1665,27 @@ function convertToUTCDateTimeString(date, safe = false){
 
 }
 
-function inlineMessage(container, message, id){
+function inlineMessage(container, message, error_target, scroll_target = false){
 
     container.html(message);
 
-    if(id !== null){
-        if(typeof(id) == 'string')
-            if(typeof(message) == 'string')
-                $('#' + id).addClass('error');
-            else
-                $('#' + id).removeClass('error');
+    if(error_target !== null){
+        if(typeof(error_target) == 'string')
+            if(typeof(message) == 'string'){
+                $('#' + error_target).addClass('error');
+            } else {
+                $('#' + error_target).removeClass('error');
+            }
         else
-            if(typeof(message) == 'string')
-                $(id).addClass('error');
-            else
-                $(id).removeClass('error');
+            if(typeof(message) == 'string'){
+                $(error_target).addClass('error');
+            } else {
+                $(error_target).removeClass('error');
+            }
+    }
+
+    if(scroll_target !== false){
+        document.getElementById(scroll_target).scrollIntoView();
     }
 
 }

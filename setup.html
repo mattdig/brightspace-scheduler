@@ -133,12 +133,12 @@
                             <h3 id="total_time">Total time: 3 hours</h3>                        
                         </div>
                     </div>
-                    <div class="row">
+                    <div class="row" id="timeslot_settings_row">
                         <div class="col-xs-12">
                             <label for="timeslot_duration">
                                 <h2>Set the duration of each timeslot</h2>
                                 <p>The length of each timeslot in minutes</p>
-                                <p><input type="number" name="timeslot_duration" id="timeslot_duration" class="form-control" value="30" min="1" max="720" /></p>
+                                <p><input type="number" name="timeslot_duration" id="timeslot_duration" class="form-control" value="30" min="5" max="720" /></p>
                             </label>
                             <label for="break_duration">
                                 <h2>Set a break between timeslots</h2>
@@ -219,7 +219,7 @@
             </form>
             <div class="row" id="edit_schedule">
                 <div class="col-sm-2 col-xs-6">
-                    <p><br><input type="button" class="btn btn-primary" value="Edit Schedule" onclick="$('#edit_schedule').hide(); $('#signup_schedule__form').show();" /></p>
+                    <p><br><input type="button" class="btn btn-primary" value="Edit Schedule" onclick="$('#edit_schedule').hide(); $('#signup_schedule__form').show(); document.getElementById('form_title').scrollIntoView();" /></p>
                 </div>
                 <div id="delete_schedule" class="col-sm-offset-6 col-sm-4 col-xs-6">
                     <p><br><input type="button" class="btn btn-red" value="DELETE SCHEDULE" onclick="confirmDeleteSchedule()" />&nbsp;</p>
