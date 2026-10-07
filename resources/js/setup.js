@@ -677,8 +677,11 @@ function validateTimeFields(withErrors){
 
             if(startdate == '' || enddate == ''){
                 if(withErrors){
-                    modalMessage('Please enter a start ' + (isRecurring ? 'and end ' : '') + 'date.', $(this).find('.date_input'));
+                    modalMessage('Please enter a start ' + (isRecurring ? 'and end ' : '') + 'date.');
                 }
+                inlineMessage($(this).find('.timeblock_status_message'), 
+                    'Please enter a start ' + (isRecurring ? 'and end ' : '') + 'date.', 
+                    $(this).find('.date_input'));
                 return false;
             }
 
@@ -691,13 +694,19 @@ function validateTimeFields(withErrors){
 
                 if(startdateMoment.isAfter(enddateMoment)){
                     if(withErrors){
-                        modalMessage('End date must be after start date.', $(this).find('.date_input'));
+                        modalMessage('End date must be after start date.');
                     }
+                    inlineMessage($(this).find('.timeblock_status_message'), 
+                        'End date must be after start date.', 
+                        $(this).find('.date_input'));
                     return false;
                 } else if (dayDifference > 365){
                     if(withErrors){
-                        modalMessage('Date range must be less than 1 year.', $(this).find('.date_input'));
+                        modalMessage('Date range must be less than 1 year.');
                     }
+                    inlineMessage($(this).find('.timeblock_status_message'), 
+                        'Date range must be less than 1 year.', 
+                        $(this).find('.date_input'));
                     return false;
                 }
 
@@ -749,11 +758,11 @@ function validateTimeFields(withErrors){
 
             if(withErrors){
                 modalMessage('Start time must be before end time.', $('#' + datetime1.id).find('select'));
-            } else {
-                inlineMessage($('#' + datetime1.id).find('.timeblock_status_message'), 
-                    'Start time must be before end time.', 
-                    $('#' + datetime1.id).find('select'));
             }
+            inlineMessage($('#' + datetime1.id).find('.timeblock_status_message'), 
+                'Start time must be before end time.', 
+                $('#' + datetime1.id).find('select'));
+            
             return false;
         }
     }
@@ -773,11 +782,11 @@ function validateTimeFields(withErrors){
                 
                 if(withErrors){
                     modalMessage('Time ranges must not overlap.', $('#' + datetime2.id).find('.timeblock_datetime_input'));
-                } else {
-                    inlineMessage($('#' + datetime2.id).find('.timeblock_status_message'), 
-                        'Time ranges must not overlap.', 
-                        $('#' + datetime2.id).find('.timeblock_datetime_input'));
                 }
+                inlineMessage($('#' + datetime2.id).find('.timeblock_status_message'), 
+                    'Time ranges must not overlap.', 
+                    $('#' + datetime2.id).find('.timeblock_datetime_input'));
+                
                 return false;
             } else {
                 if(datetime1.End.isSame(datetime2.Start)){
@@ -796,12 +805,11 @@ function validateTimeFields(withErrors){
                 datetime1.Start.isSame(datetime2.Start) || datetime1.End.isSame(datetime2.End)){
                 
                 if(withErrors){
-                    modalMessage('New time ranges must not overlap with existing time slots.', $('#' + datetime1.id).find('.timeblock_datetime_input'));
-                } else {
-                    inlineMessage($('#' + datetime1.id).find('.timeblock_status_message'), 
-                        'New time ranges must not overlap with existing time slots.', 
-                        $('#' + datetime1.id).find('.timeblock_datetime_input'));
+                    modalMessage('New time ranges must not overlap with existing time slots.');
                 }
+                inlineMessage($('#' + datetime1.id).find('.timeblock_status_message'), 
+                    'New time ranges must not overlap with existing time slots.', 
+                    $('#' + datetime1.id).find('.timeblock_datetime_input'));
                 return false;
             }
         }
@@ -817,11 +825,11 @@ function validateTimeFields(withErrors){
     if((!valid || !updateTotalTimeSlots()) && $('#edit_timeblocks').is(':visible')){
         if(withErrors){
             modalMessage('No new time slots will be created. Please adjust your time ranges, duration, or break.');
-        } else {
-            inlineMessage($('#total_time'), 
-                'No new time slots will be created. Please adjust your time ranges, duration, or break.', 
-                false);
         }
+        inlineMessage($('#total_time'), 
+            'No new time slots will be created. Please adjust your time ranges, duration, or break.', 
+            false);
+        
 
         valid = false;
     }
