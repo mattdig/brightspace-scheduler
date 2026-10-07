@@ -743,14 +743,14 @@ function validateTimeFields(withErrors){
     datetimes.sort(compareStarttime);
     
     for(const [i, datetime1] of datetimes.entries()){
-        inlineMessage($('#' + datetime1.id).find('.status_message'), false, $('#' + datetime1.id).find('.timeblock_datetime_input'));
+        inlineMessage($('#' + datetime1.id).find('.timeblock_status_message'), false, $('#' + datetime1.id).find('.timeblock_datetime_input'));
 
         if(datetime1.Start.isAfter(datetime1.End) || datetime1.Start.isSame(datetime1.End)){
 
             if(withErrors){
                 modalMessage('Start time must be before end time.', $('#' + datetime1.id).find('select'));
             } else {
-                inlineMessage($('#' + datetime1.id).find('.status_message'), 
+                inlineMessage($('#' + datetime1.id).find('.timeblock_status_message'), 
                     'Start time must be before end time.', 
                     $('#' + datetime1.id).find('select'));
             }
@@ -774,7 +774,7 @@ function validateTimeFields(withErrors){
                 if(withErrors){
                     modalMessage('Time ranges must not overlap.', $('#' + datetime2.id).find('.timeblock_datetime_input'));
                 } else {
-                    inlineMessage($('#' + datetime2.id).find('.status_message'), 
+                    inlineMessage($('#' + datetime2.id).find('.timeblock_status_message'), 
                         'Time ranges must not overlap.', 
                         $('#' + datetime2.id).find('.timeblock_datetime_input'));
                 }
@@ -798,7 +798,7 @@ function validateTimeFields(withErrors){
                 if(withErrors){
                     modalMessage('New time ranges must not overlap with existing time slots.', $('#' + datetime1.id).find('.timeblock_datetime_input'));
                 } else {
-                    inlineMessage($('#' + datetime1.id).find('.status_message'), 
+                    inlineMessage($('#' + datetime1.id).find('.timeblock_status_message'), 
                         'New time ranges must not overlap with existing time slots.', 
                         $('#' + datetime1.id).find('.timeblock_datetime_input'));
                 }
