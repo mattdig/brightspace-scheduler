@@ -630,7 +630,7 @@ function updateTotalTimeSlots(){
     $('#total_time').text('Total time: ' + totalTime + ' ' + units);
 
     if(totalTimeSlots > 0){
-        $('#total_timeslots').text('This will create ' + totalTimeSlots + ' time slots of ' + timeSlotDuration + ' minutes each.');
+        inlineMessage($('#total_timeslots'), 'This will create ' + totalTimeSlots + ' time slots of ' + timeSlotDuration + ' minutes each.');
         return true;
     } else {
         return false;
@@ -765,63 +765,81 @@ function validateTimeFields(withErrors){
                 'Start time must be before end time.', 
                 $('#' + datetime1.id).find('select'), datetime1.id);
             
-            return false;
+            valid = false;
+            break;
         }
     }
 
-    for(const [i, datetime1] of datetimes.entries()){
-        
-        let spliceIndexes = [];
+    if(valid){
 
-        for(const [j, datetime2] of datetimes.slice(i + 1).entries()){
-
-            if(datetime1.id != datetime2.id && (
-                datetime1.Start.isAfter(datetime2.Start) && datetime1.Start.isBefore(datetime2.End) || 
-                datetime1.End.isAfter(datetime2.Start) && datetime1.End.isBefore(datetime2.End) ||
-                datetime2.Start.isAfter(datetime1.Start) && datetime2.Start.isBefore(datetime1.End) || 
-                datetime2.End.isAfter(datetime1.Start) && datetime2.End.isBefore(datetime1.End) ||
-                datetime1.Start.isSame(datetime2.Start) || datetime1.End.isSame(datetime2.End))){
-                
-                if(withErrors){
-                    modalMessage('Time ranges must not overlap.', $('#' + datetime2.id).find('.timeblock_datetime_input'));
-                }
-                inlineMessage($('#' + datetime2.id).find('.timeblock_status_message'), 
-                    'Time ranges must not overlap.', 
-                    $('#' + datetime2.id).find('.timeblock_datetime_input'), datetime2.id);
-                
-                return false;
-            } else {
-                if(datetime1.End.isSame(datetime2.Start)){
-                    datetime1.End = datetime2.End.clone();
-                    spliceIndexes.push(i + j + 1);
-                }
-            }
-        }
-
-        for(const [j, datetime2] of GROUPS.entries()){
+        for(const [i, datetime1] of datetimes.entries()){
             
-            if( datetime1.Start.isAfter(datetime2.Start) && datetime1.Start.isBefore(datetime2.End) || 
-                datetime1.End.isAfter(datetime2.Start) && datetime1.End.isBefore(datetime2.End) ||
-                datetime2.Start.isAfter(datetime1.Start) && datetime2.Start.isBefore(datetime1.End) || 
-                datetime2.End.isAfter(datetime1.Start) && datetime2.End.isBefore(datetime1.End) ||
-                datetime1.Start.isSame(datetime2.Start) || datetime1.End.isSame(datetime2.End)){
-                
-                if(withErrors){
-                    modalMessage('New time ranges must not overlap with existing time slots.');
+            let spliceIndexes = [];
+
+            for(const [j, datetime2] of datetimes.slice(i + 1).entries()){
+
+                if(datetime1.id != datetime2.id && (
+                    datetime1.Start.isAfter(datetime2.Start) && datetime1.Start.isBefore(datetime2.End) || 
+                    datetime1.End.isAfter(datetime2.Start) && datetime1.End.isBefore(datetime2.End) ||
+                    datetime2.Start.isAfter(datetime1.Start) && datetime2.Start.isBefore(datetime1.End) || 
+                    datetime2.End.isAfter(datetime1.Start) && datetime2.End.isBefore(datetime1.End) ||
+                    datetime1.Start.isSame(datetime2.Start) || datetime1.End.isSame(datetime2.End))){
+                    
+                    if(withErrors){
+                        modalMessage('Time ranges must not overlap.', $('#' + datetime2.id).find('.timeblock_datetime_input'));
+                    }
+                    inlineMessage($('#' + datetime2.id).find('.timeblock_status_message'), 
+                        'Time ranges must not overlap.', 
+                        $('#' + datetime2.id).find('.timeblock_datetime_input'));
+                    
+                    valid = false;
+                    break;
+
+                } else {
+                    if(datetime1.End.isSame(datetime2.Start)){
+                        datetime1.End = datetime2.End.clone();
+                        spliceIndexes.push(i + j + 1);
+                    }
                 }
-                inlineMessage($('#' + datetime1.id).find('.timeblock_status_message'), 
-                    'New time ranges must not overlap with existing time slots.', 
-                    $('#' + datetime1.id).find('.timeblock_datetime_input'), datetime1.id);
-                return false;
             }
+
+            if(valid){
+
+                for(const [j, datetime2] of GROUPS.entries()){
+                    
+                    if( datetime1.Start.isAfter(datetime2.Start) && datetime1.Start.isBefore(datetime2.End) || 
+                        datetime1.End.isAfter(datetime2.Start) && datetime1.End.isBefore(datetime2.End) ||
+                        datetime2.Start.isAfter(datetime1.Start) && datetime2.Start.isBefore(datetime1.End) || 
+                        datetime2.End.isAfter(datetime1.Start) && datetime2.End.isBefore(datetime1.End) ||
+                        datetime1.Start.isSame(datetime2.Start) || datetime1.End.isSame(datetime2.End)){
+                        
+                        if(withErrors){
+                            modalMessage('New time ranges must not overlap with existing time slots.');
+                        }
+                        inlineMessage($('#' + datetime1.id).find('.timeblock_status_message'), 
+                            'New time ranges must not overlap with existing time slots.', 
+                            $('#' + datetime1.id).find('.timeblock_datetime_input'));
+                        valid = false;
+                        break;
+                    }
+                }
+            }
+
+            if(!valid){
+                break;
+            }
+
+            timeBlocks.push(datetime1);
+
+            spliceIndexes.forEach(function(index){
+                datetimes.splice(index, 1);
+            });
+            
         }
+    }
 
-        timeBlocks.push(datetime1);
-
-        spliceIndexes.forEach(function(index){
-            datetimes.splice(index, 1);
-        });
-         
+    if(!valid){
+        timeBlocks = [];
     }
 
     if((!valid || !updateTotalTimeSlots()) && $('#edit_timeblocks').is(':visible')){
@@ -829,8 +847,9 @@ function validateTimeFields(withErrors){
             modalMessage('No new time slots will be created. Please adjust your time ranges, duration, or break.');
         }
         inlineMessage($('#total_time'), 
-            'No new time slots will be created. Please adjust your time ranges, duration, or break.', 
-            false, 'timeslot_settings_row');
+            'No new time slots will be created. Please adjust your time ranges, duration, or break.');
+        inlineMessage($('#total_timeslots'), 
+            'No new time slots will be created. Please adjust your time ranges, duration, or break.');
         
 
         valid = false;
@@ -1665,23 +1684,19 @@ function convertToUTCDateTimeString(date, safe = false){
 
 }
 
-function inlineMessage(container, message, error_target, scroll_target = false){
+function inlineMessage(container, message, error_target = false, scroll_target = false){
 
-    container.html(message);
-
-    if(error_target !== null){
-        if(typeof(error_target) == 'string')
-            if(typeof(message) == 'string'){
-                $('#' + error_target).addClass('error');
-            } else {
-                $('#' + error_target).removeClass('error');
-            }
-        else
-            if(typeof(message) == 'string'){
-                $(error_target).addClass('error');
-            } else {
-                $(error_target).removeClass('error');
-            }
+    if(message !== false)
+        container.html(message);
+    else
+        container.html('');
+    
+    if(error_target !== false){
+        if(message !== false && message !== ''){
+            error_target.addClass('error');
+        } else {
+            error_target.removeClass('error');
+        }
     }
 
     if(scroll_target !== false){
