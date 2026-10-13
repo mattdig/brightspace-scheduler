@@ -464,7 +464,11 @@ function orderDatetimeElems(element = null, counter = null){
 
 function initializeDatetime(datetimeElem){
 
-    let latestTime = GROUPS[GROUPS.length - 1].End;
+    let latestTime = moment();
+
+    if(GROUPS.length > 0){
+        latestTime = moment(GROUPS[GROUPS.length - 1].End);
+    }
     
     // if the latest time is before the current time, set it to the current time
     if(latestTime.isBefore(moment())){
