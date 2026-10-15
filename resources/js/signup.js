@@ -301,24 +301,21 @@ async function selectTimeSlot(group){
 
     let classList = getClassList();
 
-    
 
-    let data = {
-        "d2l_rf": "IsGroupFull",
-        "params": "{\"param1\":" + group.GroupId + "}",
-        "d2l_action": "rpc"
-    };
+    // try enrolment and wait for the result
+    let enroll = await enrollInGroup(group.GroupId);
 
-    let isFull = await bs.submit('/d2l/lms/group/user_available_group_list.d2lfile?ou=(orgUnitId)&d2l_rh=rpc&d2l_rt=call', data)
-    
-    if(isFull.Result === true){
-        modalMessage('This time slot is full. Please select another time slot.<br />Reload the page to see the updated list of available time slots.');
-        $('#timeslot_' + group.GroupId).remove();
+    if (typeof(enroll) === 'object' && 'detail' in enroll && enroll.detail.indexOf('Error') === 0){
+        if(enroll.detail.indexOf('exceeded') !== -1){
+            modalMessage('This time slot is full. Please select another time slot.<br />Reload the page to see the updated list of available time slots.');
+            $('#timeslot_' + group.GroupId).remove();
+        } else {
+            modalMessage('An error occurred while enrolling in this time slot.<br />Reload the page and try again.');
+        }
         return false;
     }
 
-    let enroll = enrollInGroup(group.GroupId);
-
+    // wait for class list to be available
     classList = await classList;
 
     if(classList.length > 0){
@@ -410,13 +407,12 @@ async function notifyInstructorOfRegistration(instructorEmails, studentEmail, ti
 }
 
 function enrollInGroup(groupId){
-    // api doesn't let learners enroll themselves, form must be used instead
+    
     let data = {
-        "d2l_rf": "EnrollUser",
-        "params": "{\"param1\":" + groupId + "}",
-        "d2l_action": "rpc"
+        "UserId": USER.Identifier
     };
-    return bs.submit('/d2l/lms/group/user_available_group_list.d2lfile?ou=(orgUnitId)&d2l_rh=rpc&d2l_rt=call', data);
+    
+    return bs.post('/d2l/api/lp/(version)/' + ORG_UNIT_ID + '/groupcategories/' + GROUP_CATEGORY_ID + '/groups/' + groupId + '/enrollments/', data);
 }
 
 async function notifyStudentOfCancellation(studentEmail){
@@ -462,11 +458,5 @@ async function notifyInstructorOfCancellation(instructorEmails, studentEmail){
 
 
 function unenrollFromGroup(groupId){
-    // api doesn't let learners unenroll themselves, form must be used instead
-    let data = {
-        "d2l_rf": "UnenrollUser",
-        "params": "{\"param1\":" + groupId + "}",
-        "d2l_action": "rpc"
-    };
-    return bs.submit('/d2l/lms/group/user_group_list.d2lfile?ou=(orgUnitId)&d2l_rh=rpc&d2l_rt=call', data);
+    return bs.delete('/d2l/api/lp/(version)/' + ORG_UNIT_ID + '/groupcategories/' + GROUP_CATEGORY_ID + '/groups/' + groupId + '/enrollments/' + USER.Identifier);
 }
