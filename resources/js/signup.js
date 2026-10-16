@@ -307,11 +307,11 @@ async function selectTimeSlot(group){
 
     if (typeof(enroll) === 'object' && 'detail' in enroll && enroll.detail.indexOf('Error') === 0){
         if(enroll.detail.indexOf('exceeded') !== -1){
-            modalMessage('This time slot is full. Please select another time slot.<br />Reload the page to see the updated list of available time slots.');
-            $('#timeslot_' + group.GroupId).remove();
+            modalMessage('This time slot is full. Please select another time slot.<br />The page will reload to show the updated list of available time slots.');
         } else {
-            modalMessage('An error occurred while enrolling in this time slot.<br />Reload the page and try again.');
+            modalMessage('An error occurred while enrolling in this time slot.<br />The page will reload and you can try again.');
         }
+        window.top.location.reload();
         return false;
     }
 
