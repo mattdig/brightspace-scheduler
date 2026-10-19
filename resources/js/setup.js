@@ -913,12 +913,12 @@ function validateAllFields(){
         return false;
     }
 
-    if(MODE == 'create' && endDateMoment.isBefore(moment())){
+    if(endDateMoment !== null && MODE == 'create' && endDateMoment.isBefore(moment())){
         modalMessage('Signup end-date must be after the current date.', $('#schedule_enddate'));
         return false;
     }
     
-    if(startDateMoment != null && endDateMoment.isBefore(startDateMoment)){
+    if(startDateMoment != null && endDateMoment !== null && endDateMoment.isBefore(startDateMoment)){
         modalMessage('Signup end-date must be after the start-date.', $('#schedule_enddate'));
         return false;
     }
