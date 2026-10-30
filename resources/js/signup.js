@@ -13,6 +13,7 @@ let MAX_STUDENTS = 1;
 let CLASSLIST = getClassList('le');
 let COURSE;
 let EXPIRED = false;
+let NOT_STARTED = false;
 let REQUIRED_GROUP = false;
 let TIMEZONE;
  
@@ -85,6 +86,10 @@ async function init() {
     }
     MAX_STUDENTS = groupCategory.MaxUsersPerGroup;
     
+    if(moment() < moment.utc(groupCategory.SelfEnrollmentStartDate, 'YYYY-MM-DDTHH:mm:ss.fffZ')){
+        NOT_STARTED = true;
+    }
+
     if(moment() > moment.utc(groupCategory.SelfEnrollmentExpiryDate, 'YYYY-MM-DDTHH:mm:ss.fffZ')){
         EXPIRED = true;
     }
@@ -162,7 +167,7 @@ async function displayGroupsInCategory(groups){
                 html += '</td>';
             }
             html += '<td class="timeslot_datetime">' + group.Name + '</td>';
-            if(!EXPIRED){
+            if(!NOT_STARTED && !EXPIRED){
                 html += '<td class="timeslot_actions student_timeslot_actions">';
                 html += '<button class="btn btn-secondary btn-sm select-timeslot" data-id="' + group.GroupId + '">Select this time</button>';
                 html += '</td>';
@@ -170,14 +175,17 @@ async function displayGroupsInCategory(groups){
             html += '</tr>';
 
             $('#existing_timeslots__table').append(html);
-            $('#timeslot_' + group.GroupId).find('.select-timeslot').on('click', function(){
-                modalConfirm('Are you sure you want to select:<br />' + group.Name, 
-                    function(){
-                        $('.select-timeslot').prop('disabled', true);
-                        selectTimeSlot(group);
-                    }
-                );
-            });
+
+            if(!NOT_STARTED && !EXPIRED){
+                $('#timeslot_' + group.GroupId).find('.select-timeslot').on('click', function(){
+                    modalConfirm('Are you sure you want to select:<br />' + group.Name, 
+                        function(){
+                            $('.select-timeslot').prop('disabled', true);
+                            selectTimeSlot(group);
+                        }
+                    );
+                });
+            }
             
         } else if (group.Enrollments.includes(USER.Identifier)){
             MY_TIME = {
@@ -195,7 +203,9 @@ async function displayGroupsInCategory(groups){
         $('.student_timeslot_actions').remove();
     }
     
-    if(EXPIRED){
+    if(NOT_STARTED){
+        $('#existing_timeslots__heading').html('Sign up has not started yet. Signup will begin on ' + moment.utc(groupCategory.SelfEnrollmentStartDate, 'YYYY-MM-DDTHH:mm:ss.fffZ').local().format('MMM Do YYYY, \\at h:mm A'));
+    } else if(EXPIRED){
         $('#existing_timeslots__heading').html('Sign up is now closed.').after('<p>If you still need to sign up, please contact your instructor.</p>');
     } else if(availableGroups == 0){
         $('#existing_timeslots__heading').html('No additional time slots are available');
