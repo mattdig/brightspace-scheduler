@@ -95,7 +95,7 @@ async function init() {
     }
 
     // sets MY_TIME from the groups array
-    let availableGroups = await displayGroupsInCategory(groups);
+    let availableGroups = await displayGroupsInCategory(groupCategory, groups);
 
     if(MY_TIME !== false){
         $('#my_selection__content').html('<h3>' + MY_TIME.name + '</h3>');
@@ -118,7 +118,7 @@ async function init() {
     parent.document.getElementsByClassName('d2l-iframe')[0].style.height = document.body.scrollHeight + 'px';
 }
 
-async function displayGroupsInCategory(groups){
+async function displayGroupsInCategory(groupCategory, groups){
     
     let availableGroups = 0;
     let html = '<tr>' + (MAX_STUDENTS > 1 && HAS_CLASSLIST_ACCESS ? '<th>Enrollment</th>' : '') + '<th>Date & Time</th>' + (EXPIRED ? '' : '<th class="student_timeslot_actions">Actions</th>') + '</tr>';
@@ -171,6 +171,8 @@ async function displayGroupsInCategory(groups){
                 html += '<td class="timeslot_actions student_timeslot_actions">';
                 html += '<button class="btn btn-secondary btn-sm select-timeslot" data-id="' + group.GroupId + '">Select this time</button>';
                 html += '</td>';
+            } else {
+                html += '<td class="timeslot_actions student_timeslot_actions">Unavailable</td>';
             }
             html += '</tr>';
 
@@ -204,7 +206,7 @@ async function displayGroupsInCategory(groups){
     }
     
     if(NOT_STARTED){
-        $('#existing_timeslots__heading').html('Sign up has not started yet. Signup will begin on ' + moment.utc(groupCategory.SelfEnrollmentStartDate, 'YYYY-MM-DDTHH:mm:ss.fffZ').local().format('MMM Do YYYY, \\at h:mm A'));
+        $('#existing_timeslots__heading').html('Sign up has not started yet.<br />Check back on ' + moment.utc(groupCategory.SelfEnrollmentStartDate, 'YYYY-MM-DDTHH:mm:ss.fffZ').local().format('MMM Do YYYY, \\at h:mm A'));
     } else if(EXPIRED){
         $('#existing_timeslots__heading').html('Sign up is now closed.').after('<p>If you still need to sign up, please contact your instructor.</p>');
     } else if(availableGroups == 0){
