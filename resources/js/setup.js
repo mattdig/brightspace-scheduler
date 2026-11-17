@@ -581,6 +581,10 @@ function generateTimeOptions(object, defaultTime = false, startTime = 0, endTime
         defaultTime = startTime.clone();
     }
 
+    $(object).val(defaultTime.format('h:mm A'));
+
+    return false;
+
     for(let i = 0; i < (24 * (60 / interval)); i++){
         let time = startTime.clone().add(i * interval, 'minutes');
 
